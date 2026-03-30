@@ -22,7 +22,9 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     rollupOptions: {
-      input: "./index.html",
+      input: {
+        index: './index.html'
+      },
     },
   },
 }));
