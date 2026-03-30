@@ -8,7 +8,6 @@ import { StepBeltSpeed } from '@/components/configurator/StepBeltSpeed';
 import { StepDrive } from '@/components/configurator/StepDrive';
 import { StepStand } from '@/components/configurator/StepStand';
 import { StepSummary } from '@/components/configurator/StepSummary';
-import { ConfiguratorAssistant } from '@/components/configurator/ConfiguratorAssistant';
 import { ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
@@ -187,11 +186,6 @@ const Index = () => {
         </div>
       </footer>
 
-      <ConfiguratorAssistant
-        config={config}
-        lang={lang}
-        onApplySuggestions={handleChange}
-      />
     </div>
   );
 };
