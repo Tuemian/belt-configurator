@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import conveyorStand from '@/assets/conveyor-stand.jpg';
+import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
 
 interface Props {
   config: ConveyorConfig;
@@ -94,14 +94,8 @@ export const StepStand = ({ config, onChange, lang }: Props) => {
         )}
       </div>
 
-      <div className="flex items-center justify-center rounded-xl bg-muted/50 p-6">
-        <img
-          src={conveyorStand}
-          alt="Belt conveyor stand"
-          className="max-w-full h-auto rounded-lg"
-          loading="lazy"
-          width={800} height={512}
-        />
+      <div className="rounded-xl overflow-hidden border min-h-[380px]">
+        <ConveyorPreview config={config} />
       </div>
     </div>
   );
