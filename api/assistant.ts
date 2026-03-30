@@ -58,36 +58,38 @@ export default async function handler(req: any, res: any) {
     return json(res, 400, { error: 'Missing message' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return json(res, 200, {
       answer: lang === 'de'
-        ? 'Der KI-Service ist noch nicht verbunden (OPENAI_API_KEY fehlt). Ich kann lokal trotzdem einfache Vorschlaege geben.'
-        : 'AI service is not connected yet (OPENAI_API_KEY missing). I can still provide basic local suggestions.',
+        ? 'Der KI-Service ist noch nicht verbunden (GEMINI_API_KEY fehlt). Ich kann lokal trotzdem einfache Vorschlaege geben.'
+        : 'AI service is not connected yet (GEMINI_API_KEY missing). I can still provide basic local suggestions.',
     });
   }
 
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
   try {
-    const completion = await fetch('https://api.openai.com/v1/chat/completions', {
+    const completion = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-        messages: [
-          { role: 'system', content: buildSystemPrompt(lang) },
+        systemInstruction: { parts: [{ text: buildSystemPrompt(lang) }] },
+        contents: [
           {
             role: 'user',
-            content: JSON.stringify({
-              message,
-              currentConfig: config,
-            }),
+            parts: [
+              {
+                text: JSON.stringify({ message, currentConfig: config }),
+              },
+            ],
           },
         ],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+        },
       }),
     });
 
@@ -97,7 +99,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const raw = await completion.json();
-    const content = raw?.choices?.[0]?.message?.content;
+    const content = raw?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!content || typeof content !== 'string') {
       return json(res, 502, { error: 'Invalid upstream response' });
     }
