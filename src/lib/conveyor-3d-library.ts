@@ -23,6 +23,7 @@ export interface Conveyor3DMeasurements {
 export interface ModelAssetDefinition {
   url: string;
   rotation?: Vec3;
+  rotationDeg?: Vec3;
   scale?: Vec3;
 }
 
@@ -78,21 +79,21 @@ const defaultLibrary: Conveyor3DLibrary = {
   motors: {
     direct: {
       left: [
-        { id: 'direct-left-compact', url: '/models/motors/direct-left.glb', rules: { maxFrameWidth: 500 } },
-        { id: 'direct-left-large', url: '/models/motors/direct-left-large.glb', rules: { minFrameWidth: 501 } },
+        { id: 'direct-left-compact', url: '/models/motors/direct-left.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
+        { id: 'direct-left-large', url: '/models/motors/direct-left-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
       ],
       right: [
-        { id: 'direct-right-compact', url: '/models/motors/direct-right.glb', rules: { maxFrameWidth: 500 } },
-        { id: 'direct-right-large', url: '/models/motors/direct-right-large.glb', rules: { minFrameWidth: 501 } },
+        { id: 'direct-right-compact', url: '/models/motors/direct-right.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
+        { id: 'direct-right-large', url: '/models/motors/direct-right-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
       ],
     },
     indirect: [
-      { id: 'indirect-compact', url: '/models/motors/indirect.glb', rules: { maxFrameWidth: 500 } },
-      { id: 'indirect-large', url: '/models/motors/indirect-large.glb', rules: { minFrameWidth: 501 } },
+      { id: 'indirect-compact', url: '/models/motors/indirect.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
+      { id: 'indirect-large', url: '/models/motors/indirect-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
     ],
     center: [
-      { id: 'center-compact', url: '/models/motors/center.glb', rules: { maxFrameWidth: 500 } },
-      { id: 'center-large', url: '/models/motors/center-large.glb', rules: { minFrameWidth: 501 } },
+      { id: 'center-compact', url: '/models/motors/center.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
+      { id: 'center-large', url: '/models/motors/center-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
     ],
   },
   floorElements: {
@@ -129,6 +130,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object';
 }
 
+function isVec3(value: unknown): value is Vec3 {
+  return Array.isArray(value) && value.length === 3 && value.every((n) => typeof n === 'number');
+}
+
+function degToRadVec3([x, y, z]: Vec3): Vec3 {
+  const f = Math.PI / 180;
+  return [x * f, y * f, z * f];
+}
+
 function toVariant(value: unknown): ModelVariant | null {
   if (!isObject(value)) {
     return null;
@@ -147,11 +157,17 @@ function toVariant(value: unknown): ModelVariant | null {
       }
     : undefined;
 
+  const rotation = isVec3(value.rotation)
+    ? value.rotation
+    : isVec3(value.rotationDeg)
+      ? degToRadVec3(value.rotationDeg)
+      : undefined;
+
   return {
     id: value.id,
     url: value.url,
     rules,
-    rotation: Array.isArray(value.rotation) ? (value.rotation as Vec3) : undefined,
+    rotation,
     scale: Array.isArray(value.scale) ? (value.scale as Vec3) : undefined,
   };
 }
@@ -272,6 +288,11 @@ function selectVariant(frameWidth: number, variants: readonly ModelVariant[]): M
   return variants.find((variant) => matchesRule(frameWidth, variant.rules)) ?? variants[0];
 }
 
+function withAddedYRotation(rotation: Vec3 | undefined, deltaY: number): Vec3 {
+  const [x, y, z] = rotation ?? [0, 0, 0];
+  return [x, y + deltaY, z];
+}
+
 export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   const library = getConveyor3DLibrary();
   const urls: string[] = [];
@@ -333,8 +354,8 @@ export function resolveConveyor3DAssets(
         0,
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
-      rotation: [0, side === -1 ? Math.PI : 0, 0],
-      scale: [1, 1, 1],
+      rotation: withAddedYRotation(variant.rotation, side === -1 ? Math.PI : 0),
+      scale: variant.scale ?? [1, 1, 1],
     };
   }
 
@@ -347,7 +368,8 @@ export function resolveConveyor3DAssets(
         -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
         0,
       ],
-      scale: [1, 1, 1],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
     };
   }
 
@@ -356,7 +378,8 @@ export function resolveConveyor3DAssets(
     resolved.motor = {
       url: variant.url,
       position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
-      scale: [1, 1, 1],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
     };
   }
 
@@ -371,8 +394,8 @@ export function resolveConveyor3DAssets(
     const variant = selectVariant(measurements.frameWidth, def.variants);
     resolved.feet = {
       url: variant.url,
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
       positions: legPositions.map(([x, y, z]) => [x, y + def.positionOffset[1], z]),
     };
   }
@@ -382,8 +405,8 @@ export function resolveConveyor3DAssets(
     const variant = selectVariant(measurements.frameWidth, def.variants);
     resolved.castors = {
       url: variant.url,
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
       positions: legPositions.map(([x, y, z]) => [x, y + def.positionOffset[1], z]),
     };
   }
