@@ -44,6 +44,13 @@ function json(res: any, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
+function visibleErrorAnswer(lang: Lang, message: string) {
+  if (lang === 'de') {
+    return { answer: `Gemini ist aktuell nicht verfuegbar: ${message}` };
+  }
+  return { answer: `Gemini is currently unavailable: ${message}` };
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return json(res, 405, { error: 'Method not allowed' });
@@ -95,13 +102,24 @@ export default async function handler(req: any, res: any) {
 
     if (!completion.ok) {
       const txt = await completion.text();
-      return json(res, 502, { error: 'Upstream error', details: txt.slice(0, 500) });
+      const details = txt.slice(0, 200).replace(/\s+/g, ' ').trim();
+      return json(res, 200, visibleErrorAnswer(lang, `HTTP ${completion.status}${details ? ` - ${details}` : ''}`));
     }
 
     const raw = await completion.json();
-    const content = raw?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parts = raw?.candidates?.[0]?.content?.parts;
+    const content = Array.isArray(parts)
+      ? parts
+          .map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
+          .join('\n')
+          .trim()
+      : '';
+
     if (!content || typeof content !== 'string') {
-      return json(res, 502, { error: 'Invalid upstream response' });
+      const finishReason = raw?.candidates?.[0]?.finishReason;
+      const blockReason = raw?.promptFeedback?.blockReason;
+      const reason = blockReason || finishReason || 'empty_response';
+      return json(res, 200, visibleErrorAnswer(lang, `Keine verwertbare Antwort (${reason})`));
     }
 
     try {
