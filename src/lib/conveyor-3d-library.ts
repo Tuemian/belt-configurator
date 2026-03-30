@@ -356,10 +356,11 @@ export function resolveConveyor3DAssets(
 ): Conveyor3DResolvedAssets {
   const library = getConveyor3DLibrary();
   const resolved: Conveyor3DResolvedAssets = {};
-  const motorAngleRad = ((config.motorAngle + 90) * Math.PI) / 180;
+  const baseMotorAngleRad = ((config.motorAngle + 90) * Math.PI) / 180;
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
+    const motorAngleRad = baseMotorAngleRad + (config.motorPosition === 'left' ? Math.PI : 0);
     const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
     resolved.motor = {
       url: variant.url,
@@ -377,6 +378,7 @@ export function resolveConveyor3DAssets(
   }
 
   if (config.driveType === 'indirect') {
+    const motorAngleRad = baseMotorAngleRad;
     const variant = selectVariant(measurements.frameWidth, library.motors.indirect);
     resolved.motor = {
       url: variant.url,
@@ -391,6 +393,7 @@ export function resolveConveyor3DAssets(
   }
 
   if (config.driveType === 'center') {
+    const motorAngleRad = baseMotorAngleRad;
     const variant = selectVariant(measurements.frameWidth, library.motors.center);
     resolved.motor = {
       url: variant.url,
