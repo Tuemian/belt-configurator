@@ -356,7 +356,7 @@ export function resolveConveyor3DAssets(
 ): Conveyor3DResolvedAssets {
   const library = getConveyor3DLibrary();
   const resolved: Conveyor3DResolvedAssets = {};
-  const motorAngleRad = (config.motorAngle * Math.PI) / 180;
+  const motorAngleRad = ((config.motorAngle + 90) * Math.PI) / 180;
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
