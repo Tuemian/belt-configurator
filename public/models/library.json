@@ -1,0 +1,134 @@
+{
+  "motors": {
+    "direct": {
+      "left": [
+        {
+          "id": "direct-left-compact",
+          "url": "/models/motors/direct-left.glb",
+          "rules": {
+            "maxFrameWidth": 500
+          }
+        },
+        {
+          "id": "direct-left-large",
+          "url": "/models/motors/direct-left-large.glb",
+          "rules": {
+            "minFrameWidth": 501
+          }
+        }
+      ],
+      "right": [
+        {
+          "id": "direct-right-compact",
+          "url": "/models/motors/direct-right.glb",
+          "rules": {
+            "maxFrameWidth": 500
+          }
+        },
+        {
+          "id": "direct-right-large",
+          "url": "/models/motors/direct-right-large.glb",
+          "rules": {
+            "minFrameWidth": 501
+          }
+        }
+      ]
+    },
+    "indirect": [
+      {
+        "id": "indirect-compact",
+        "url": "/models/motors/indirect.glb",
+        "rules": {
+          "maxFrameWidth": 500
+        }
+      },
+      {
+        "id": "indirect-large",
+        "url": "/models/motors/indirect-large.glb",
+        "rules": {
+          "minFrameWidth": 501
+        }
+      }
+    ],
+    "center": [
+      {
+        "id": "center-compact",
+        "url": "/models/motors/center.glb",
+        "rules": {
+          "maxFrameWidth": 500
+        }
+      },
+      {
+        "id": "center-large",
+        "url": "/models/motors/center-large.glb",
+        "rules": {
+          "minFrameWidth": 501
+        }
+      }
+    ]
+  },
+  "floorElements": {
+    "feet": {
+      "positionOffset": [0, -12, 0],
+      "variants": [
+        {
+          "id": "foot-standard",
+          "url": "/models/floor-elements/foot.glb",
+          "rules": {
+            "maxFrameWidth": 700
+          }
+        },
+        {
+          "id": "foot-heavy",
+          "url": "/models/floor-elements/foot-heavy.glb",
+          "rules": {
+            "minFrameWidth": 701
+          }
+        }
+      ]
+    },
+    "castors": {
+      "positionOffset": [0, -28, 0],
+      "variants": [
+        {
+          "id": "castor-standard",
+          "url": "/models/floor-elements/castor.glb",
+          "rules": {
+            "maxFrameWidth": 700
+          }
+        },
+        {
+          "id": "castor-heavy",
+          "url": "/models/floor-elements/castor-heavy.glb",
+          "rules": {
+            "minFrameWidth": 701
+          }
+        }
+      ]
+    }
+  },
+  "accessories": {
+    "sideGuide": [
+      {
+        "id": "side-guide-standard",
+        "url": "/models/accessories/side-guide.glb",
+        "rules": {
+          "maxFrameWidth": 700
+        }
+      },
+      {
+        "id": "side-guide-heavy",
+        "url": "/models/accessories/side-guide-heavy.glb",
+        "rules": {
+          "minFrameWidth": 701
+        }
+      }
+    ],
+    "sensors": [
+      {
+        "id": "sensor-standard",
+        "url": "/models/accessories/sensor-standard.glb"
+      }
+    ]
+  }
+}
