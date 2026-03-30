@@ -3,6 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Grid, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { ConveyorConfig } from '@/lib/configurator-types';
 import {
   Conveyor3DMeasurements,
@@ -199,7 +200,7 @@ function ExternalAssetInstances({
   );
 }
 
-function CameraRig({ config }: { config: ConveyorConfig }) {
+function CameraRig({ config, resetCameraTick }: { config: ConveyorConfig; resetCameraTick: number }) {
   const { camera, invalidate } = useThree();
   const prev = useRef({ length: 0, width: 0, standHeight: 0 });
 
@@ -227,9 +228,34 @@ function CameraRig({ config }: { config: ConveyorConfig }) {
     (camera as THREE.PerspectiveCamera).far = diagonal * 12;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     invalidate();
-  }, [camera, config.beltLength, config.frameWidth, config.standHeight, config.withStand, invalidate]);
+  }, [camera, config.beltLength, config.frameWidth, config.standHeight, config.withStand, invalidate, resetCameraTick]);
 
   return null;
+}
+
+function ControlsRig({ config, resetCameraTick }: { config: ConveyorConfig; resetCameraTick: number }) {
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+
+  useEffect(() => {
+    const standHeight = config.withStand ? config.standHeight : 0;
+    if (!controlsRef.current) {
+      return;
+    }
+
+    controlsRef.current.target.set(0, standHeight * 0.5, 0);
+    controlsRef.current.update();
+  }, [config.standHeight, config.withStand, resetCameraTick]);
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      enablePan
+      minPolarAngle={0.1}
+      maxPolarAngle={Math.PI / 2.05}
+      zoomSpeed={0.8}
+    />
+  );
 }
 
 function ParametricDirectMotor({
@@ -559,7 +585,13 @@ function FloorGrid({ config }: { config: ConveyorConfig }) {
   );
 }
 
-export function ConveyorViewer3D({ config }: { config: ConveyorConfig }) {
+export function ConveyorViewer3D({
+  config,
+  resetCameraTick = 0,
+}: {
+  config: ConveyorConfig;
+  resetCameraTick?: number;
+}) {
   useEffect(() => {
     void loadConveyor3DLibraryFromPublic();
   }, []);
@@ -581,14 +613,8 @@ export function ConveyorViewer3D({ config }: { config: ConveyorConfig }) {
         <FloorGrid config={config} />
       </Suspense>
 
-      <CameraRig config={config} />
-      <OrbitControls
-        makeDefault
-        enablePan
-        minPolarAngle={0.1}
-        maxPolarAngle={Math.PI / 2.05}
-        zoomSpeed={0.8}
-      />
+      <CameraRig config={config} resetCameraTick={resetCameraTick} />
+      <ControlsRig config={config} resetCameraTick={resetCameraTick} />
     </Canvas>
   );
 }
