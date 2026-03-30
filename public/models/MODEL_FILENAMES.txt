@@ -1,0 +1,25 @@
+Place your GLB files in these folders and names:
+
+motors/
+- direct-left.glb
+- direct-left-large.glb
+- direct-right.glb
+- direct-right-large.glb
+- indirect.glb
+- indirect-large.glb
+- center.glb
+- center-large.glb
+
+floor-elements/
+- foot.glb
+- foot-heavy.glb
+- castor.glb
+- castor-heavy.glb
+
+accessories/
+- side-guide.glb
+- side-guide-heavy.glb
+- sensor-standard.glb
+
+You can change these names and rules in:
+/models/library.json
