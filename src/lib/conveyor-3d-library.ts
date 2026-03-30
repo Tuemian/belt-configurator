@@ -293,6 +293,11 @@ function withAddedYRotation(rotation: Vec3 | undefined, deltaY: number): Vec3 {
   return [x, y + deltaY, z];
 }
 
+function withAddedXRotation(rotation: Vec3 | undefined, deltaX: number): Vec3 {
+  const [x, y, z] = rotation ?? [0, 0, 0];
+  return [x + deltaX, y, z];
+}
+
 export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   const library = getConveyor3DLibrary();
   const urls: string[] = [];
@@ -343,6 +348,7 @@ export function resolveConveyor3DAssets(
 ): Conveyor3DResolvedAssets {
   const library = getConveyor3DLibrary();
   const resolved: Conveyor3DResolvedAssets = {};
+  const motorAngleRad = (config.motorAngle * Math.PI) / 180;
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
@@ -354,7 +360,10 @@ export function resolveConveyor3DAssets(
         0,
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
-      rotation: withAddedYRotation(variant.rotation, side === -1 ? Math.PI : 0),
+      rotation: withAddedXRotation(
+        withAddedYRotation(variant.rotation, side === -1 ? Math.PI : 0),
+        motorAngleRad,
+      ),
       scale: variant.scale ?? [1, 1, 1],
     };
   }
@@ -368,7 +377,7 @@ export function resolveConveyor3DAssets(
         -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
         0,
       ],
-      rotation: variant.rotation ?? [0, 0, 0],
+      rotation: withAddedXRotation(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
     };
   }
@@ -378,7 +387,7 @@ export function resolveConveyor3DAssets(
     resolved.motor = {
       url: variant.url,
       position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
-      rotation: variant.rotation ?? [0, 0, 0],
+      rotation: withAddedXRotation(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
     };
   }
