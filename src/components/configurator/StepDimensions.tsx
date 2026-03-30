@@ -25,9 +25,11 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="ml-1 cursor-pointer text-muted-foreground text-xs border border-muted-foreground rounded-full px-2 py-0.5">i</span>
+                      <span className="ml-1 cursor-pointer text-muted-foreground text-xs border border-muted-foreground rounded-full px-2 py-0.5 transition-colors duration-200 hover:bg-primary/10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e0e0"/><text x="12" y="17" textAnchor="middle" fontSize="14" fill="#333" fontFamily="Arial" dy="-2">i</text></svg>
+                      </span>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="animate-fade-in-up">
                       <span>
                         Mögliche Breiten: 40, 80, 120 mm und ab 130 mm bis 1000 mm in 10er-Schritten.
                       </span>
@@ -56,14 +58,24 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                 })()}
                 <div className="flex items-center gap-1 min-w-[100px]">
                   <Input
-                    type="number" value={config.frameWidth}
-                    onChange={(e) => {
+                    type="number"
+                    value={config.frameWidth}
+                    min={40}
+                    max={1000}
+                    step={1}
+                    onChange={e => {
                       let v = Number(e.target.value);
-                      let allowed = [40, 80, 120];
-                      for (let i = 130; i <= 1000; i += 10) allowed.push(i);
+                      const allowed = [40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)];
                       // Finde den nächsten erlaubten Wert
                       let nearest = allowed.reduce((prev, curr) => Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev, allowed[0]);
-                      onChange({ frameWidth: nearest, beltLength: Math.round(nearest * 1.5) });
+                      onChange({ frameWidth: nearest, beltLength: Math.max(config.beltLength, Math.round(nearest * 1.5)) });
+                    }}
+                    onBlur={e => {
+                      // Nach dem Verlassen des Feldes Wert auf erlaubten Wert setzen
+                      let v = Number(e.target.value);
+                      const allowed = [40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)];
+                      let nearest = allowed.reduce((prev, curr) => Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev, allowed[0]);
+                      if (v !== nearest) onChange({ frameWidth: nearest, beltLength: Math.max(config.beltLength, Math.round(nearest * 1.5)) });
                     }}
                     className="w-20 h-9 text-right"
                   />
@@ -78,18 +90,38 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                 <span className="text-muted-foreground font-normal ml-2 text-xs">({t('beltLengthRange', lang)})</span>
               </Label>
               <div className="flex items-center gap-4">
-                <Input
-                  type="number"
+                <Slider
+                  value={[config.beltLength]}
                   min={Math.ceil(config.frameWidth * 1.5)}
-                  value={config.beltLength}
-                  onChange={e => {
+                  max={12000}
+                  step={1}
+                  onValueChange={([v]) => {
                     let min = Math.ceil(config.frameWidth * 1.5);
-                    let v = Math.max(min, Number(e.target.value));
-                    onChange({ beltLength: v });
+                    onChange({ beltLength: Math.max(min, v) });
                   }}
-                  className="w-20 h-9 text-right"
+                  className="flex-1"
                 />
-                <span className="text-sm text-muted-foreground">mm (mind. 1,5 × Breite)</span>
+                <div className="flex items-center gap-1 min-w-[100px]">
+                  <Input
+                    type="number"
+                    min={Math.ceil(config.frameWidth * 1.5)}
+                    max={12000}
+                    step={1}
+                    value={config.beltLength}
+                    onChange={e => {
+                      let min = Math.ceil(config.frameWidth * 1.5);
+                      let v = Math.max(min, Number(e.target.value));
+                      onChange({ beltLength: v });
+                    }}
+                    onBlur={e => {
+                      let min = Math.ceil(config.frameWidth * 1.5);
+                      let v = Math.max(min, Number(e.target.value));
+                      if (v !== config.beltLength) onChange({ beltLength: v });
+                    }}
+                    className="w-20 h-9 text-right"
+                  />
+                  <span className="text-sm text-muted-foreground">mm (mind. 1,5 × Breite)</span>
+                </div>
               </div>
             </div>
 
