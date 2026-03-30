@@ -1,0 +1,392 @@
+import { ConveyorConfig } from '@/lib/configurator-types';
+
+export type Vec3 = [number, number, number];
+
+export interface Conveyor3DMeasurements {
+  beltLength: number;
+  frameWidth: number;
+  frameHeight: number;
+  frameSectionWidth: number;
+  sideGuideHeight: number;
+  inclineAngle: number;
+  beltTopY: number;
+  drumRadius: number;
+  motorWidth: number;
+  motorHeight: number;
+  motorDepth: number;
+  motorCylinderHeight: number;
+  legLength: number;
+  legInsetX: number;
+  legInsetZ: number;
+}
+
+export interface ModelAssetDefinition {
+  url: string;
+  rotation?: Vec3;
+  scale?: Vec3;
+}
+
+interface VariantRule {
+  minFrameWidth?: number;
+  maxFrameWidth?: number;
+}
+
+interface ModelVariant extends ModelAssetDefinition {
+  id: string;
+  rules?: VariantRule;
+}
+
+interface FloorElementDefinition {
+  variants: ModelVariant[];
+  positionOffset: Vec3;
+}
+
+export interface Conveyor3DLibrary {
+  motors: {
+    direct: {
+      left: ModelVariant[];
+      right: ModelVariant[];
+    };
+    indirect: ModelVariant[];
+    center: ModelVariant[];
+  };
+  floorElements: {
+    feet: FloorElementDefinition;
+    castors: FloorElementDefinition;
+  };
+  accessories?: {
+    sideGuide?: ModelVariant[];
+    sensors?: ModelVariant[];
+  };
+}
+
+export interface ModelPlacement extends ModelAssetDefinition {
+  position: Vec3;
+}
+
+export interface ModelInstances extends ModelAssetDefinition {
+  positions: Vec3[];
+}
+
+export interface Conveyor3DResolvedAssets {
+  motor?: ModelPlacement;
+  feet?: ModelInstances;
+  castors?: ModelInstances;
+}
+
+const defaultLibrary: Conveyor3DLibrary = {
+  motors: {
+    direct: {
+      left: [
+        { id: 'direct-left-compact', url: '/models/motors/direct-left.glb', rules: { maxFrameWidth: 500 } },
+        { id: 'direct-left-large', url: '/models/motors/direct-left-large.glb', rules: { minFrameWidth: 501 } },
+      ],
+      right: [
+        { id: 'direct-right-compact', url: '/models/motors/direct-right.glb', rules: { maxFrameWidth: 500 } },
+        { id: 'direct-right-large', url: '/models/motors/direct-right-large.glb', rules: { minFrameWidth: 501 } },
+      ],
+    },
+    indirect: [
+      { id: 'indirect-compact', url: '/models/motors/indirect.glb', rules: { maxFrameWidth: 500 } },
+      { id: 'indirect-large', url: '/models/motors/indirect-large.glb', rules: { minFrameWidth: 501 } },
+    ],
+    center: [
+      { id: 'center-compact', url: '/models/motors/center.glb', rules: { maxFrameWidth: 500 } },
+      { id: 'center-large', url: '/models/motors/center-large.glb', rules: { minFrameWidth: 501 } },
+    ],
+  },
+  floorElements: {
+    feet: {
+      variants: [
+        { id: 'foot-standard', url: '/models/floor-elements/foot.glb', rules: { maxFrameWidth: 700 } },
+        { id: 'foot-heavy', url: '/models/floor-elements/foot-heavy.glb', rules: { minFrameWidth: 701 } },
+      ],
+      positionOffset: [0, -12, 0],
+    },
+    castors: {
+      variants: [
+        { id: 'castor-standard', url: '/models/floor-elements/castor.glb', rules: { maxFrameWidth: 700 } },
+        { id: 'castor-heavy', url: '/models/floor-elements/castor-heavy.glb', rules: { minFrameWidth: 701 } },
+      ],
+      positionOffset: [0, -28, 0],
+    },
+  },
+  accessories: {
+    sideGuide: [
+      { id: 'side-guide-standard', url: '/models/accessories/side-guide.glb', rules: { maxFrameWidth: 700 } },
+      { id: 'side-guide-heavy', url: '/models/accessories/side-guide-heavy.glb', rules: { minFrameWidth: 701 } },
+    ],
+    sensors: [
+      { id: 'sensor-standard', url: '/models/accessories/sensor-standard.glb' },
+    ],
+  },
+};
+
+let activeLibrary: Conveyor3DLibrary = defaultLibrary;
+let loadPromise: Promise<void> | null = null;
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+function toVariant(value: unknown): ModelVariant | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  if (typeof value.id !== 'string' || typeof value.url !== 'string') {
+    return null;
+  }
+
+  const rules = isObject(value.rules)
+    ? {
+        minFrameWidth:
+          typeof value.rules.minFrameWidth === 'number' ? value.rules.minFrameWidth : undefined,
+        maxFrameWidth:
+          typeof value.rules.maxFrameWidth === 'number' ? value.rules.maxFrameWidth : undefined,
+      }
+    : undefined;
+
+  return {
+    id: value.id,
+    url: value.url,
+    rules,
+    rotation: Array.isArray(value.rotation) ? (value.rotation as Vec3) : undefined,
+    scale: Array.isArray(value.scale) ? (value.scale as Vec3) : undefined,
+  };
+}
+
+function parseVariantArray(value: unknown): ModelVariant[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const parsed = value.map(toVariant).filter((entry): entry is ModelVariant => entry !== null);
+  return parsed.length > 0 ? parsed : null;
+}
+
+function toFloorElement(value: unknown): FloorElementDefinition | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const variants = parseVariantArray(value.variants);
+  if (!variants) {
+    return null;
+  }
+
+  const positionOffset = Array.isArray(value.positionOffset)
+    ? (value.positionOffset as Vec3)
+    : ([0, 0, 0] as Vec3);
+
+  return { variants, positionOffset };
+}
+
+function toLibrary(value: unknown): Conveyor3DLibrary | null {
+  if (!isObject(value) || !isObject(value.motors) || !isObject(value.floorElements)) {
+    return null;
+  }
+
+  if (!isObject(value.motors.direct)) {
+    return null;
+  }
+
+  const directLeft = parseVariantArray(value.motors.direct.left);
+  const directRight = parseVariantArray(value.motors.direct.right);
+  const indirect = parseVariantArray(value.motors.indirect);
+  const center = parseVariantArray(value.motors.center);
+  const feet = toFloorElement(value.floorElements.feet);
+  const castors = toFloorElement(value.floorElements.castors);
+  const accessories = isObject(value.accessories) ? {
+    sideGuide: parseVariantArray(value.accessories.sideGuide) ?? undefined,
+    sensors: parseVariantArray(value.accessories.sensors) ?? undefined,
+  } : undefined;
+
+  if (!directLeft || !directRight || !indirect || !center || !feet || !castors) {
+    return null;
+  }
+
+  return {
+    motors: {
+      direct: {
+        left: directLeft,
+        right: directRight,
+      },
+      indirect,
+      center,
+    },
+    floorElements: {
+      feet,
+      castors,
+    },
+    accessories,
+  };
+}
+
+export function getConveyor3DLibrary(): Conveyor3DLibrary {
+  return activeLibrary;
+}
+
+export async function loadConveyor3DLibraryFromPublic(): Promise<void> {
+  if (loadPromise) {
+    return loadPromise;
+  }
+
+  loadPromise = (async () => {
+    try {
+      const response = await fetch('/models/library.json', { cache: 'no-store' });
+      if (!response.ok) {
+        return;
+      }
+
+      const json = await response.json();
+      const parsed = toLibrary(json);
+      if (parsed) {
+        activeLibrary = parsed;
+      }
+    } catch {
+      // Keep defaults when custom file is missing or invalid.
+    }
+  })();
+
+  return loadPromise;
+}
+
+function matchesRule(frameWidth: number, rule?: VariantRule): boolean {
+  if (!rule) {
+    return true;
+  }
+
+  if (rule.minFrameWidth !== undefined && frameWidth < rule.minFrameWidth) {
+    return false;
+  }
+
+  if (rule.maxFrameWidth !== undefined && frameWidth > rule.maxFrameWidth) {
+    return false;
+  }
+
+  return true;
+}
+
+function selectVariant(frameWidth: number, variants: readonly ModelVariant[]): ModelVariant {
+  return variants.find((variant) => matchesRule(frameWidth, variant.rules)) ?? variants[0];
+}
+
+export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
+  const library = getConveyor3DLibrary();
+  const urls: string[] = [];
+
+  if (config.driveType === 'direct') {
+    urls.push(selectVariant(config.frameWidth, library.motors.direct[config.motorPosition]).url);
+  }
+
+  if (config.driveType === 'indirect') {
+    urls.push(selectVariant(config.frameWidth, library.motors.indirect).url);
+  }
+
+  if (config.driveType === 'center') {
+    urls.push(selectVariant(config.frameWidth, library.motors.center).url);
+  }
+
+  if (config.withStand) {
+    if (config.floorElement === 'feet') {
+      urls.push(selectVariant(config.frameWidth, library.floorElements.feet.variants).url);
+    }
+
+    if (config.floorElement === 'castors') {
+      urls.push(selectVariant(config.frameWidth, library.floorElements.castors.variants).url);
+    }
+  }
+
+  if ((config.sideGuideHeight ?? 0) > 0 && library.accessories?.sideGuide?.length) {
+    urls.push(selectVariant(config.frameWidth, library.accessories.sideGuide).url);
+  }
+
+  return Array.from(new Set(urls));
+}
+
+function legBasePositions(measurements: Conveyor3DMeasurements): Vec3[] {
+  const { legInsetX, legInsetZ, frameHeight, legLength } = measurements;
+
+  return [
+    [-legInsetX, -(frameHeight / 2 + legLength), -legInsetZ],
+    [-legInsetX, -(frameHeight / 2 + legLength), legInsetZ],
+    [legInsetX, -(frameHeight / 2 + legLength), -legInsetZ],
+    [legInsetX, -(frameHeight / 2 + legLength), legInsetZ],
+  ];
+}
+
+export function resolveConveyor3DAssets(
+  config: ConveyorConfig,
+  measurements: Conveyor3DMeasurements,
+): Conveyor3DResolvedAssets {
+  const library = getConveyor3DLibrary();
+  const resolved: Conveyor3DResolvedAssets = {};
+
+  if (config.driveType === 'direct') {
+    const side = config.motorPosition === 'left' ? -1 : 1;
+    const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
+    resolved.motor = {
+      url: variant.url,
+      position: [
+        -measurements.beltLength / 2,
+        0,
+        side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
+      ],
+      rotation: [0, side === -1 ? Math.PI : 0, 0],
+      scale: [1, 1, 1],
+    };
+  }
+
+  if (config.driveType === 'indirect') {
+    const variant = selectVariant(measurements.frameWidth, library.motors.indirect);
+    resolved.motor = {
+      url: variant.url,
+      position: [
+        -measurements.beltLength / 2,
+        -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
+        0,
+      ],
+      scale: [1, 1, 1],
+    };
+  }
+
+  if (config.driveType === 'center') {
+    const variant = selectVariant(measurements.frameWidth, library.motors.center);
+    resolved.motor = {
+      url: variant.url,
+      position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
+      scale: [1, 1, 1],
+    };
+  }
+
+  if (!config.withStand || measurements.legLength <= 0) {
+    return resolved;
+  }
+
+  const legPositions = legBasePositions(measurements);
+
+  if (config.floorElement === 'feet') {
+    const def = library.floorElements.feet;
+    const variant = selectVariant(measurements.frameWidth, def.variants);
+    resolved.feet = {
+      url: variant.url,
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+      positions: legPositions.map(([x, y, z]) => [x, y + def.positionOffset[1], z]),
+    };
+  }
+
+  if (config.floorElement === 'castors') {
+    const def = library.floorElements.castors;
+    const variant = selectVariant(measurements.frameWidth, def.variants);
+    resolved.castors = {
+      url: variant.url,
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+      positions: legPositions.map(([x, y, z]) => [x, y + def.positionOffset[1], z]),
+    };
+  }
+
+  return resolved;
+}
