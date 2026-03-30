@@ -70,25 +70,23 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                       let nearest = allowed.reduce((prev, curr) => Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev, allowed[0]);
                       onChange({ frameWidth: nearest, beltLength: Math.max(config.beltLength, Math.round(nearest * 1.5)) });
                     }}
-                    onBlur={e => {
-                      // Nach dem Verlassen des Feldes Wert auf erlaubten Wert setzen
-                      let v = Number(e.target.value);
-                      const allowed = [40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)];
-                      let nearest = allowed.reduce((prev, curr) => Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev, allowed[0]);
-                      if (v !== nearest) onChange({ frameWidth: nearest, beltLength: Math.max(config.beltLength, Math.round(nearest * 1.5)) });
-                    }}
-                    className="w-20 h-9 text-right"
-                  />
-                  <span className="text-sm text-muted-foreground">mm</span>
-                </div>
+                            <div className="flex items-center gap-1 min-w-[100px]">
+                              <FrameWidthInput
+                                value={config.frameWidth}
+                                onChange={v => onChange({ frameWidth: v, beltLength: Math.max(config.beltLength, Math.round(v * 1.5)) })}
+                              />
+                              <span className="text-sm text-muted-foreground">mm</span>
+                            </div>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="animate-fade-in-up">
+                      <span>
+                        Die Länge muss mindestens das 1,5-fache der Breite betragen. Du kannst sie aber beliebig größer wählen.
+                      </span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold text-foreground">
-                {t('beltLength', lang)}
-                <span className="text-muted-foreground font-normal ml-2 text-xs">({t('beltLengthRange', lang)})</span>
-              </Label>
               <div className="flex items-center gap-4">
                 <Slider
                   value={[config.beltLength]}
@@ -102,28 +100,46 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                   className="flex-1"
                 />
                 <div className="flex items-center gap-1 min-w-[100px]">
-                  <Input
-                    type="number"
+                  <BeltLengthInput
+                    value={config.beltLength}
                     min={Math.ceil(config.frameWidth * 1.5)}
                     max={12000}
-                    step={1}
-                    value={config.beltLength}
-                    onChange={e => {
-                      let min = Math.ceil(config.frameWidth * 1.5);
-                      let v = Math.max(min, Number(e.target.value));
-                      onChange({ beltLength: v });
-                    }}
-                    onBlur={e => {
-                      let min = Math.ceil(config.frameWidth * 1.5);
-                      let v = Math.max(min, Number(e.target.value));
-                      if (v !== config.beltLength) onChange({ beltLength: v });
-                    }}
-                    className="w-20 h-9 text-right"
+                    onChange={v => onChange({ beltLength: v })}
                   />
-                  <span className="text-sm text-muted-foreground">mm (mind. 1,5 × Breite)</span>
+                  <span className="text-sm text-muted-foreground">mm</span>
                 </div>
               </div>
             </div>
+// Custom Input-Komponente für bessere UX beim Eintippen
+import React, { useState, useEffect } from 'react';
+
+function BeltLengthInput({ value, min, max, onChange }: { value: number, min: number, max: number, onChange: (v: number) => void }) {
+  const [internal, setInternal] = useState(value.toString());
+  useEffect(() => { setInternal(value.toString()); }, [value]);
+  return (
+    <Input
+      type="number"
+      min={min}
+      max={max}
+      step={1}
+      value={internal}
+      onChange={e => setInternal(e.target.value)}
+      onBlur={e => {
+        let v = Math.max(min, Math.min(max, Number(e.target.value)));
+        setInternal(v.toString());
+        if (v !== value) onChange(v);
+      }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          let v = Math.max(min, Math.min(max, Number((e.target as HTMLInputElement).value)));
+          setInternal(v.toString());
+          if (v !== value) onChange(v);
+        }
+      }}
+      className="w-20 h-9 text-right"
+    />
+  );
+}
 
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground">
