@@ -16,6 +16,10 @@ interface Props {
 const ALLOWED_FRAME_WIDTHS = [40, 80, 120, ...Array.from({ length: 88 }, (_, i) => 130 + i * 10)];
 const MIN_BELT_LENGTH = 500;
 const MAX_BELT_LENGTH = 12000;
+const SIDE_GUIDE_MIN = 10;
+const SIDE_GUIDE_MAX = 50;
+const INCLINE_MIN = -10;
+const INCLINE_MAX = 10;
 
 const nearestFrameWidth = (value: number): number => {
   return ALLOWED_FRAME_WIDTHS.reduce((prev, curr) => {
@@ -79,7 +83,7 @@ function BeltLengthInput({
   const commit = (raw: string) => {
     const parsed = Number(raw);
     const safe = Number.isFinite(parsed) ? parsed : value;
-    const clamped = Math.max(min, Math.min(max, Math.round(safe)));
+    const clamped = Math.max(min, Math.min(max, Math.round(safe / 5) * 5));
     setInternal(clamped.toString());
     if (clamped !== value) {
       onChange(clamped);
@@ -91,7 +95,7 @@ function BeltLengthInput({
       type="number"
       min={min}
       max={max}
-      step={1}
+      step={5}
       value={internal}
       onChange={(e) => setInternal(e.target.value)}
       onBlur={(e) => commit(e.target.value)}
@@ -127,7 +131,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <span>Mögliche Breiten: 40, 80, 120 mm und ab 130 mm bis 1000 mm in 10er-Schritten.</span>
+                  <span>{t('frameWidthInfo', lang)}</span>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -177,7 +181,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <span>Die Länge muss mindestens das 1,5-fache der Breite betragen. Du kannst sie aber beliebig größer wählen.</span>
+                  <span>{t('beltLengthInfo', lang)}</span>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -188,7 +192,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               value={[config.beltLength]}
               min={minLengthFromWidth}
               max={MAX_BELT_LENGTH}
-              step={1}
+              step={5}
               onValueChange={([next]) => onChange({ beltLength: Math.max(minLengthFromWidth, next) })}
               className="flex-1"
             />
@@ -213,8 +217,8 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
             <Slider
               value={[config.sideGuideHeight]}
               onValueChange={([v]) => onChange({ sideGuideHeight: v })}
-              min={0}
-              max={100}
+              min={SIDE_GUIDE_MIN}
+              max={SIDE_GUIDE_MAX}
               step={5}
               className="flex-1"
             />
@@ -222,7 +226,10 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               <Input
                 type="number"
                 value={config.sideGuideHeight}
-                onChange={(e) => onChange({ sideGuideHeight: Math.min(100, Math.max(0, Number(e.target.value))) })}
+                min={SIDE_GUIDE_MIN}
+                max={SIDE_GUIDE_MAX}
+                step={5}
+                onChange={(e) => onChange({ sideGuideHeight: Math.min(SIDE_GUIDE_MAX, Math.max(SIDE_GUIDE_MIN, Number(e.target.value))) })}
                 className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">mm</span>
@@ -239,8 +246,8 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
             <Slider
               value={[config.inclineAngle]}
               onValueChange={([v]) => onChange({ inclineAngle: v })}
-              min={-15}
-              max={15}
+              min={INCLINE_MIN}
+              max={INCLINE_MAX}
               step={1}
               className="flex-1"
             />
@@ -248,7 +255,9 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               <Input
                 type="number"
                 value={config.inclineAngle}
-                onChange={(e) => onChange({ inclineAngle: Math.min(15, Math.max(-15, Number(e.target.value))) })}
+                min={INCLINE_MIN}
+                max={INCLINE_MAX}
+                onChange={(e) => onChange({ inclineAngle: Math.min(INCLINE_MAX, Math.max(INCLINE_MIN, Number(e.target.value))) })}
                 className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">°</span>
