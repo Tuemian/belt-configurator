@@ -35,19 +35,24 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                 </TooltipProvider>
               </div>
               <div className="flex items-center gap-4">
-                <Slider
-                  value={[config.frameWidth]}
-                  onValueChange={([v]) => {
-                    // Nur erlaubte Werte: 40, 80, 120, dann 130-1000 in 10er Schritten
-                    let allowed = [40, 80, 120];
-                    for (let i = 130; i <= 1000; i += 10) allowed.push(i);
-                    // Finde den nächsten erlaubten Wert
-                    let nearest = allowed.reduce((prev, curr) => Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev, allowed[0]);
-                    onChange({ frameWidth: nearest, beltLength: Math.round(nearest * 1.5) });
-                  }}
-                  min={40} max={1000} step={1}
-                  className="flex-1"
-                />
+                {/* Custom-Slider: Index → Wert Mapping */}
+                {(() => {
+                  const allowed = [40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)];
+                  const valueIndex = allowed.findIndex(v => v === config.frameWidth);
+                  return (
+                    <Slider
+                      value={[valueIndex === -1 ? 0 : valueIndex]}
+                      min={0}
+                      max={allowed.length - 1}
+                      step={1}
+                      onValueChange={([idx]) => {
+                        const val = allowed[idx];
+                        onChange({ frameWidth: val, beltLength: Math.max(config.beltLength, Math.round(val * 1.5)) });
+                      }}
+                      className="flex-1"
+                    />
+                  );
+                })()}
                 <div className="flex items-center gap-1 min-w-[100px]">
                   <Input
                     type="number" value={config.frameWidth}
