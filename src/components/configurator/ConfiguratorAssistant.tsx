@@ -52,7 +52,14 @@ export function ConfiguratorAssistant({ config, lang, onApplySuggestions }: Prop
       });
 
       if (!response.ok) {
-        throw new Error('assistant_api_error');
+        let backendMessage = '';
+        try {
+          const errJson = await response.json() as { error?: string; details?: string };
+          backendMessage = errJson.details || errJson.error || '';
+        } catch {
+          backendMessage = '';
+        }
+        throw new Error(backendMessage || 'assistant_api_error');
       }
 
       const json = (await response.json()) as AssistantResponse;
@@ -66,8 +73,18 @@ export function ConfiguratorAssistant({ config, lang, onApplySuggestions }: Prop
           suggestions: cleanSuggestions ?? undefined,
         },
       ]);
-    } catch {
-      const local = localAssistantFallback(text, lang);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '';
+      const shouldUseLocalFallback = !msg || msg === 'assistant_api_error' || msg.includes('Failed to fetch');
+
+      const local = shouldUseLocalFallback
+        ? localAssistantFallback(text, lang)
+        : {
+            answer: lang === 'de'
+              ? `Serverfehler: ${msg}`
+              : `Server error: ${msg}`,
+          };
+
       const cleanSuggestions = sanitizeSuggestions(local.suggestions, config);
       setMessages((prev) => [
         ...prev,
