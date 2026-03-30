@@ -21,20 +21,16 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
             <span className="text-muted-foreground font-normal ml-2 text-xs">({t('frameWidthRange', lang)})</span>
           </Label>
           <div className="flex items-center gap-4">
-            <Slider
-              value={[config.frameWidth]}
-              onValueChange={([v]) => onChange({ frameWidth: v })}
-              min={40} max={1250} step={10}
-              className="flex-1"
-            />
-            <div className="flex items-center gap-1 min-w-[100px]">
-              <Input
-                type="number" value={config.frameWidth}
-                onChange={(e) => onChange({ frameWidth: Math.min(1250, Math.max(40, Number(e.target.value))) })}
-                className="w-20 h-9 text-right"
-              />
-              <span className="text-sm text-muted-foreground">mm</span>
-            </div>
+            {/* Auswahl: 40, 80, 120, dann 130-1000 in 10er Schritten */}
+            <select
+              value={config.frameWidth}
+              onChange={e => onChange({ frameWidth: Number(e.target.value) })}
+              className="w-32 h-9 rounded border border-input bg-background px-2 text-right"
+            >
+              {[40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)].map(val => (
+                <option key={val} value={val}>{val} mm</option>
+              ))}
+            </select>
           </div>
         </div>
 
