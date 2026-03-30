@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import conveyorBelt from '@/assets/conveyor-belt-speed.jpg';
+import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
 
 interface Props {
   config: ConveyorConfig;
@@ -83,14 +83,8 @@ export const StepBeltSpeed = ({ config, onChange, lang }: Props) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center rounded-xl bg-muted/50 p-6">
-        <img
-          src={conveyorBelt}
-          alt="Belt conveyor belt and speed"
-          className="max-w-full h-auto rounded-lg"
-          loading="lazy"
-          width={800} height={512}
-        />
+      <div className="rounded-xl overflow-hidden border min-h-[380px]">
+        <ConveyorPreview config={config} />
       </div>
     </div>
   );
