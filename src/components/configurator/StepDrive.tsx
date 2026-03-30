@@ -2,7 +2,7 @@ import { Language, t } from '@/lib/i18n';
 import { ConveyorConfig } from '@/lib/configurator-types';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import conveyorDrive from '@/assets/conveyor-drive.jpg';
+import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
 
 interface Props {
   config: ConveyorConfig;
@@ -87,14 +87,8 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center rounded-xl bg-muted/50 p-6">
-        <img
-          src={conveyorDrive}
-          alt="Belt conveyor drive system"
-          className="max-w-full h-auto rounded-lg"
-          loading="lazy"
-          width={800} height={512}
-        />
+      <div className="rounded-xl overflow-hidden border min-h-[380px]">
+        <ConveyorPreview config={config} />
       </div>
     </div>
   );
