@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Language, t } from '@/lib/i18n';
 import { ConveyorConfig } from '@/lib/configurator-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import conveyorDimensions from '@/assets/conveyor-dimensions.jpg';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   config: ConveyorConfig;
@@ -12,128 +13,45 @@ interface Props {
   lang: Language;
 }
 
-export const StepDimensions = ({ config, onChange, lang }: Props) => {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-semibold text-foreground">
-                  {t('frameWidth', lang)}
-                  <span className="text-muted-foreground font-normal ml-2 text-xs">({t('frameWidthRange', lang)})</span>
-                </Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="ml-1 cursor-pointer text-muted-foreground text-xs border border-muted-foreground rounded-full px-2 py-0.5 transition-colors duration-200 hover:bg-primary/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e0e0e0"/><text x="12" y="17" textAnchor="middle" fontSize="14" fill="#333" fontFamily="Arial" dy="-2">i</text></svg>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="animate-fade-in-up">
-                      <span>
-                        Mögliche Breiten: 40, 80, 120 mm und ab 130 mm bis 1000 mm in 10er-Schritten.
-                      </span>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="flex items-center gap-4">
-                {/* Custom-Slider: Index → Wert Mapping */}
-                {(() => {
-                  const allowed = [40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)];
-                  const valueIndex = allowed.findIndex(v => v === config.frameWidth);
-                  return (
-                    <Slider
-                      value={[valueIndex === -1 ? 0 : valueIndex]}
-                      min={0}
-                      max={allowed.length - 1}
-                      step={1}
-                      onValueChange={([idx]) => {
-                        const val = allowed[idx];
-                        onChange({ frameWidth: val, beltLength: Math.max(config.beltLength, Math.round(val * 1.5)) });
-                      }}
-                      className="flex-1"
-                    />
-                  );
-                })()}
-                <div className="flex items-center gap-1 min-w-[100px]">
-                  <Input
-                    type="number"
-                    value={config.frameWidth}
-                    min={40}
-                    max={1000}
-                    step={1}
-                    onChange={e => {
-                      let v = Number(e.target.value);
-                      const allowed = [40, 80, 120, ...Array.from({length: 88}, (_, i) => 130 + i * 10)];
-                      // Finde den nächsten erlaubten Wert
-                      let nearest = allowed.reduce((prev, curr) => Math.abs(curr - v) < Math.abs(prev - v) ? curr : prev, allowed[0]);
-                      onChange({ frameWidth: nearest, beltLength: Math.max(config.beltLength, Math.round(nearest * 1.5)) });
-                    }}
-                            <div className="flex items-center gap-1 min-w-[100px]">
-                              <FrameWidthInput
-                                value={config.frameWidth}
-                                onChange={v => onChange({ frameWidth: v, beltLength: Math.max(config.beltLength, Math.round(v * 1.5)) })}
-                              />
-                              <span className="text-sm text-muted-foreground">mm</span>
-                            </div>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="animate-fade-in-up">
-                      <span>
-                        Die Länge muss mindestens das 1,5-fache der Breite betragen. Du kannst sie aber beliebig größer wählen.
-                      </span>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="flex items-center gap-4">
-                <Slider
-                  value={[config.beltLength]}
-                  min={Math.ceil(config.frameWidth * 1.5)}
-                  max={12000}
-                  step={1}
-                  onValueChange={([v]) => {
-                    let min = Math.ceil(config.frameWidth * 1.5);
-                    onChange({ beltLength: Math.max(min, v) });
-                  }}
-                  className="flex-1"
-                />
-                <div className="flex items-center gap-1 min-w-[100px]">
-                  <BeltLengthInput
-                    value={config.beltLength}
-                    min={Math.ceil(config.frameWidth * 1.5)}
-                    max={12000}
-                    onChange={v => onChange({ beltLength: v })}
-                  />
-                  <span className="text-sm text-muted-foreground">mm</span>
-                </div>
-              </div>
-            </div>
-// Custom Input-Komponente für bessere UX beim Eintippen
-import React, { useState, useEffect } from 'react';
+const ALLOWED_FRAME_WIDTHS = [40, 80, 120, ...Array.from({ length: 88 }, (_, i) => 130 + i * 10)];
+const MIN_BELT_LENGTH = 500;
+const MAX_BELT_LENGTH = 12000;
 
-function BeltLengthInput({ value, min, max, onChange }: { value: number, min: number, max: number, onChange: (v: number) => void }) {
+const nearestFrameWidth = (value: number): number => {
+  return ALLOWED_FRAME_WIDTHS.reduce((prev, curr) => {
+    return Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev;
+  }, ALLOWED_FRAME_WIDTHS[0]);
+};
+
+function FrameWidthInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [internal, setInternal] = useState(value.toString());
-  useEffect(() => { setInternal(value.toString()); }, [value]);
+
+  useEffect(() => {
+    setInternal(value.toString());
+  }, [value]);
+
+  const commit = (raw: string) => {
+    const parsed = Number(raw);
+    const safe = Number.isFinite(parsed) ? parsed : value;
+    const snapped = nearestFrameWidth(safe);
+    setInternal(snapped.toString());
+    if (snapped !== value) {
+      onChange(snapped);
+    }
+  };
+
   return (
     <Input
       type="number"
-      min={min}
-      max={max}
+      min={40}
+      max={1000}
       step={1}
       value={internal}
-      onChange={e => setInternal(e.target.value)}
-      onBlur={e => {
-        let v = Math.max(min, Math.min(max, Number(e.target.value)));
-        setInternal(v.toString());
-        if (v !== value) onChange(v);
-      }}
-      onKeyDown={e => {
+      onChange={(e) => setInternal(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
         if (e.key === 'Enter') {
-          let v = Math.max(min, Math.min(max, Number((e.target as HTMLInputElement).value)));
-          setInternal(v.toString());
-          if (v !== value) onChange(v);
+          commit((e.target as HTMLInputElement).value);
         }
       }}
       className="w-20 h-9 text-right"
@@ -141,23 +59,171 @@ function BeltLengthInput({ value, min, max, onChange }: { value: number, min: nu
   );
 }
 
+function BeltLengthInput({
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const [internal, setInternal] = useState(value.toString());
+
+  useEffect(() => {
+    setInternal(value.toString());
+  }, [value]);
+
+  const commit = (raw: string) => {
+    const parsed = Number(raw);
+    const safe = Number.isFinite(parsed) ? parsed : value;
+    const clamped = Math.max(min, Math.min(max, Math.round(safe)));
+    setInternal(clamped.toString());
+    if (clamped !== value) {
+      onChange(clamped);
+    }
+  };
+
+  return (
+    <Input
+      type="number"
+      min={min}
+      max={max}
+      step={1}
+      value={internal}
+      onChange={(e) => setInternal(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          commit((e.target as HTMLInputElement).value);
+        }
+      }}
+      className="w-20 h-9 text-right"
+    />
+  );
+}
+
+export const StepDimensions = ({ config, onChange, lang }: Props) => {
+  const frameWidthIndex = ALLOWED_FRAME_WIDTHS.findIndex((v) => v === config.frameWidth);
+  const selectedFrameWidthIndex = frameWidthIndex === -1 ? 0 : frameWidthIndex;
+  const minLengthFromWidth = Math.max(MIN_BELT_LENGTH, Math.ceil(config.frameWidth * 1.5));
+
+  return (
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-semibold text-foreground">
+              {t('frameWidth', lang)}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">({t('frameWidthRange', lang)})</span>
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-1 cursor-pointer rounded-full border border-muted-foreground px-2 py-0.5 text-xs text-muted-foreground transition-colors duration-200 hover:bg-primary/10">
+                    i
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Mögliche Breiten: 40, 80, 120 mm und ab 130 mm bis 1000 mm in 10er-Schritten.</span>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Slider
+              value={[selectedFrameWidthIndex]}
+              min={0}
+              max={ALLOWED_FRAME_WIDTHS.length - 1}
+              step={1}
+              onValueChange={([idx]) => {
+                const next = ALLOWED_FRAME_WIDTHS[idx];
+                onChange({
+                  frameWidth: next,
+                  beltLength: Math.max(config.beltLength, Math.round(next * 1.5)),
+                });
+              }}
+              className="flex-1"
+            />
+            <div className="flex min-w-[100px] items-center gap-1">
+              <FrameWidthInput
+                value={config.frameWidth}
+                onChange={(next) =>
+                  onChange({
+                    frameWidth: next,
+                    beltLength: Math.max(config.beltLength, Math.round(next * 1.5)),
+                  })
+                }
+              />
+              <span className="text-sm text-muted-foreground">mm</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-semibold text-foreground">
+              {t('beltLength', lang)}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">({t('beltLengthRange', lang)})</span>
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-1 cursor-pointer rounded-full border border-muted-foreground px-2 py-0.5 text-xs text-muted-foreground transition-colors duration-200 hover:bg-primary/10">
+                    i
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Die Länge muss mindestens das 1,5-fache der Breite betragen. Du kannst sie aber beliebig größer wählen.</span>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Slider
+              value={[config.beltLength]}
+              min={minLengthFromWidth}
+              max={MAX_BELT_LENGTH}
+              step={1}
+              onValueChange={([next]) => onChange({ beltLength: Math.max(minLengthFromWidth, next) })}
+              className="flex-1"
+            />
+            <div className="flex min-w-[100px] items-center gap-1">
+              <BeltLengthInput
+                value={config.beltLength}
+                min={minLengthFromWidth}
+                max={MAX_BELT_LENGTH}
+                onChange={(next) => onChange({ beltLength: next })}
+              />
+              <span className="text-sm text-muted-foreground">mm</span>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground">
             {t('sideGuideHeight', lang)}
-            <span className="text-muted-foreground font-normal ml-2 text-xs">({t('sideGuideHeightRange', lang)})</span>
+            <span className="ml-2 text-xs font-normal text-muted-foreground">({t('sideGuideHeightRange', lang)})</span>
           </Label>
           <div className="flex items-center gap-4">
             <Slider
               value={[config.sideGuideHeight]}
               onValueChange={([v]) => onChange({ sideGuideHeight: v })}
-              min={0} max={100} step={5}
+              min={0}
+              max={100}
+              step={5}
               className="flex-1"
             />
-            <div className="flex items-center gap-1 min-w-[100px]">
+            <div className="flex min-w-[100px] items-center gap-1">
               <Input
-                type="number" value={config.sideGuideHeight}
+                type="number"
+                value={config.sideGuideHeight}
                 onChange={(e) => onChange({ sideGuideHeight: Math.min(100, Math.max(0, Number(e.target.value))) })}
-                className="w-20 h-9 text-right"
+                className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">mm</span>
             </div>
@@ -167,20 +233,23 @@ function BeltLengthInput({ value, min, max, onChange }: { value: number, min: nu
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground">
             {t('inclineAngle', lang)}
-            <span className="text-muted-foreground font-normal ml-2 text-xs">({t('inclineAngleRange', lang)})</span>
+            <span className="ml-2 text-xs font-normal text-muted-foreground">({t('inclineAngleRange', lang)})</span>
           </Label>
           <div className="flex items-center gap-4">
             <Slider
               value={[config.inclineAngle]}
               onValueChange={([v]) => onChange({ inclineAngle: v })}
-              min={-15} max={15} step={1}
+              min={-15}
+              max={15}
+              step={1}
               className="flex-1"
             />
-            <div className="flex items-center gap-1 min-w-[100px]">
+            <div className="flex min-w-[100px] items-center gap-1">
               <Input
-                type="number" value={config.inclineAngle}
+                type="number"
+                value={config.inclineAngle}
                 onChange={(e) => onChange({ inclineAngle: Math.min(15, Math.max(-15, Number(e.target.value))) })}
-                className="w-20 h-9 text-right"
+                className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">°</span>
             </div>
@@ -192,9 +261,10 @@ function BeltLengthInput({ value, min, max, onChange }: { value: number, min: nu
         <img
           src={conveyorDimensions}
           alt="Belt conveyor dimensions"
-          className="max-w-full h-auto rounded-lg"
+          className="h-auto max-w-full rounded-lg"
           loading="lazy"
-          width={800} height={512}
+          width={800}
+          height={512}
         />
       </div>
     </div>
