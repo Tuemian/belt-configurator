@@ -79,21 +79,21 @@ const defaultLibrary: Conveyor3DLibrary = {
   motors: {
     direct: {
       left: [
-        { id: 'direct-left-compact', url: '/models/motors/direct-left.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
-        { id: 'direct-left-large', url: '/models/motors/direct-left-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
+        { id: 'direct-left-compact', url: '/models/motors/direct-left.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
+        { id: 'direct-left-large', url: '/models/motors/direct-left-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
       ],
       right: [
-        { id: 'direct-right-compact', url: '/models/motors/direct-right.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
-        { id: 'direct-right-large', url: '/models/motors/direct-right-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
+        { id: 'direct-right-compact', url: '/models/motors/direct-left.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
+        { id: 'direct-right-large', url: '/models/motors/direct-left-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
       ],
     },
     indirect: [
-      { id: 'indirect-compact', url: '/models/motors/indirect.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
-      { id: 'indirect-large', url: '/models/motors/indirect-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
+      { id: 'indirect-compact', url: '/models/motors/indirect.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
+      { id: 'indirect-large', url: '/models/motors/indirect-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
     ],
     center: [
-      { id: 'center-compact', url: '/models/motors/center.glb', rotationDeg: [0, 90, 0], rules: { maxFrameWidth: 500 } },
-      { id: 'center-large', url: '/models/motors/center-large.glb', rotationDeg: [0, 90, 0], rules: { minFrameWidth: 501 } },
+      { id: 'center-compact', url: '/models/motors/center.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
+      { id: 'center-large', url: '/models/motors/center-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
     ],
   },
   floorElements: {
