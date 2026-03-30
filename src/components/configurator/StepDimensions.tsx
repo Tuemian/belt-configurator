@@ -266,7 +266,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
         </div>
       </div>
 
-      <div className="rounded-xl overflow-hidden border min-h-[380px]">
+      <div className="w-full min-h-[380px] overflow-hidden rounded-xl border aspect-[16/10]">
         <ConveyorPreview config={config} />
       </div>
     </div>
