@@ -4,8 +4,8 @@ import { ConveyorConfig } from '@/lib/configurator-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import conveyorDimensions from '@/assets/conveyor-dimensions.jpg';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
 
 interface Props {
   config: ConveyorConfig;
@@ -266,15 +266,8 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center rounded-xl bg-muted/50 p-6">
-        <img
-          src={conveyorDimensions}
-          alt="Belt conveyor dimensions"
-          className="h-auto max-w-full rounded-lg"
-          loading="lazy"
-          width={800}
-          height={512}
-        />
+      <div className="rounded-xl overflow-hidden border min-h-[380px]">
+        <ConveyorPreview config={config} />
       </div>
     </div>
   );
