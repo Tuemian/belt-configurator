@@ -1,4 +1,5 @@
 import { ConveyorConfig } from '@/lib/configurator-types';
+import * as THREE from 'three';
 
 export type Vec3 = [number, number, number];
 
@@ -293,9 +294,16 @@ function withAddedYRotation(rotation: Vec3 | undefined, deltaY: number): Vec3 {
   return [x, y + deltaY, z];
 }
 
-function withAddedZRotation(rotation: Vec3 | undefined, deltaZ: number): Vec3 {
+function rotateAroundConveyorAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
   const [x, y, z] = rotation ?? [0, 0, 0];
-  return [x, y, z + deltaZ];
+  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+
+  // Drive roller axis in the conveyor scene is Z.
+  const axisQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angleRad);
+  const finalQuat = axisQuat.multiply(baseQuat);
+  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
+
+  return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
 export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
@@ -360,7 +368,7 @@ export function resolveConveyor3DAssets(
         0,
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
-      rotation: withAddedZRotation(
+      rotation: rotateAroundConveyorAxis(
         withAddedYRotation(variant.rotation, side === -1 ? Math.PI : 0),
         motorAngleRad,
       ),
@@ -377,7 +385,7 @@ export function resolveConveyor3DAssets(
         -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
         0,
       ],
-      rotation: withAddedZRotation(variant.rotation ?? [0, 0, 0], motorAngleRad),
+      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
     };
   }
@@ -387,7 +395,7 @@ export function resolveConveyor3DAssets(
     resolved.motor = {
       url: variant.url,
       position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
-      rotation: withAddedZRotation(variant.rotation ?? [0, 0, 0], motorAngleRad),
+      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
     };
   }
