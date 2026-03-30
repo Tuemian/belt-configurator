@@ -45,6 +45,7 @@ async function fileExists(url: string): Promise<boolean> {
 
 export function ConveyorPreview({ config }: { config: ConveyorConfig }) {
   const [missingFiles, setMissingFiles] = useState<string[]>([]);
+  const [resetCameraTick, setResetCameraTick] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -74,7 +75,7 @@ export function ConveyorPreview({ config }: { config: ConveyorConfig }) {
   }, [config]);
 
   return (
-    <div className="h-full w-full">
+    <div className="relative h-full w-full">
       <Suspense
         fallback={
           <div className="flex h-full min-h-[380px] items-center justify-center rounded-xl bg-muted/40">
@@ -104,8 +105,16 @@ export function ConveyorPreview({ config }: { config: ConveyorConfig }) {
           </div>
         }
       >
-        <ConveyorViewer3D config={config} />
+        <ConveyorViewer3D config={config} resetCameraTick={resetCameraTick} />
       </Suspense>
+
+      <button
+        type="button"
+        onClick={() => setResetCameraTick((v) => v + 1)}
+        className="absolute right-3 top-3 rounded-md border border-border bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted"
+      >
+        Kamera zentrieren
+      </button>
 
       {missingFiles.length > 0 && (
         <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
