@@ -43,6 +43,71 @@ def _clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min_value, min(max_value, value))
 
 
+def _build_motor_solid(
+    config: ConveyorConfig,
+    length: float,
+    width: float,
+    frame_height: float,
+) -> cq.Shape | None:
+    motor_w = _clamp(width * 0.28, 60, 240)
+    motor_h = _clamp(frame_height * 0.9, 40, 160)
+    motor_d = _clamp(width * 0.22, 50, 200)
+
+    gearbox = cq.Workplane("XY").box(motor_d, motor_h, motor_w)
+
+    motor_radius = _clamp(motor_w * 0.28, 18, 90)
+    motor_length = _clamp(motor_w * 0.9, 55, 260)
+    cylinder = cq.Workplane("XZ").cylinder(motor_length, motor_radius)
+
+    if config.driveType == "direct":
+        side = 1.0 if config.motorPosition == "right" else -1.0
+        x_pos = -length / 2
+        y_pos = 0.0
+        z_pos = side * (width / 2 + motor_w / 2 + 10)
+        gb = gearbox.translate((x_pos, y_pos, z_pos))
+        cyl = cylinder.translate((x_pos, y_pos + motor_h / 2 + motor_radius, z_pos))
+        motor_shape = gb.union(cyl)
+        if config.motorAngle != 0:
+            motor_shape = motor_shape.rotate(
+                (x_pos, y_pos, z_pos),
+                (x_pos + 1, y_pos, z_pos),
+                float(config.motorAngle),
+            )
+        return motor_shape
+
+    if config.driveType == "indirect":
+        x_pos = -length / 2
+        y_pos = -(frame_height / 2 + motor_h / 2 + 12)
+        z_pos = 0.0
+        gb = gearbox.translate((x_pos, y_pos, z_pos))
+        cyl = cylinder.translate((x_pos, y_pos - motor_h / 2 - motor_radius, z_pos))
+        motor_shape = gb.union(cyl)
+        if config.motorAngle != 0:
+            motor_shape = motor_shape.rotate(
+                (x_pos, y_pos, z_pos),
+                (x_pos, y_pos, z_pos + 1),
+                float(config.motorAngle),
+            )
+        return motor_shape
+
+    if config.driveType == "center":
+        x_pos = 0.0
+        y_pos = -(frame_height / 2 + motor_h / 2 + 12)
+        z_pos = 0.0
+        gb = gearbox.translate((x_pos, y_pos, z_pos))
+        cyl = cylinder.translate((x_pos, y_pos - motor_h / 2 - motor_radius, z_pos))
+        motor_shape = gb.union(cyl)
+        if config.motorAngle != 0:
+            motor_shape = motor_shape.rotate(
+                (x_pos, y_pos, z_pos),
+                (x_pos, y_pos, z_pos + 1),
+                float(config.motorAngle),
+            )
+        return motor_shape
+
+    return None
+
+
 def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     length = _clamp(config.beltLength, 500, 12000)
     width = _clamp(config.frameWidth, 40, 1250)
@@ -116,6 +181,11 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
                     .translate((pos[0], pos[1] - leg_length / 2 - 8, pos[2]))
                 )
                 shape = shape.union(foot)
+
+    
+    motor = _build_motor_solid(config, length, width, frame_height)
+    if motor is not None:
+        shape = shape.union(motor)
 
     if abs(incline_deg) > 0.0001:
         shape = shape.rotate((0, 0, 0), (0, 0, 1), incline_deg)
