@@ -14,6 +14,11 @@ const translations = {
     startConfig: 'Konfiguration starten',
     sendInquiry: 'Anfrage senden',
     downloadPdf: 'PDF herunterladen',
+    downloadStep: 'STEP herunterladen',
+    downloadStepSuccess: 'STEP-Datei heruntergeladen',
+    downloadStepError: 'Fehler beim STEP-Download',
+    downloadStepWireframeInfoTitle: 'Vereinfachtes STEP-Modell',
+    downloadStepWireframeInfoDesc: 'Das Solid-Modell ist derzeit nicht verfuegbar. Ein Wireframe-STEP wurde heruntergeladen.',
     newConfig: 'Neue Konfiguration',
 
     // Step 1 - Dimensions
@@ -105,6 +110,11 @@ const translations = {
     startConfig: 'Start Configuration',
     sendInquiry: 'Send Inquiry',
     downloadPdf: 'Download PDF',
+    downloadStep: 'Download STEP',
+    downloadStepSuccess: 'STEP file downloaded',
+    downloadStepError: 'Error downloading STEP file',
+    downloadStepWireframeInfoTitle: 'Simplified STEP model',
+    downloadStepWireframeInfoDesc: 'Solid generation is currently unavailable. A wireframe STEP was downloaded.',
     newConfig: 'New Configuration',
 
     step1Title: 'Dimensions',
