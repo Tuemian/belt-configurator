@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import briefpapier from '@/assets/Briefpapier.pdf';
+import { buildStepFilename, downloadStepFile, generateStepWireframe } from '@/lib/step-export';
 
 interface Props {
   config: ConveyorConfig;
@@ -150,6 +151,61 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     }
   };
 
+  const handleDownloadStep = async () => {
+    try {
+      const filename = buildStepFilename(config);
+      let downloaded = false;
+
+      try {
+        const response = await fetch('/api/export-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config, mode: 'solid', allowFallback: true }),
+        });
+
+        if (response.ok) {
+          const mode = response.headers.get('x-step-mode');
+          const contentDisposition = response.headers.get('content-disposition');
+          const match = contentDisposition?.match(/filename="?([^"]+)"?/i);
+          const apiFilename = match?.[1] ?? filename;
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = apiFilename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          downloaded = true;
+
+          if (mode === 'wireframe') {
+            toast({
+              title: t('downloadStepWireframeInfoTitle', lang),
+              description: t('downloadStepWireframeInfoDesc', lang),
+            });
+          }
+        }
+      } catch {
+        // Fallback to local generation when API is unavailable (e.g. local Vite dev).
+      }
+
+      if (!downloaded) {
+        const stepContent = generateStepWireframe(config);
+        downloadStepFile(stepContent, filename);
+      }
+
+      toast({ title: t('downloadStepSuccess', lang) });
+    } catch (error) {
+      console.error('STEP export error:', error);
+      toast({
+        title: t('downloadStepError', lang),
+        description: lang === 'de' ? 'Bitte versuchen Sie es später erneut' : 'Please try again later',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.privacy) return;
@@ -187,6 +243,10 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           <Button onClick={handleDownloadPdf} variant="outline" className="flex-1">
             <FileDown className="w-4 h-4 mr-2" />
             {t('downloadPdf', lang)}
+          </Button>
+          <Button onClick={handleDownloadStep} variant="outline" className="flex-1">
+            <FileDown className="w-4 h-4 mr-2" />
+            {t('downloadStep', lang)}
           </Button>
           <Button onClick={onReset} variant="ghost" className="flex-1">
             <RotateCcw className="w-4 h-4 mr-2" />
