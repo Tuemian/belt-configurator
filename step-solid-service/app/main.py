@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import tempfile
 
@@ -41,6 +42,13 @@ class ExportResponse(BaseModel):
 
 def _clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min_value, min(max_value, value))
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _build_motor_solid(
@@ -183,9 +191,12 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
                 shape = shape.union(foot)
 
     
-    motor = _build_motor_solid(config, length, width, frame_height)
-    if motor is not None:
-        shape = shape.union(motor)
+    # Placeholder motor geometry is optional and off by default,
+    # because GLB preview assets are not directly reused for CAD STEP solids.
+    if _env_flag("STEP_INCLUDE_PLACEHOLDER_MOTOR", default=False):
+        motor = _build_motor_solid(config, length, width, frame_height)
+        if motor is not None:
+            shape = shape.union(motor)
 
     if abs(incline_deg) > 0.0001:
         shape = shape.rotate((0, 0, 0), (0, 0, 1), incline_deg)
