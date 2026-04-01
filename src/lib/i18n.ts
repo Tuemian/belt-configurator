@@ -17,8 +17,8 @@ const translations = {
     downloadStep: 'STEP herunterladen',
     downloadStepSuccess: 'STEP-Datei heruntergeladen',
     downloadStepError: 'Fehler beim STEP-Download',
-    downloadStepWireframeInfoTitle: 'Vereinfachtes STEP-Modell',
-    downloadStepWireframeInfoDesc: 'Das Solid-Modell ist derzeit nicht verfuegbar. Ein Wireframe-STEP wurde heruntergeladen.',
+    downloadStepSolidUnavailableTitle: 'Solid-Export nicht verfuegbar',
+    downloadStepSolidUnavailableDesc: 'Der Solid-Service startet noch oder ist derzeit nicht erreichbar. Bitte in 30-60 Sekunden erneut versuchen.',
     newConfig: 'Neue Konfiguration',
 
     // Step 1 - Dimensions
@@ -113,8 +113,8 @@ const translations = {
     downloadStep: 'Download STEP',
     downloadStepSuccess: 'STEP file downloaded',
     downloadStepError: 'Error downloading STEP file',
-    downloadStepWireframeInfoTitle: 'Simplified STEP model',
-    downloadStepWireframeInfoDesc: 'Solid generation is currently unavailable. A wireframe STEP was downloaded.',
+    downloadStepSolidUnavailableTitle: 'Solid export unavailable',
+    downloadStepSolidUnavailableDesc: 'The solid service is still starting or currently unreachable. Please try again in 30-60 seconds.',
     newConfig: 'New Configuration',
 
     step1Title: 'Dimensions',
