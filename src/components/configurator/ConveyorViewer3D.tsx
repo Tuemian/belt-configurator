@@ -371,8 +371,9 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
     floorElement,
   } = config;
 
-  const frameHeight = Math.max(70, frameWidth * 0.1);
-  const frameSectionWidth = Math.min(35, Math.max(20, frameWidth * 0.06));
+  const usesWideProfile = frameWidth > 500;
+  const frameHeight = usesWideProfile ? 80 : 40;
+  const frameSectionWidth = 40;
   const drumRadius = Math.max(25, Math.min(55, frameWidth * 0.07));
   const beltThickness = 6;
   const beltTopY = frameHeight / 2 + beltThickness;
@@ -421,8 +422,15 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
   return (
     <group rotation={[0, 0, inclineRadians]} position={[0, groupY, 0]}>
-      <Box pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
-      <Box pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+      <ExternalAssetInstances
+        asset={resolvedAssets.sideRails}
+        fallback={(
+          <>
+            <Box pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+            <Box pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+          </>
+        )}
+      />
 
       {Array.from({ length: Math.min(18, Math.max(2, Math.floor(beltLength / 500))) }, (_, index) => {
         const x = -beltLength / 2 + ((index + 1) * beltLength) / (Math.min(18, Math.max(2, Math.floor(beltLength / 500))) + 1);
