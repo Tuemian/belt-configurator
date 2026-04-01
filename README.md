@@ -20,3 +20,16 @@ The endpoint is expected to return JSON:
 	"content": "ISO-10303-21;..."
 }
 ```
+
+## Solid STEP Setup (Local)
+
+1. Start the solid service from `step-solid-service/`.
+2. Use either Python + uvicorn or Docker (see `step-solid-service/README.md`).
+3. Add this variable to your local env:
+
+`STEP_SOLID_SERVICE_URL=http://127.0.0.1:8001/export-step-solid`
+
+4. Start your frontend/API runtime.
+5. Use STEP download in the configurator summary.
+
+If the solid service is offline, the application still downloads a wireframe STEP as fallback.
