@@ -343,22 +343,30 @@ function ParametricIndirectMotor({
 
 function DirectionArrow({
   beltLength,
-  frameWidth,
   beltTopY,
+  driveType,
 }: {
   beltLength: number;
-  frameWidth: number;
   beltTopY: number;
+  driveType: ConveyorConfig['driveType'];
 }) {
-  const arrowY = beltTopY + 8;
+  const towardMotor = driveType === 'indirect' ? -1 : 1;
+  const arrowY = beltTopY + 2;
   const arrowLength = Math.max(80, beltLength * 0.08);
-  const arrowRadius = arrowLength * 0.15;
+  const arrowThickness = Math.max(6, arrowLength * 0.08);
+  const tipLength = Math.max(20, arrowLength * 0.28);
 
   return (
-    <group position={[0, arrowY, frameWidth * 0.35]}>
-      <Cyl pos={[0, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={arrowRadius * 0.4} h={arrowLength} color={C.arrow} segs={8} />
-      <mesh position={[arrowLength / 2 + arrowRadius, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[arrowRadius, arrowRadius * 2, 8]} />
+    <group position={[0, arrowY, 0]} rotation={[0, towardMotor > 0 ? 0 : Math.PI, 0]}>
+      <Box
+        pos={[-arrowLength * 0.5, 0.4, 0]}
+        size={[arrowLength, arrowThickness, arrowThickness]}
+        color={C.arrow}
+        metalness={0.3}
+        roughness={0.5}
+      />
+      <mesh position={[arrowLength * 0.1, 0.4, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <coneGeometry args={[arrowThickness * 0.8, tipLength, 12]} />
         <meshStandardMaterial color={C.arrow} />
       </mesh>
     </group>
@@ -565,7 +573,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         />
       )}
 
-      <DirectionArrow beltLength={beltLength} frameWidth={frameWidth} beltTopY={beltTopY} />
+      <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} driveType={driveType} />
 
       {withStand && legLength > 0 && (
         <>
@@ -606,8 +614,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 }
 
 function FloorPlane({ config }: { config: ConveyorConfig }) {
-  const standHeight = config.withStand ? config.standHeight : 0;
-  const groundY = -(standHeight + 40);
+  const groundY = -45;
   const size = Math.max(config.beltLength, 4000) * 2.5;
 
   return (
