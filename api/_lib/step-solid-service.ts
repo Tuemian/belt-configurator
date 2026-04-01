@@ -1,4 +1,4 @@
-import type { ConveyorConfig } from './step-wireframe';
+import type { ConveyorConfig } from './step-wireframe.js';
 
 type SolidServiceResponse = {
   filename?: string;
