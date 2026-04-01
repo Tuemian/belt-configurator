@@ -1,5 +1,5 @@
-import { buildStepFilename, generateStepWireframe, type ConveyorConfig } from './_lib/step-wireframe';
-import { requestSolidStepFromService } from './_lib/step-solid-service';
+import { buildStepFilename, generateStepWireframe, type ConveyorConfig } from './_lib/step-wireframe.js';
+import { requestSolidStepFromService } from './_lib/step-solid-service.js';
 
 type ExportMode = 'wireframe' | 'solid';
 
