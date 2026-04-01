@@ -99,25 +99,77 @@ def _get_profile_step_file(frame_width: float) -> Path | None:
     return profile_file if profile_file.exists() else None
 
 
-def _import_profile_rail(profile_file: Path, length: float) -> cq.Shape | None:
-    """Import and scale profile STEP to specified length."""
+def _scale_shape_along_x(shape: cq.Shape, scale_x: float) -> cq.Shape:
+    """Non-uniform scale along X only, preserving Y/Z cross-section (OCC GTrsf)."""
+    try:
+        from OCC.Core.gp import gp_GTrsf, gp_Mat
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_GTransform
+        mat = gp_Mat()
+        mat.SetValue(1, 1, float(scale_x))
+        mat.SetValue(2, 2, 1.0)
+        mat.SetValue(3, 3, 1.0)
+        gtrsf = gp_GTrsf()
+        gtrsf.SetVectorialPart(mat)
+        builder = BRepBuilderAPI_GTransform(shape.wrapped, gtrsf, True)
+        return cq.Shape(builder.Shape())
+    except Exception:
+        return shape
+
+
+def _import_profile_rail(profile_file: Path, target_length: float) -> cq.Shape | None:
+    """Import profile STEP and scale to target_length along its long (extrusion) axis.
+
+    Uses OCC GTrsf for non-uniform scaling so the cross-section profile geometry
+    (T-slots, chamfers) is preserved exactly and only the extrusion length changes.
+    Falls back gracefully to None so the caller can use a plain-box extrusion instead.
+    """
+    if not profile_file.exists():
+        return None
     try:
         wp = cq.importers.importStep(str(profile_file))
-        base_shape = wp.val()
-        bb = base_shape.BoundingBox()
-        base_length = max(float(bb.xlen), 1.0)
-        
-        # Scale to desired length along X axis
-        scale_factor = length / base_length if base_length > 0 else 1.0
-        scaled = base_shape.scale(scale_factor)
-        
-        # Center the scaled profile at origin
-        bb_scaled = scaled.BoundingBox()
-        cx = (float(bb_scaled.xmin) + float(bb_scaled.xmax)) / 2.0
-        cy = (float(bb_scaled.ymin) + float(bb_scaled.ymax)) / 2.0
-        cz = (float(bb_scaled.zmin) + float(bb_scaled.zmax)) / 2.0
-        
-        return scaled.translate((-cx, -cy, -cz))
+        shape = wp.val()
+        bb = shape.BoundingBox()
+
+        xlen = float(bb.xlen)
+        ylen = float(bb.ylen)
+        zlen = float(bb.zlen)
+
+        # Identify the extrusion (long) axis.
+        axis_lens = [('x', xlen), ('y', ylen), ('z', zlen)]
+        long_axis, base_len = max(axis_lens, key=lambda a: a[1])
+
+        if base_len < 1:
+            return None
+
+        # Center at origin.
+        cx = (float(bb.xmin) + float(bb.xmax)) / 2.0
+        cy = (float(bb.ymin) + float(bb.ymax)) / 2.0
+        cz = (float(bb.zmin) + float(bb.zmax)) / 2.0
+        shape = shape.translate((-cx, -cy, -cz))
+
+        # Rotate so the long axis aligns with X (belt length direction).
+        if long_axis == 'y':
+            shape = shape.rotate((0, 0, 0), (0, 0, 1), -90)
+        elif long_axis == 'z':
+            shape = shape.rotate((0, 0, 0), (0, 1, 0), 90)
+
+        # Re-center after rotation.
+        bb2 = shape.BoundingBox()
+        cx2 = (float(bb2.xmin) + float(bb2.xmax)) / 2.0
+        cy2 = (float(bb2.ymin) + float(bb2.ymax)) / 2.0
+        cz2 = (float(bb2.zmin) + float(bb2.zmax)) / 2.0
+        shape = shape.translate((-cx2, -cy2, -cz2))
+
+        # Scale only along X to target length; Y and Z (cross-section) are untouched.
+        scale_x = target_length / base_len
+        scaled = _scale_shape_along_x(shape, scale_x)
+
+        # Final centering.
+        bb3 = scaled.BoundingBox()
+        cx3 = (float(bb3.xmin) + float(bb3.xmax)) / 2.0
+        cy3 = (float(bb3.ymin) + float(bb3.ymax)) / 2.0
+        cz3 = (float(bb3.zmin) + float(bb3.zmax)) / 2.0
+        return scaled.translate((-cx3, -cy3, -cz3))
     except Exception:
         return None
 
@@ -328,13 +380,20 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     frame_height = _clamp(profile_h, 35, 140)
     belt_thickness = _clamp(0.008 * width, 3, 12)
 
-    # Build side rails as box extrusions using the accurate cross-section from the profile STEP.
-    # Note: we intentionally do NOT uniformly scale the imported profile STEP for the rail shape
-    # because cq.Shape.scale() applies a uniform factor to all axes and would deform the
-    # cross-section.  The profile files are used only for measuring outer dimensions.
+    # Build side rails: try to import the real A8 profile STEP geometry (with T-slots) and
+    # scale it to the belt length using non-uniform OCC GTrsf (X-axis only, cross-section
+    # Y/Z untouched).  Fall back to plain-box extrusion if the import fails.
     rail_z = max(width / 2 - profile_w / 2, 0)
-    left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
-    right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
+    _profile_file = _get_profile_step_file(width)
+    _left_profile = _import_profile_rail(_profile_file, length) if _profile_file else None
+    _right_profile = _import_profile_rail(_profile_file, length) if _profile_file else None
+
+    if _left_profile is not None:
+        left_rail = cq.Workplane("XY").add(_left_profile.translate((0, 0, rail_z)))
+        right_rail = cq.Workplane("XY").add(_right_profile.translate((0, 0, -rail_z)))
+    else:
+        left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
+        right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
 
     # End cross-members between both side rails.
     inner_span = max(width - 2 * profile_w, 5)
@@ -418,7 +477,7 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     # 2) Optional parametric fallback can be enabled via STEP_INCLUDE_PARAMETRIC_MOTOR=true
     if _env_flag("STEP_INCLUDE_MOTOR", default=True):
         motor = _build_motor_from_step_asset(config, length, width, frame_height)
-        if motor is None and _env_flag("STEP_INCLUDE_PARAMETRIC_MOTOR", default=False):
+        if motor is None and _env_flag("STEP_INCLUDE_PARAMETRIC_MOTOR", default=True):
             motor = _build_motor_solid(config, length, width, frame_height)
         if motor is not None:
             shape = shape.union(motor)
