@@ -5,6 +5,7 @@ import tempfile
 
 import cadquery as cq
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 
@@ -130,6 +131,13 @@ def shape_to_step_text(shape: cq.Shape) -> str:
 
 
 app = FastAPI(title="STEP Solid Service", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST", "GET"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.get("/health")
