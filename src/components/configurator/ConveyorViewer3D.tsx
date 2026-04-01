@@ -480,122 +480,126 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const resolvedAssets = resolveConveyor3DAssets(config, measurements);
 
   return (
-    <group rotation={[0, 0, inclineRadians]} position={[0, groupY, 0]}>
-      <ExternalAssetInstances
-        asset={resolvedAssets.sideRails}
-        fallback={(
+    <group position={[0, groupY, 0]}>
+      {/* Belt + frame — tilts with incline */}
+      <group rotation={[0, 0, inclineRadians]}>
+        <ExternalAssetInstances
+          asset={resolvedAssets.sideRails}
+          fallback={(
+            <>
+              <Box pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+              <Box pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+            </>
+          )}
+        />
+
+        {Array.from({ length: Math.min(18, Math.max(2, Math.floor(beltLength / 500))) }, (_, index) => {
+          const x = -beltLength / 2 + ((index + 1) * beltLength) / (Math.min(18, Math.max(2, Math.floor(beltLength / 500))) + 1);
+          return (
+            <Box
+              key={`cross-member-${index}`}
+              pos={[x, -frameHeight * 0.2, 0]}
+              size={[frameSectionWidth * 0.5, frameHeight * 0.55, frameWidth - 2 * frameSectionWidth]}
+              color={C.frameDark}
+            />
+          );
+        })}
+
+        <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        <Cyl pos={[-beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+
+        <Box
+          pos={[0, beltTopY - beltThickness / 2, 0]}
+          size={[beltLength * 0.99, beltThickness, Math.max(frameWidth - 5, 1)]}
+          color={C.beltSurface}
+          metalness={0.05}
+          roughness={0.92}
+        />
+        <Box
+          pos={[0, -(frameHeight / 2 + 2), 0]}
+          size={[beltLength * 0.99, 4, Math.max(frameWidth - 5, 1)]}
+          color={C.belt}
+          metalness={0.05}
+          roughness={0.92}
+        />
+
+        {sideGuideHeight > 0 && (
           <>
-            <Box pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
-            <Box pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+            <Box
+              pos={[0, beltTopY + sideGuideHeight / 2, -(frameWidth / 2 - 3)]}
+              size={[beltLength * 0.96, sideGuideHeight, 5]}
+              color={C.guide}
+              opacity={0.88}
+            />
+            <Box
+              pos={[0, beltTopY + sideGuideHeight / 2, frameWidth / 2 - 3]}
+              size={[beltLength * 0.96, sideGuideHeight, 5]}
+              color={C.guide}
+              opacity={0.88}
+            />
           </>
         )}
-      />
 
-      {Array.from({ length: Math.min(18, Math.max(2, Math.floor(beltLength / 500))) }, (_, index) => {
-        const x = -beltLength / 2 + ((index + 1) * beltLength) / (Math.min(18, Math.max(2, Math.floor(beltLength / 500))) + 1);
-        return (
-          <Box
-            key={`cross-member-${index}`}
-            pos={[x, -frameHeight * 0.2, 0]}
-            size={[frameSectionWidth * 0.5, frameHeight * 0.55, frameWidth - 2 * frameSectionWidth]}
-            color={C.frameDark}
+        {driveType === 'direct' && (
+          <ExternalAsset
+            asset={resolvedAssets.motor}
+            fallback={
+              <ParametricDirectMotor
+                length={beltLength}
+                width={frameWidth}
+                motorWidth={motorWidth}
+                motorHeight={motorHeight}
+                motorDepth={motorDepth}
+                motorCylinderHeight={motorCylinderHeight}
+                motorCylinderRadius={motorCylinderRadius}
+                motorPosition={motorPosition}
+              />
+            }
           />
-        );
-      })}
+        )}
 
-      <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
-      <Cyl pos={[-beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
-
-      <Box
-        pos={[0, beltTopY - beltThickness / 2, 0]}
-        size={[beltLength * 0.99, beltThickness, Math.max(frameWidth - 5, 1)]}
-        color={C.beltSurface}
-        metalness={0.05}
-        roughness={0.92}
-      />
-      <Box
-        pos={[0, -(frameHeight / 2 + 2), 0]}
-        size={[beltLength * 0.99, 4, Math.max(frameWidth - 5, 1)]}
-        color={C.belt}
-        metalness={0.05}
-        roughness={0.92}
-      />
-
-      {sideGuideHeight > 0 && (
-        <>
-          <Box
-            pos={[0, beltTopY + sideGuideHeight / 2, -(frameWidth / 2 - 3)]}
-            size={[beltLength * 0.96, sideGuideHeight, 5]}
-            color={C.guide}
-            opacity={0.88}
+        {driveType === 'indirect' && (
+          <ExternalAsset
+            asset={resolvedAssets.motor}
+            fallback={
+              <ParametricIndirectMotor
+                length={beltLength}
+                frameHeight={frameHeight}
+                motorWidth={motorWidth}
+                motorHeight={motorHeight}
+                motorDepth={motorDepth}
+                motorCylinderHeight={motorCylinderHeight}
+                motorCylinderRadius={motorCylinderRadius}
+                centerMounted={false}
+                centerOffset={0}
+              />
+            }
           />
-          <Box
-            pos={[0, beltTopY + sideGuideHeight / 2, frameWidth / 2 - 3]}
-            size={[beltLength * 0.96, sideGuideHeight, 5]}
-            color={C.guide}
-            opacity={0.88}
+        )}
+
+        {driveType === 'center' && (
+          <ExternalAsset
+            asset={resolvedAssets.motor}
+            fallback={
+              <ParametricIndirectMotor
+                length={beltLength}
+                frameHeight={frameHeight}
+                motorWidth={motorWidth}
+                motorHeight={motorHeight}
+                motorDepth={motorDepth}
+                motorCylinderHeight={motorCylinderHeight}
+                motorCylinderRadius={motorCylinderRadius}
+                centerMounted
+                centerOffset={config.centerDriveOffset}
+              />
+            }
           />
-        </>
-      )}
+        )}
 
-      {driveType === 'direct' && (
-        <ExternalAsset
-          asset={resolvedAssets.motor}
-          fallback={
-            <ParametricDirectMotor
-              length={beltLength}
-              width={frameWidth}
-              motorWidth={motorWidth}
-              motorHeight={motorHeight}
-              motorDepth={motorDepth}
-              motorCylinderHeight={motorCylinderHeight}
-              motorCylinderRadius={motorCylinderRadius}
-              motorPosition={motorPosition}
-            />
-          }
-        />
-      )}
+        <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} driveType={driveType} />
+      </group>
 
-      {driveType === 'indirect' && (
-        <ExternalAsset
-          asset={resolvedAssets.motor}
-          fallback={
-            <ParametricIndirectMotor
-              length={beltLength}
-              frameHeight={frameHeight}
-              motorWidth={motorWidth}
-              motorHeight={motorHeight}
-              motorDepth={motorDepth}
-              motorCylinderHeight={motorCylinderHeight}
-              motorCylinderRadius={motorCylinderRadius}
-              centerMounted={false}
-              centerOffset={0}
-            />
-          }
-        />
-      )}
-
-      {driveType === 'center' && (
-        <ExternalAsset
-          asset={resolvedAssets.motor}
-          fallback={
-            <ParametricIndirectMotor
-              length={beltLength}
-              frameHeight={frameHeight}
-              motorWidth={motorWidth}
-              motorHeight={motorHeight}
-              motorDepth={motorDepth}
-              motorCylinderHeight={motorCylinderHeight}
-              motorCylinderRadius={motorCylinderRadius}
-              centerMounted
-              centerOffset={config.centerDriveOffset}
-            />
-          }
-        />
-      )}
-
-      <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} driveType={driveType} />
-
+      {/* Stand — always vertical, not tilted */}
       {withStand && legLength > 0 && (
         <>
           {legPostPositions.map((position, index) => (

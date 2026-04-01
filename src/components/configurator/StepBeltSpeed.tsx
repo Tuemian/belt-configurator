@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Language, t } from '@/lib/i18n';
 import { ConveyorConfig } from '@/lib/configurator-types';
 import { Label } from '@/components/ui/label';
@@ -13,12 +14,25 @@ interface Props {
 }
 
 export const StepBeltSpeed = ({ config, onChange, lang }: Props) => {
-  const beltOptions = [
+  const isInclined = config.inclineAngle !== 0;
+
+  const allBeltOptions = [
     { value: 'standard' as const, label: t('beltStandard', lang) },
     { value: 'grip' as const, label: t('beltGrip', lang) },
     { value: 'heavy-grip' as const, label: t('beltHeavyGrip', lang) },
     { value: 'food-safe' as const, label: t('beltFoodSafe', lang) },
   ];
+
+  const beltOptions = isInclined
+    ? allBeltOptions.filter((o) => o.value === 'grip' || o.value === 'heavy-grip')
+    : allBeltOptions;
+
+  // Auto-correct belt type when incline becomes non-zero
+  useEffect(() => {
+    if (isInclined && config.beltType !== 'grip' && config.beltType !== 'heavy-grip') {
+      onChange({ beltType: 'grip' });
+    }
+  }, [isInclined]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
