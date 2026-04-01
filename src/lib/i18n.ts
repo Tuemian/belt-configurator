@@ -32,7 +32,7 @@ const translations = {
     beltLengthRange: '500 mm bis 12.000 mm',
     beltLengthInfo: 'Die Länge muss mindestens das 1,5-fache der Breite betragen. Du kannst sie aber beliebig größer wählen.',
     sideGuideHeight: 'Höhe Seitenführung',
-    sideGuideHeightRange: '0 mm bis 50 mm',
+    sideGuideHeightRange: '0 mm (aus) oder 8 mm bis 50 mm',
     inclineAngle: 'Steigungswinkel',
     inclineAngleRange: '-10° bis +10°',
 
@@ -129,7 +129,7 @@ const translations = {
     beltLengthRange: '500 mm to 12,000 mm',
     beltLengthInfo: 'Length must be at least 1.5 times the width. You can choose any larger length.',
     sideGuideHeight: 'Side Guide Height',
-    sideGuideHeightRange: '0 mm to 50 mm',
+    sideGuideHeightRange: '0 mm (off) or 8 mm to 50 mm',
     inclineAngle: 'Incline Angle',
     inclineAngleRange: '-10° to +10°',
 

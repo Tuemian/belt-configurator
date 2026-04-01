@@ -328,25 +328,13 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     frame_height = _clamp(profile_h, 35, 140)
     belt_thickness = _clamp(0.008 * width, 3, 12)
 
-    # Try to use actual profile geometry, fall back to box if unavailable
-    profile_file = _get_profile_step_file(width)
-    if profile_file:
-        left_profile = _import_profile_rail(profile_file, length)
-        right_profile = _import_profile_rail(profile_file, length)
-    else:
-        left_profile = None
-        right_profile = None
-
+    # Build side rails as box extrusions using the accurate cross-section from the profile STEP.
+    # Note: we intentionally do NOT uniformly scale the imported profile STEP for the rail shape
+    # because cq.Shape.scale() applies a uniform factor to all axes and would deform the
+    # cross-section.  The profile files are used only for measuring outer dimensions.
     rail_z = max(width / 2 - profile_w / 2, 0)
-    
-    if left_profile and right_profile:
-        # Use actual profile geometry and wrap in Workplane so downstream boolean ops stay consistent.
-        left_rail = cq.Workplane("XY").add(left_profile.translate((0, 0, rail_z)))
-        right_rail = cq.Workplane("XY").add(right_profile.translate((0, 0, -rail_z)))
-    else:
-        # Fallback to box-based construction
-        left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
-        right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
+    left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
+    right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
 
     # End cross-members between both side rails.
     inner_span = max(width - 2 * profile_w, 5)
@@ -356,16 +344,20 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
 
     frame = left_rail.union(right_rail).union(front_cross).union(rear_cross)
 
+    # Belt is 5 mm narrower than the frame on each side.
+    belt_width = max(width - 5, 1)
     belt = (
         cq.Workplane("XY")
-        .box(length * 0.985, belt_thickness, width * 0.92)
+        .box(length * 0.985, belt_thickness, belt_width)
         .translate((0, frame_height / 2 + belt_thickness / 2, 0))
     )
 
     shape = frame.union(belt)
 
-    # Side guides as simple solid rails.
+    # Side guides: 0 = disabled; if active the minimum meaningful height is 8 mm.
     side_guide_height = _clamp(config.sideGuideHeight, 0, 120)
+    if 0 < side_guide_height < 8:
+        side_guide_height = 8
     if side_guide_height > 0:
         rail_thickness = 4
         rail_length = length * 0.98

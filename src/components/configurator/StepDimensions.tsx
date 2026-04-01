@@ -18,6 +18,14 @@ const MIN_BELT_LENGTH = 500;
 const MAX_BELT_LENGTH = 12000;
 const SIDE_GUIDE_MIN = 0;
 const SIDE_GUIDE_MAX = 50;
+const SIDE_GUIDE_ACTIVE_MIN = 8; // When side guides are on, minimum meaningful height
+
+// Snap helper: 0 = off; 1-7 snaps up to 8; above 8 is kept as-is
+function snapSideGuide(v: number): number {
+  if (v <= 0) return 0;
+  if (v < SIDE_GUIDE_ACTIVE_MIN) return SIDE_GUIDE_ACTIVE_MIN;
+  return Math.min(SIDE_GUIDE_MAX, v);
+}
 const INCLINE_MIN = -10;
 const INCLINE_MAX = 10;
 
@@ -216,10 +224,10 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
           <div className="flex items-center gap-4">
             <Slider
               value={[config.sideGuideHeight]}
-              onValueChange={([v]) => onChange({ sideGuideHeight: v })}
+              onValueChange={([v]) => onChange({ sideGuideHeight: snapSideGuide(v) })}
               min={SIDE_GUIDE_MIN}
               max={SIDE_GUIDE_MAX}
-              step={5}
+              step={1}
               className="flex-1"
             />
             <div className="flex min-w-[100px] items-center gap-1">
@@ -228,8 +236,8 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
                 value={config.sideGuideHeight}
                 min={SIDE_GUIDE_MIN}
                 max={SIDE_GUIDE_MAX}
-                step={5}
-                onChange={(e) => onChange({ sideGuideHeight: Math.min(SIDE_GUIDE_MAX, Math.max(SIDE_GUIDE_MIN, Number(e.target.value))) })}
+                step={1}
+                onChange={(e) => onChange({ sideGuideHeight: snapSideGuide(Number(e.target.value)) })}
                 className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">mm</span>

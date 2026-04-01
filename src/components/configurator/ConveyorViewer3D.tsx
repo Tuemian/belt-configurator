@@ -508,14 +508,14 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
       <Box
         pos={[0, beltTopY - beltThickness / 2, 0]}
-        size={[beltLength * 0.99, beltThickness, frameWidth * 0.86]}
+        size={[beltLength * 0.99, beltThickness, Math.max(frameWidth - 5, 1)]}
         color={C.beltSurface}
         metalness={0.05}
         roughness={0.92}
       />
       <Box
         pos={[0, -(frameHeight / 2 + 2), 0]}
-        size={[beltLength * 0.99, 4, frameWidth * 0.82]}
+        size={[beltLength * 0.99, 4, Math.max(frameWidth - 5, 1)]}
         color={C.belt}
         metalness={0.05}
         roughness={0.92}
