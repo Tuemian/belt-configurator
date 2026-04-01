@@ -40,6 +40,11 @@ class ExportResponse(BaseModel):
     content: str
 
 
+PROFILE_DIR = Path(__file__).resolve().parent.parent / "profile"
+PROFILE_40_FILE = PROFILE_DIR / "1108038_profil_a8_40x40_leicht.step"
+PROFILE_80_FILE = PROFILE_DIR / "1108055_profil_a8_80x40_leicht.step"
+
+
 def _clamp(value: float, min_value: float, max_value: float) -> float:
     return max(min_value, min(max_value, value))
 
@@ -49,6 +54,40 @@ def _env_flag(name: str, default: bool = False) -> bool:
     if raw is None:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _try_profile_outer_dims(profile_file: Path) -> tuple[float, float] | None:
+    if not profile_file.exists():
+        return None
+
+    try:
+        wp = cq.importers.importStep(str(profile_file))
+        bb = wp.val().BoundingBox()
+    except Exception:
+        return None
+
+    dims = sorted([float(bb.xlen), float(bb.ylen), float(bb.zlen)])
+    # Two smallest extents are treated as profile cross-section dimensions.
+    a, b = dims[0], dims[1]
+    return a, b
+
+
+def _frame_profile_dims(frame_width: float) -> tuple[float, float]:
+    # Mirrors requested profile mapping: 40x40 for narrower belts, 80x40 (high) for wider.
+    use_gf80 = frame_width > 500
+
+    if use_gf80:
+        dims = _try_profile_outer_dims(PROFILE_80_FILE)
+        if dims:
+            low, high = min(dims), max(dims)
+            return low, high
+        return 40.0, 80.0
+
+    dims = _try_profile_outer_dims(PROFILE_40_FILE)
+    if dims:
+        low, high = min(dims), max(dims)
+        return low, high
+    return 40.0, 40.0
 
 
 def _motor_variant_dims(width: float, frame_height: float) -> tuple[float, float, float, float, float, float]:
@@ -99,14 +138,20 @@ def _build_motor_solid(
 
     if config.driveType == "direct":
         side = 1.0 if config.motorPosition == "right" else -1.0
-        x_pos = -length / 2
-        y_pos = 0.0
-        z_pos = side * (width / 2 + gearbox_w / 2 + 10)
-        motor_shape = local_shape.translate((x_pos, y_pos, z_pos))
+        # Direct drive should point to the side drum (axis along Z), not along conveyor length.
+        y_axis_rot = 90.0 if side > 0 else -90.0
+        direct_shape = local_shape.rotate((0, 0, 0), (0, 1, 0), y_axis_rot)
+
+        # Position: near tail drum, outside the side frame, hanging below top frame edge.
+        x_pos = -length / 2 + _clamp(gearbox_d * 0.20, 8, 40)
+        y_pos = -(frame_height / 2 + _clamp(gearbox_h * 0.30, 14, 52))
+        z_pos = side * (width / 2 + gearbox_d / 2 + _clamp(width * 0.04, 14, 34))
+
+        motor_shape = direct_shape.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             motor_shape = motor_shape.rotate(
                 (x_pos, y_pos, z_pos),
-                (x_pos + 1, y_pos, z_pos),
+                (x_pos, y_pos, z_pos + 1),
                 float(config.motorAngle),
             )
         return motor_shape
@@ -145,10 +190,21 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     width = _clamp(config.frameWidth, 40, 1250)
     incline_deg = _clamp(config.inclineAngle, -10, 10)
 
-    frame_height = _clamp(0.12 * width, 35, 140)
+    profile_w, profile_h = _frame_profile_dims(width)
+    frame_height = _clamp(profile_h, 35, 140)
     belt_thickness = _clamp(0.008 * width, 3, 12)
 
-    frame = cq.Workplane("XY").box(length, frame_height, width)
+    rail_z = max(width / 2 - profile_w / 2, 0)
+    left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
+    right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
+
+    # End cross-members between both side rails.
+    inner_span = max(width - 2 * profile_w, 5)
+    cross_depth = _clamp(profile_w, 20, 80)
+    front_cross = cq.Workplane("XY").box(cross_depth, frame_height, inner_span).translate((length / 2 - cross_depth / 2, 0, 0))
+    rear_cross = cq.Workplane("XY").box(cross_depth, frame_height, inner_span).translate((-length / 2 + cross_depth / 2, 0, 0))
+
+    frame = left_rail.union(right_rail).union(front_cross).union(rear_cross)
 
     belt = (
         cq.Workplane("XY")
