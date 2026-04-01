@@ -60,6 +60,9 @@ export interface Conveyor3DLibrary {
     sideGuide?: ModelVariant[];
     sensors?: ModelVariant[];
   };
+  profiles?: {
+    sideRails?: ModelVariant[];
+  };
 }
 
 export interface ModelPlacement extends ModelAssetDefinition {
@@ -74,6 +77,7 @@ export interface Conveyor3DResolvedAssets {
   motor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
+  sideRails?: ModelInstances;
 }
 
 const defaultLibrary: Conveyor3DLibrary = {
@@ -120,6 +124,12 @@ const defaultLibrary: Conveyor3DLibrary = {
     ],
     sensors: [
       { id: 'sensor-standard', url: '/models/accessories/sensor-standard.glb' },
+    ],
+  },
+  profiles: {
+    sideRails: [
+      { id: 'profile-40x40-light', url: '/models/profiles/1108038_profil_a8_40x40_leicht.glb', rules: { maxFrameWidth: 500 } },
+      { id: 'profile-80x40-light-high', url: '/models/profiles/1108055_profil_a8_80x40_leicht.glb', rules: { minFrameWidth: 501 } },
     ],
   },
 };
@@ -218,6 +228,11 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
     sideGuide: parseVariantArray(value.accessories.sideGuide) ?? undefined,
     sensors: parseVariantArray(value.accessories.sensors) ?? undefined,
   } : undefined;
+  const profiles = isObject(value.profiles)
+    ? {
+        sideRails: parseVariantArray(value.profiles.sideRails) ?? undefined,
+      }
+    : undefined;
 
   if (!directLeft || !directRight || !indirect || !center || !feet || !castors) {
     return null;
@@ -237,6 +252,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       castors,
     },
     accessories,
+    profiles,
   };
 }
 
@@ -336,6 +352,10 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
     urls.push(selectVariant(config.frameWidth, library.accessories.sideGuide).url);
   }
 
+  if (library.profiles?.sideRails?.length) {
+    urls.push(selectVariant(config.frameWidth, library.profiles.sideRails).url);
+  }
+
   return Array.from(new Set(urls));
 }
 
@@ -400,6 +420,23 @@ export function resolveConveyor3DAssets(
       position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
       rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
+    };
+  }
+
+  if (library.profiles?.sideRails?.length) {
+    const profileVariant = selectVariant(measurements.frameWidth, library.profiles.sideRails);
+    const frameSectionWidth = measurements.frameSectionWidth;
+    const railZ = measurements.frameWidth / 2 - frameSectionWidth / 2;
+    const lengthScale = Math.max(measurements.beltLength / 100, 0.1);
+
+    resolved.sideRails = {
+      url: profileVariant.url,
+      rotation: profileVariant.rotation ?? [0, 0, 0],
+      scale: profileVariant.scale ?? [lengthScale, 1, 1],
+      positions: [
+        [0, 0, -railZ],
+        [0, 0, railZ],
+      ],
     };
   }
 
