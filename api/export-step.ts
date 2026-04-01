@@ -40,6 +40,7 @@ function isValidConfig(value: unknown): value is ConveyorConfig {
     isNumber('speed') &&
     isNumber('loadCapacity') &&
     isNumber('standHeight') &&
+    isNumber('centerDriveOffset') &&
     oneOf('beltType', ['standard', 'grip', 'heavy-grip', 'food-safe']) &&
     oneOf('driveType', ['direct', 'indirect', 'center']) &&
     oneOf('motorPosition', ['left', 'right']) &&

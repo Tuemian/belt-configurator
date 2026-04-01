@@ -23,6 +23,7 @@ class ConveyorConfig(BaseModel):
     driveType: str = Field("direct")
     motorPosition: str = Field("right")
     motorAngle: int = Field(0)
+    centerDriveOffset: float = Field(0)
 
     withStand: bool = Field(True)
     standHeight: float = Field(850)
@@ -89,6 +90,36 @@ def _frame_profile_dims(frame_width: float) -> tuple[float, float]:
         low, high = min(dims), max(dims)
         return low, high
     return 40.0, 40.0
+
+
+def _get_profile_step_file(frame_width: float) -> Path | None:
+    """Select appropriate profile STEP file based on frame width."""
+    use_gf80 = frame_width > 500
+    profile_file = PROFILE_80_FILE if use_gf80 else PROFILE_40_FILE
+    return profile_file if profile_file.exists() else None
+
+
+def _import_profile_rail(profile_file: Path, length: float) -> cq.Shape | None:
+    """Import and scale profile STEP to specified length."""
+    try:
+        wp = cq.importers.importStep(str(profile_file))
+        base_shape = wp.val()
+        bb = base_shape.BoundingBox()
+        base_length = max(float(bb.xlen), 1.0)
+        
+        # Scale to desired length along X axis
+        scale_factor = length / base_length if base_length > 0 else 1.0
+        scaled = base_shape.scale(scale_factor)
+        
+        # Center the scaled profile at origin
+        bb_scaled = scaled.BoundingBox()
+        cx = (float(bb_scaled.xmin) + float(bb_scaled.xmax)) / 2.0
+        cy = (float(bb_scaled.ymin) + float(bb_scaled.ymax)) / 2.0
+        cz = (float(bb_scaled.zmin) + float(bb_scaled.zmax)) / 2.0
+        
+        return scaled.translate((-cx, -cy, -cz))
+    except Exception:
+        return None
 
 
 def _find_motor_step_asset(config: ConveyorConfig, width: float) -> Path | None:
@@ -162,7 +193,7 @@ def _build_motor_from_step_asset(
 
     if config.driveType == "direct":
         side = 1.0 if config.motorPosition == "right" else -1.0
-        x_pos = -length / 2 + _clamp(sx * 0.18, 8, 45)
+        x_pos = length / 2 - _clamp(sx * 0.30, 10, 60)
         y_pos = -(frame_height / 2 + _clamp(sy * 0.20, 10, 45))
         z_pos = side * (width / 2 + sz / 2 + _clamp(width * 0.03, 10, 30))
         shape = base.translate((x_pos, y_pos, z_pos))
@@ -177,12 +208,14 @@ def _build_motor_from_step_asset(
         shape = base.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
+        if config.motorAngle != 0:
+            shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
         return shape
 
     if config.driveType == "center":
         x_pos = 0.0
         y_pos = -(frame_height / 2 + sy / 2 + 12)
-        z_pos = 0.0
+        z_pos = _clamp(config.centerDriveOffset, -50, 50)
         shape = base.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
@@ -243,8 +276,8 @@ def _build_motor_solid(
         y_axis_rot = 90.0 if side > 0 else -90.0
         direct_shape = local_shape.rotate((0, 0, 0), (0, 1, 0), y_axis_rot)
 
-        # Position: near tail drum, outside the side frame, hanging below top frame edge.
-        x_pos = -length / 2 + _clamp(gearbox_d * 0.20, 8, 40)
+        # Position: near drive drum, outside the side frame, hanging below top frame edge.
+        x_pos = length / 2 - _clamp(gearbox_d * 0.30, 10, 50)
         y_pos = -(frame_height / 2 + _clamp(gearbox_h * 0.30, 14, 52))
         z_pos = side * (width / 2 + gearbox_d / 2 + _clamp(width * 0.04, 14, 34))
 
@@ -273,7 +306,7 @@ def _build_motor_solid(
     if config.driveType == "center":
         x_pos = 0.0
         y_pos = -(frame_height / 2 + gearbox_h / 2 + 12)
-        z_pos = 0.0
+        z_pos = _clamp(config.centerDriveOffset, -50, 50)
         motor_shape = local_shape.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             motor_shape = motor_shape.rotate(
@@ -295,9 +328,25 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     frame_height = _clamp(profile_h, 35, 140)
     belt_thickness = _clamp(0.008 * width, 3, 12)
 
+    # Try to use actual profile geometry, fall back to box if unavailable
+    profile_file = _get_profile_step_file(width)
+    if profile_file:
+        left_profile = _import_profile_rail(profile_file, length)
+        right_profile = _import_profile_rail(profile_file, length)
+    else:
+        left_profile = None
+        right_profile = None
+
     rail_z = max(width / 2 - profile_w / 2, 0)
-    left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
-    right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
+    
+    if left_profile and right_profile:
+        # Use actual profile geometry
+        left_rail = left_profile.translate((0, 0, rail_z))
+        right_rail = right_profile.translate((0, 0, -rail_z))
+    else:
+        # Fallback to box-based construction
+        left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
+        right_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, -rail_z))
 
     # End cross-members between both side rails.
     inner_span = max(width - 2 * profile_w, 5)

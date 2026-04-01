@@ -21,6 +21,8 @@ RUN pip install --upgrade pip \
     ; pip install -r /app/requirements.txt
 
 COPY app /app/app
+COPY profile /app/profile
+COPY motor-step /app/motor-step
 
 EXPOSE 8001
 
