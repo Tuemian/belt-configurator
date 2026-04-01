@@ -43,6 +43,7 @@ class ExportResponse(BaseModel):
 PROFILE_DIR = Path(__file__).resolve().parent.parent / "profile"
 PROFILE_40_FILE = PROFILE_DIR / "1108038_profil_a8_40x40_leicht.step"
 PROFILE_80_FILE = PROFILE_DIR / "1108055_profil_a8_80x40_leicht.step"
+MOTOR_STEP_DIR = Path(__file__).resolve().parent.parent / "motor-step"
 
 
 def _clamp(value: float, min_value: float, max_value: float) -> float:
@@ -88,6 +89,106 @@ def _frame_profile_dims(frame_width: float) -> tuple[float, float]:
         low, high = min(dims), max(dims)
         return low, high
     return 40.0, 40.0
+
+
+def _find_motor_step_asset(config: ConveyorConfig, width: float) -> Path | None:
+    variant = "large" if width > 500 else "compact"
+
+    if config.driveType == "direct":
+        prefix = f"direct-{config.motorPosition}"
+        candidates = [
+            f"{prefix}-{variant}.step",
+            f"{prefix}.step",
+            f"{prefix}-{variant}.stp",
+            f"{prefix}.stp",
+        ]
+    elif config.driveType == "indirect":
+        candidates = [
+            f"indirect-{variant}.step",
+            "indirect.step",
+            f"indirect-{variant}.stp",
+            "indirect.stp",
+        ]
+    elif config.driveType == "center":
+        candidates = [
+            f"center-{variant}.step",
+            "center.step",
+            f"center-{variant}.stp",
+            "center.stp",
+        ]
+    else:
+        return None
+
+    for name in candidates:
+        path = MOTOR_STEP_DIR / name
+        if path.exists():
+            return path
+
+    return None
+
+
+def _import_step_shape(step_file: Path) -> cq.Shape | None:
+    try:
+        wp = cq.importers.importStep(str(step_file))
+        shape = wp.val()
+    except Exception:
+        return None
+
+    bb = shape.BoundingBox()
+    cx = (float(bb.xmin) + float(bb.xmax)) / 2.0
+    cy = (float(bb.ymin) + float(bb.ymax)) / 2.0
+    cz = (float(bb.zmin) + float(bb.zmax)) / 2.0
+    return shape.translate((-cx, -cy, -cz))
+
+
+def _build_motor_from_step_asset(
+    config: ConveyorConfig,
+    length: float,
+    width: float,
+    frame_height: float,
+) -> cq.Shape | None:
+    asset = _find_motor_step_asset(config, width)
+    if asset is None:
+        return None
+
+    base = _import_step_shape(asset)
+    if base is None:
+        return None
+
+    bb = base.BoundingBox()
+    sx = max(float(bb.xlen), 1.0)
+    sy = max(float(bb.ylen), 1.0)
+    sz = max(float(bb.zlen), 1.0)
+
+    if config.driveType == "direct":
+        side = 1.0 if config.motorPosition == "right" else -1.0
+        x_pos = -length / 2 + _clamp(sx * 0.18, 8, 45)
+        y_pos = -(frame_height / 2 + _clamp(sy * 0.20, 10, 45))
+        z_pos = side * (width / 2 + sz / 2 + _clamp(width * 0.03, 10, 30))
+        shape = base.translate((x_pos, y_pos, z_pos))
+        if config.motorAngle != 0:
+            shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
+        return shape
+
+    if config.driveType == "indirect":
+        x_pos = -length / 2
+        y_pos = -(frame_height / 2 + sy / 2 + 12)
+        z_pos = 0.0
+        shape = base.translate((x_pos, y_pos, z_pos))
+        if config.motorAngle != 0:
+            shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
+        return shape
+
+    if config.driveType == "center":
+        x_pos = 0.0
+        y_pos = -(frame_height / 2 + sy / 2 + 12)
+        z_pos = 0.0
+        shape = base.translate((x_pos, y_pos, z_pos))
+        if config.motorAngle != 0:
+            shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
+        return shape
+
+    return None
 
 
 def _motor_variant_dims(width: float, frame_height: float) -> tuple[float, float, float, float, float, float]:
@@ -271,9 +372,13 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
                 shape = shape.union(foot)
 
     
-    # Keep motor export on by default; set STEP_INCLUDE_MOTOR=false to disable.
+    # Motor strategy:
+    # 1) Prefer direct STEP motor assets from step-solid-service/motor-step/
+    # 2) Optional parametric fallback can be enabled via STEP_INCLUDE_PARAMETRIC_MOTOR=true
     if _env_flag("STEP_INCLUDE_MOTOR", default=True):
-        motor = _build_motor_solid(config, length, width, frame_height)
+        motor = _build_motor_from_step_asset(config, length, width, frame_height)
+        if motor is None and _env_flag("STEP_INCLUDE_PARAMETRIC_MOTOR", default=False):
+            motor = _build_motor_solid(config, length, width, frame_height)
         if motor is not None:
             shape = shape.union(motor)
 
