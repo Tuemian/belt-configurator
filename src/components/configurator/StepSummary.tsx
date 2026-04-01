@@ -34,6 +34,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
   const [sending, setSending] = useState(false);
+  const [stepLoading, setStepLoading] = useState(false);
 
   const summaryRows = [
     {
@@ -151,30 +152,71 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     }
   };
 
+  const triggerBlobDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadStep = async () => {
+    setStepLoading(true);
     try {
       const filename = buildStepFilename(config);
+      const body = JSON.stringify({ config });
 
-      const response = await fetch('/api/export-step', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config, mode: 'solid', allowFallback: false }),
-      });
+      // 1st attempt: via Vercel API (respects server-side env vars)
+      let solidBlob: Blob | null = null;
+      let solidFilename = filename;
 
-      if (!response.ok) {
-        if (response.status === 503) {
-          toast({
-            title: t('downloadStepSolidUnavailableTitle', lang),
-            description: t('downloadStepSolidUnavailableDesc', lang),
-          });
-          return;
+      try {
+        const response = await fetch('/api/export-step', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config, mode: 'solid', allowFallback: false }),
+        });
+
+        if (response.ok && response.headers.get('x-step-mode') === 'solid') {
+          const cd = response.headers.get('content-disposition');
+          const m = cd?.match(/filename="?([^"]+)"?/i);
+          solidFilename = m?.[1] ?? filename;
+          solidBlob = await response.blob();
         }
-
-        throw new Error(`STEP export failed with status ${response.status}`);
+      } catch {
+        // Vercel timed out — try Render directly below.
       }
 
-      const mode = response.headers.get('x-step-mode');
-      if (mode !== 'solid') {
+      // 2nd attempt: browser calls Render solid service directly (CORS enabled)
+      if (!solidBlob) {
+        const directUrl = (window as Record<string, unknown>).__STEP_SOLID_DIRECT_URL as string | undefined
+          ?? import.meta.env.VITE_STEP_SOLID_DIRECT_URL as string | undefined;
+
+        if (directUrl) {
+          try {
+            const directResponse = await fetch(directUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body,
+            });
+
+            if (directResponse.ok) {
+              const json = await directResponse.json() as { filename?: string; content?: string };
+              if (json.content) {
+                solidFilename = json.filename ?? filename;
+                solidBlob = new Blob([json.content], { type: 'application/step' });
+              }
+            }
+          } catch {
+            // Direct call failed too.
+          }
+        }
+      }
+
+      if (!solidBlob) {
         toast({
           title: t('downloadStepSolidUnavailableTitle', lang),
           description: t('downloadStepSolidUnavailableDesc', lang),
@@ -182,20 +224,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         return;
       }
 
-      const contentDisposition = response.headers.get('content-disposition');
-      const match = contentDisposition?.match(/filename="?([^"]+)"?/i);
-      const apiFilename = match?.[1] ?? filename;
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = apiFilename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
+      triggerBlobDownload(solidBlob, solidFilename);
       toast({ title: t('downloadStepSuccess', lang) });
     } catch (error) {
       console.error('STEP export error:', error);
@@ -203,6 +232,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         title: t('downloadStepError', lang),
         description: lang === 'de' ? 'Bitte versuchen Sie es später erneut' : 'Please try again later',
       });
+    } finally {
+      setStepLoading(false);
     }
   };
 
@@ -244,9 +275,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
             <FileDown className="w-4 h-4 mr-2" />
             {t('downloadPdf', lang)}
           </Button>
-          <Button onClick={handleDownloadStep} variant="outline" className="flex-1">
+          <Button onClick={handleDownloadStep} variant="outline" className="flex-1" disabled={stepLoading}>
             <FileDown className="w-4 h-4 mr-2" />
-            {t('downloadStep', lang)}
+            {stepLoading ? (lang === 'de' ? 'Wird erstellt...' : 'Generating...') : t('downloadStep', lang)}
           </Button>
           <Button onClick={onReset} variant="ghost" className="flex-1">
             <RotateCcw className="w-4 h-4 mr-2" />
