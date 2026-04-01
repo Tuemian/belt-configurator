@@ -14,6 +14,7 @@ export interface ConveyorConfig {
   driveType: 'direct' | 'indirect' | 'center';
   motorPosition: 'left' | 'right';
   motorAngle: 0 | 90 | 180 | 270;
+  centerDriveOffset: number;
 
   // Step 4 - Stand
   withStand: boolean;
@@ -34,6 +35,7 @@ export const defaultConfig: ConveyorConfig = {
   driveType: 'direct',
   motorPosition: 'right',
   motorAngle: 0,
+  centerDriveOffset: 0,
   withStand: true,
   standHeight: 850,
   floorElement: 'feet',
