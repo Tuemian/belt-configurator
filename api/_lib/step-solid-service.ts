@@ -16,8 +16,9 @@ export async function requestSolidStepFromService(config: ConveyorConfig): Promi
     return null;
   }
 
+  const timeoutMs = Number(process.env.STEP_SOLID_TIMEOUT_MS ?? 90000);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(serviceUrl, {
