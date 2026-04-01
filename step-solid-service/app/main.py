@@ -338,9 +338,9 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     rail_z = max(width / 2 - profile_w / 2, 0)
     
     if left_profile and right_profile:
-        # Use actual profile geometry
-        left_rail = left_profile.translate((0, 0, rail_z))
-        right_rail = right_profile.translate((0, 0, -rail_z))
+        # Use actual profile geometry and wrap in Workplane so downstream boolean ops stay consistent.
+        left_rail = cq.Workplane("XY").add(left_profile.translate((0, 0, rail_z)))
+        right_rail = cq.Workplane("XY").add(right_profile.translate((0, 0, -rail_z)))
     else:
         # Fallback to box-based construction
         left_rail = cq.Workplane("XY").box(length, frame_height, profile_w).translate((0, 0, rail_z))
