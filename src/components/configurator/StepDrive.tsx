@@ -3,6 +3,8 @@ import { ConveyorConfig } from '@/lib/configurator-types';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
 
 interface Props {
   config: ConveyorConfig;
@@ -29,7 +31,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onChange({ driveType: opt.value })}
+                onClick={() => onChange({ driveType: opt.value, centerDriveOffset: opt.value === 'center' ? config.centerDriveOffset : 0 })}
                 className={cn(
                   'flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left',
                   config.driveType === opt.value
@@ -85,6 +87,37 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
             ))}
           </div>
         </div>
+
+        {config.driveType === 'center' && (
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold text-foreground">
+              {t('centerDriveOffset', lang)}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">({t('centerDriveOffsetRange', lang)})</span>
+            </Label>
+            <div className="flex items-center gap-4">
+              <Slider
+                value={[config.centerDriveOffset]}
+                min={-300}
+                max={300}
+                step={5}
+                onValueChange={([v]) => onChange({ centerDriveOffset: v })}
+                className="flex-1"
+              />
+              <div className="flex min-w-[120px] items-center gap-1">
+                <Input
+                  type="number"
+                  value={config.centerDriveOffset}
+                  min={-300}
+                  max={300}
+                  step={5}
+                  onChange={(e) => onChange({ centerDriveOffset: Math.min(300, Math.max(-300, Number(e.target.value))) })}
+                  className="h-9 w-24 text-right"
+                />
+                <span className="text-sm text-muted-foreground">mm</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="w-full min-h-[380px] overflow-hidden rounded-xl border aspect-[16/10]">

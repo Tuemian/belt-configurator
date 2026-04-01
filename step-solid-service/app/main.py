@@ -208,14 +208,12 @@ def _build_motor_from_step_asset(
         shape = base.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
-        if config.motorAngle != 0:
-            shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
         return shape
 
     if config.driveType == "center":
         x_pos = 0.0
         y_pos = -(frame_height / 2 + sy / 2 + 12)
-        z_pos = _clamp(config.centerDriveOffset, -50, 50)
+        z_pos = _clamp(config.centerDriveOffset, -300, 300)
         shape = base.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             shape = shape.rotate((x_pos, y_pos, z_pos), (x_pos, y_pos, z_pos + 1), float(config.motorAngle))
@@ -306,7 +304,7 @@ def _build_motor_solid(
     if config.driveType == "center":
         x_pos = 0.0
         y_pos = -(frame_height / 2 + gearbox_h / 2 + 12)
-        z_pos = _clamp(config.centerDriveOffset, -50, 50)
+        z_pos = _clamp(config.centerDriveOffset, -300, 300)
         motor_shape = local_shape.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             motor_shape = motor_shape.rotate(

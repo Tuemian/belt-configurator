@@ -16,7 +16,7 @@ interface Props {
 const ALLOWED_FRAME_WIDTHS = [40, 80, 120, ...Array.from({ length: 88 }, (_, i) => 130 + i * 10)];
 const MIN_BELT_LENGTH = 500;
 const MAX_BELT_LENGTH = 12000;
-const SIDE_GUIDE_MIN = 10;
+const SIDE_GUIDE_MIN = 0;
 const SIDE_GUIDE_MAX = 50;
 const INCLINE_MIN = -10;
 const INCLINE_MAX = 10;

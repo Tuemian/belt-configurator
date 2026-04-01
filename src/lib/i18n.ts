@@ -18,7 +18,7 @@ const translations = {
     downloadStepSuccess: 'STEP-Datei heruntergeladen',
     downloadStepError: 'Fehler beim STEP-Download',
     downloadStepSolidUnavailableTitle: 'Solid-Export nicht verfuegbar',
-    downloadStepSolidUnavailableDesc: 'Der Solid-Service startet noch oder ist derzeit nicht erreichbar. Bitte in 30-60 Sekunden erneut versuchen.',
+    downloadStepSolidUnavailableDesc: 'Solid-Export derzeit nicht verfuegbar. Bitte Anfrage mit Datenblatt an office@novamotis.com senden.',
     newConfig: 'Neue Konfiguration',
 
     // Step 1 - Dimensions
@@ -32,7 +32,7 @@ const translations = {
     beltLengthRange: '500 mm bis 12.000 mm',
     beltLengthInfo: 'Die Länge muss mindestens das 1,5-fache der Breite betragen. Du kannst sie aber beliebig größer wählen.',
     sideGuideHeight: 'Höhe Seitenführung',
-    sideGuideHeightRange: '10 mm bis 50 mm',
+    sideGuideHeightRange: '0 mm bis 50 mm',
     inclineAngle: 'Steigungswinkel',
     inclineAngleRange: '-10° bis +10°',
 
@@ -63,6 +63,8 @@ const translations = {
     motorLeft: 'Links',
     motorRight: 'Rechts',
     motorAngle: 'Motorstellung',
+    centerDriveOffset: 'Versatz Mittenantrieb',
+    centerDriveOffsetRange: '-300 mm bis +300 mm',
 
     // Step 4 - Stand
     step4Title: 'Untergestell & Zubehör',
@@ -114,7 +116,7 @@ const translations = {
     downloadStepSuccess: 'STEP file downloaded',
     downloadStepError: 'Error downloading STEP file',
     downloadStepSolidUnavailableTitle: 'Solid export unavailable',
-    downloadStepSolidUnavailableDesc: 'The solid service is still starting or currently unreachable. Please try again in 30-60 seconds.',
+    downloadStepSolidUnavailableDesc: 'Solid export is currently unavailable. Please email office@novamotis.com and attach the datasheet.',
     newConfig: 'New Configuration',
 
     step1Title: 'Dimensions',
@@ -127,7 +129,7 @@ const translations = {
     beltLengthRange: '500 mm to 12,000 mm',
     beltLengthInfo: 'Length must be at least 1.5 times the width. You can choose any larger length.',
     sideGuideHeight: 'Side Guide Height',
-    sideGuideHeightRange: '10 mm to 50 mm',
+    sideGuideHeightRange: '0 mm to 50 mm',
     inclineAngle: 'Incline Angle',
     inclineAngleRange: '-10° to +10°',
 
@@ -156,6 +158,8 @@ const translations = {
     motorLeft: 'Left',
     motorRight: 'Right',
     motorAngle: 'Motor Orientation',
+    centerDriveOffset: 'Center Drive Offset',
+    centerDriveOffsetRange: '-300 mm to +300 mm',
 
     step4Title: 'Stand & Accessories',
     step4Desc: 'Select stand and optional accessories',

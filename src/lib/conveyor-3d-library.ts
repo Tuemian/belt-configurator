@@ -380,20 +380,21 @@ export function resolveConveyor3DAssets(
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
-    const motorAngleRad = baseMotorAngleRad + (config.motorPosition === 'left' ? Math.PI : 0);
+    const motorAngleRad = baseMotorAngleRad;
     const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
+    const mirrorScaleZ = config.motorPosition === 'left' ? 1 : -1;
     resolved.motor = {
       url: variant.url,
       position: [
-        -measurements.beltLength / 2,
+        measurements.beltLength / 2 - measurements.motorWidth * 0.3,
         0,
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: rotateAroundConveyorAxis(
-        withAddedYRotation(variant.rotation, side === -1 ? Math.PI : 0),
+        withAddedYRotation(variant.rotation, 0),
         motorAngleRad,
       ),
-      scale: variant.scale ?? [1, 1, 1],
+      scale: variant.scale ?? [1, 1, mirrorScaleZ],
     };
   }
 
@@ -417,7 +418,7 @@ export function resolveConveyor3DAssets(
     const variant = selectVariant(measurements.frameWidth, library.motors.center);
     resolved.motor = {
       url: variant.url,
-      position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
+      position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), config.centerDriveOffset],
       rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
     };
