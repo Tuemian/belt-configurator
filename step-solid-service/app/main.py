@@ -51,30 +51,58 @@ def _env_flag(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _motor_variant_dims(width: float, frame_height: float) -> tuple[float, float, float, float, float, float]:
+    # Mirrors the compact/large split used in models/library.json.
+    compact = width <= 500
+
+    if compact:
+        gearbox_d = _clamp(width * 0.20, 50, 95)
+        gearbox_h = _clamp(frame_height * 0.88, 40, 90)
+        gearbox_w = _clamp(width * 0.24, 55, 120)
+        motor_radius = _clamp(gearbox_w * 0.22, 14, 32)
+        motor_len = _clamp(gearbox_w * 0.95, 40, 120)
+        flange_t = _clamp(gearbox_d * 0.12, 4, 12)
+    else:
+        gearbox_d = _clamp(width * 0.24, 95, 220)
+        gearbox_h = _clamp(frame_height * 1.00, 70, 170)
+        gearbox_w = _clamp(width * 0.30, 120, 260)
+        motor_radius = _clamp(gearbox_w * 0.24, 28, 75)
+        motor_len = _clamp(gearbox_w * 1.00, 95, 260)
+        flange_t = _clamp(gearbox_d * 0.10, 8, 18)
+
+    return gearbox_d, gearbox_h, gearbox_w, motor_radius, motor_len, flange_t
+
+
 def _build_motor_solid(
     config: ConveyorConfig,
     length: float,
     width: float,
     frame_height: float,
 ) -> cq.Shape | None:
-    motor_w = _clamp(width * 0.28, 60, 240)
-    motor_h = _clamp(frame_height * 0.9, 40, 160)
-    motor_d = _clamp(width * 0.22, 50, 200)
+    gearbox_d, gearbox_h, gearbox_w, motor_radius, motor_length, flange_t = _motor_variant_dims(
+        width,
+        frame_height,
+    )
 
-    gearbox = cq.Workplane("XY").box(motor_d, motor_h, motor_w)
+    # Simplified geared motor assembly: gearbox + flange + motor can + shaft.
+    gearbox = cq.Workplane("XY").box(gearbox_d, gearbox_h, gearbox_w)
+    flange = cq.Workplane("XY").box(flange_t, gearbox_h * 0.92, gearbox_w * 0.92)
+    motor_can = cq.Workplane("YZ").cylinder(motor_length, motor_radius)
+    shaft = cq.Workplane("YZ").cylinder(_clamp(gearbox_d * 0.35, 12, 45), _clamp(motor_radius * 0.22, 4, 14))
 
-    motor_radius = _clamp(motor_w * 0.28, 18, 90)
-    motor_length = _clamp(motor_w * 0.9, 55, 260)
-    cylinder = cq.Workplane("XZ").cylinder(motor_length, motor_radius)
+    local_shape = (
+        gearbox
+        .union(flange.translate((gearbox_d / 2 + flange_t / 2, 0, 0)))
+        .union(motor_can.translate((-(gearbox_d / 2 + motor_length / 2), 0, 0)))
+        .union(shaft.translate((gearbox_d / 2 + flange_t + 6, 0, 0)))
+    )
 
     if config.driveType == "direct":
         side = 1.0 if config.motorPosition == "right" else -1.0
         x_pos = -length / 2
         y_pos = 0.0
-        z_pos = side * (width / 2 + motor_w / 2 + 10)
-        gb = gearbox.translate((x_pos, y_pos, z_pos))
-        cyl = cylinder.translate((x_pos, y_pos + motor_h / 2 + motor_radius, z_pos))
-        motor_shape = gb.union(cyl)
+        z_pos = side * (width / 2 + gearbox_w / 2 + 10)
+        motor_shape = local_shape.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             motor_shape = motor_shape.rotate(
                 (x_pos, y_pos, z_pos),
@@ -85,11 +113,9 @@ def _build_motor_solid(
 
     if config.driveType == "indirect":
         x_pos = -length / 2
-        y_pos = -(frame_height / 2 + motor_h / 2 + 12)
+        y_pos = -(frame_height / 2 + gearbox_h / 2 + 12)
         z_pos = 0.0
-        gb = gearbox.translate((x_pos, y_pos, z_pos))
-        cyl = cylinder.translate((x_pos, y_pos - motor_h / 2 - motor_radius, z_pos))
-        motor_shape = gb.union(cyl)
+        motor_shape = local_shape.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             motor_shape = motor_shape.rotate(
                 (x_pos, y_pos, z_pos),
@@ -100,11 +126,9 @@ def _build_motor_solid(
 
     if config.driveType == "center":
         x_pos = 0.0
-        y_pos = -(frame_height / 2 + motor_h / 2 + 12)
+        y_pos = -(frame_height / 2 + gearbox_h / 2 + 12)
         z_pos = 0.0
-        gb = gearbox.translate((x_pos, y_pos, z_pos))
-        cyl = cylinder.translate((x_pos, y_pos - motor_h / 2 - motor_radius, z_pos))
-        motor_shape = gb.union(cyl)
+        motor_shape = local_shape.translate((x_pos, y_pos, z_pos))
         if config.motorAngle != 0:
             motor_shape = motor_shape.rotate(
                 (x_pos, y_pos, z_pos),
@@ -191,9 +215,8 @@ def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
                 shape = shape.union(foot)
 
     
-    # Placeholder motor geometry is optional and off by default,
-    # because GLB preview assets are not directly reused for CAD STEP solids.
-    if _env_flag("STEP_INCLUDE_PLACEHOLDER_MOTOR", default=False):
+    # Keep motor export on by default; set STEP_INCLUDE_MOTOR=false to disable.
+    if _env_flag("STEP_INCLUDE_MOTOR", default=True):
         motor = _build_motor_solid(config, length, width, frame_height)
         if motor is not None:
             shape = shape.union(motor)
