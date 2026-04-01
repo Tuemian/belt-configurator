@@ -172,12 +172,14 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       // 1st attempt: via Vercel API (respects server-side env vars)
       let solidBlob: Blob | null = null;
       let solidFilename = filename;
+      let wireframeBlob: Blob | null = null;
+      let wireframeFilename = filename;
 
       try {
         const response = await fetch('/api/export-step', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ config, mode: 'solid', allowFallback: false }),
+          body: JSON.stringify({ config, mode: 'solid', allowFallback: true }),
         });
 
         if (response.ok && response.headers.get('x-step-mode') === 'solid') {
@@ -185,6 +187,11 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           const m = cd?.match(/filename="?([^"]+)"?/i);
           solidFilename = m?.[1] ?? filename;
           solidBlob = await response.blob();
+        } else if (response.ok && response.headers.get('x-step-mode') === 'wireframe') {
+          const cd = response.headers.get('content-disposition');
+          const m = cd?.match(/filename="?([^"]+)"?/i);
+          wireframeFilename = m?.[1] ?? filename;
+          wireframeBlob = await response.blob();
         }
       } catch {
         // Vercel timed out — try Render directly below.
@@ -221,6 +228,16 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           title: t('downloadStepSolidUnavailableTitle', lang),
           description: t('downloadStepSolidUnavailableDesc', lang),
         });
+
+        if (wireframeBlob) {
+          triggerBlobDownload(wireframeBlob, wireframeFilename);
+          toast({
+            title: lang === 'de' ? 'Wireframe-STEP heruntergeladen' : 'Wireframe STEP downloaded',
+            description: lang === 'de'
+              ? 'Solid war nicht verfuegbar, deshalb wurde Wireframe exportiert.'
+              : 'Solid was unavailable, so wireframe was exported.',
+          });
+        }
         return;
       }
 
