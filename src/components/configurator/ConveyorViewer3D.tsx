@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { Grid, OrbitControls } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -15,17 +15,19 @@ import {
 } from '@/lib/conveyor-3d-library';
 
 const C = {
-  frame: '#4b5563',
-  frameDark: '#374151',
-  drum: '#9ca3af',
+  frame: '#2563eb',
+  frameDark: '#1e40af',
+  drum: '#64748b',
   belt: '#1a1a1a',
-  beltSurface: '#27272a',
-  guide: '#6b7280',
+  beltSurface: '#292929',
+  guide: '#0ea5e9',
   motor: '#f59e0b',
   motorBody: '#d97706',
-  leg: '#374151',
-  castor: '#1f2937',
-  crossbar: '#4b5563',
+  leg: '#7c3aed',
+  castor: '#a855f7',
+  crossbar: '#60a5fa',
+  floorPlane: '#e5e7eb',
+  arrow: '#ef4444',
 } as const;
 
 const sceneCache = new Map<string, THREE.Object3D>();
@@ -279,9 +281,10 @@ function ParametricDirectMotor({
 }) {
   const side = motorPosition === 'left' ? -1 : 1;
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
+  const motorX = length / 2 - motorWidth * 0.3;
 
   return (
-    <group position={[-length / 2, 0, motorZ]}>
+    <group position={[motorX, 0, motorZ]}>
       <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
       <Cyl
         pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
@@ -311,6 +314,7 @@ function ParametricIndirectMotor({
   motorCylinderHeight,
   motorCylinderRadius,
   centerMounted,
+  centerOffset = 0,
 }: {
   length: number;
   frameHeight: number;
@@ -320,9 +324,11 @@ function ParametricIndirectMotor({
   motorCylinderHeight: number;
   motorCylinderRadius: number;
   centerMounted: boolean;
+  centerOffset?: number;
 }) {
+  const xPos = centerMounted ? centerOffset : -length / 2;
   return (
-    <group position={[centerMounted ? 0 : -length / 2, -(frameHeight / 2 + motorHeight / 2 + 15), 0]}>
+    <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15), 0]}>
       <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
       <Cyl
         pos={[0, 0, motorDepth / 2 + motorCylinderHeight / 2 + 8]}
@@ -331,6 +337,30 @@ function ParametricIndirectMotor({
         h={motorCylinderHeight}
         color={C.motorBody}
       />
+    </group>
+  );
+}
+
+function DirectionArrow({
+  beltLength,
+  frameWidth,
+  beltTopY,
+}: {
+  beltLength: number;
+  frameWidth: number;
+  beltTopY: number;
+}) {
+  const arrowY = beltTopY + 8;
+  const arrowLength = Math.max(80, beltLength * 0.08);
+  const arrowRadius = arrowLength * 0.15;
+
+  return (
+    <group position={[0, arrowY, frameWidth * 0.35]}>
+      <Cyl pos={[0, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={arrowRadius * 0.4} h={arrowLength} color={C.arrow} segs={8} />
+      <mesh position={[arrowLength / 2 + arrowRadius, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <coneGeometry args={[arrowRadius, arrowRadius * 2, 8]} />
+        <meshStandardMaterial color={C.arrow} />
+      </mesh>
     </group>
   );
 }
@@ -510,6 +540,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
               motorCylinderHeight={motorCylinderHeight}
               motorCylinderRadius={motorCylinderRadius}
               centerMounted={false}
+              centerOffset={0}
             />
           }
         />
@@ -528,10 +559,13 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
               motorCylinderHeight={motorCylinderHeight}
               motorCylinderRadius={motorCylinderRadius}
               centerMounted
+              centerOffset={config.centerDriveOffset}
             />
           }
         />
       )}
+
+      <DirectionArrow beltLength={beltLength} frameWidth={frameWidth} beltTopY={beltTopY} />
 
       {withStand && legLength > 0 && (
         <>
@@ -571,25 +605,16 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   );
 }
 
-function FloorGrid({ config }: { config: ConveyorConfig }) {
+function FloorPlane({ config }: { config: ConveyorConfig }) {
   const standHeight = config.withStand ? config.standHeight : 0;
-  const groundY = -(standHeight + 60);
+  const groundY = -(standHeight + 40);
   const size = Math.max(config.beltLength, 4000) * 2.5;
-  const cell = Math.round(size / 60 / 100) * 100 || 100;
-  const section = cell * 5;
 
   return (
-    <Grid
-      position={[0, groundY, 0]}
-      args={[size, size] as unknown as [number]}
-      cellSize={cell}
-      sectionSize={section}
-      cellColor="#e2e8f0"
-      sectionColor="#94a3b8"
-      fadeDistance={size * 1.2}
-      fadeStrength={1}
-      infiniteGrid
-    />
+    <mesh position={[0, groundY, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[size, size]} />
+      <meshStandardMaterial color={C.floorPlane} side={THREE.DoubleSide} />
+    </mesh>
   );
 }
 
@@ -618,7 +643,7 @@ export function ConveyorViewer3D({
 
       <Suspense fallback={null}>
         <ConveyorModel config={config} />
-        <FloorGrid config={config} />
+        <FloorPlane config={config} />
       </Suspense>
 
       <CameraRig config={config} resetCameraTick={resetCameraTick} />
