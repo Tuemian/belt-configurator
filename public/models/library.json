@@ -138,5 +138,23 @@
         "url": "/models/accessories/sensor-standard.glb"
       }
     ]
+  },
+  "profiles": {
+    "sideRails": [
+      {
+        "id": "profile-40x40-light",
+        "url": "/models/profiles/1108038_profil_a8_40x40_leicht.glb",
+        "rules": {
+          "maxFrameWidth": 500
+        }
+      },
+      {
+        "id": "profile-80x40-light-high",
+        "url": "/models/profiles/1108055_profil_a8_80x40_leicht.glb",
+        "rules": {
+          "minFrameWidth": 501
+        }
+      }
+    ]
   }
 }
