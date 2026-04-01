@@ -64,7 +64,7 @@ const translations = {
     motorRight: 'Rechts',
     motorAngle: 'Motorstellung',
     centerDriveOffset: 'Versatz Mittenantrieb',
-    centerDriveOffsetRange: '-300 mm bis +300 mm',
+    centerDriveOffsetRange: 'je nach Bandlänge, min. 300 mm zum Bandende',
 
     // Step 4 - Stand
     step4Title: 'Untergestell & Zubehör',
@@ -159,7 +159,7 @@ const translations = {
     motorRight: 'Right',
     motorAngle: 'Motor Orientation',
     centerDriveOffset: 'Center Drive Offset',
-    centerDriveOffsetRange: '-300 mm to +300 mm',
+    centerDriveOffsetRange: 'depends on belt length, min. 300 mm from each end',
 
     step4Title: 'Stand & Accessories',
     step4Desc: 'Select stand and optional accessories',

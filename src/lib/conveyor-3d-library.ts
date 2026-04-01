@@ -376,13 +376,26 @@ export function resolveConveyor3DAssets(
 ): Conveyor3DResolvedAssets {
   const library = getConveyor3DLibrary();
   const resolved: Conveyor3DResolvedAssets = {};
-  const baseMotorAngleRad = ((config.motorAngle + 90) * Math.PI) / 180;
+
+  // Motor angle convention:
+  //   0°  = shaft pointing down (toward floor)
+  //   90° = shaft pointing toward belt (inward)
+  //  180° = shaft pointing up
+  //  270° = shaft pointing away from belt (outward)
+  // The asset's natural pose has the shaft pointing outward (+Z for right side).
+  // We rotate around the X-axis (conveyor longitudinal axis) by the mount angle.
+  // For left side the motor is mirrored in Z so the same angle convention holds.
+  const motorAngleRad = (config.motorAngle * Math.PI) / 180;
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
-    const motorAngleRad = baseMotorAngleRad;
     const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
-    const mirrorScaleZ = config.motorPosition === 'left' ? 1 : -1;
+    // Mirror left motor in Z so both sides share identical angle semantics.
+    const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
+    // Base rotation aligns asset so shaft points outward (+Z right, -Z left after mirror).
+    // Then rotate by motorAngle around X (conveyor axis) to implement the 0/90/180/270 mapping.
+    const baseRot = variant.rotation ?? [0, 0, 0];
+    const finalRot = rotateAroundConveyorAxis(baseRot, motorAngleRad);
     resolved.motor = {
       url: variant.url,
       position: [
@@ -390,21 +403,18 @@ export function resolveConveyor3DAssets(
         0,
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
-      rotation: rotateAroundConveyorAxis(
-        withAddedYRotation(variant.rotation, 0),
-        motorAngleRad,
-      ),
+      rotation: finalRot,
       scale: variant.scale ?? [1, 1, mirrorScaleZ],
     };
   }
 
   if (config.driveType === 'indirect') {
-    const motorAngleRad = baseMotorAngleRad;
     const variant = selectVariant(measurements.frameWidth, library.motors.indirect);
+    // Indirect drive is at the head (drive) drum, same end as direct — positive X.
     resolved.motor = {
       url: variant.url,
       position: [
-        -measurements.beltLength / 2,
+        measurements.beltLength / 2,
         -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
         0,
       ],
@@ -414,11 +424,13 @@ export function resolveConveyor3DAssets(
   }
 
   if (config.driveType === 'center') {
-    const motorAngleRad = baseMotorAngleRad;
     const variant = selectVariant(measurements.frameWidth, library.motors.center);
+    // Dynamic offset limit: keep at least 300 mm clearance from each belt end.
+    const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
+    const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
     resolved.motor = {
       url: variant.url,
-      position: [0, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), config.centerDriveOffset],
+      position: [clampedOffset, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
       rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: variant.scale ?? [1, 1, 1],
     };

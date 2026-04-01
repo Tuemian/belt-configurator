@@ -204,22 +204,19 @@ function ExternalAssetInstances({
 
 function CameraRig({ config, resetCameraTick }: { config: ConveyorConfig; resetCameraTick: number }) {
   const { camera, invalidate } = useThree();
-  const prev = useRef({ length: 0, width: 0, standHeight: 0 });
+  const initialised = useRef(false);
 
+  // Only reposition camera on first mount or explicit reset (resetCameraTick change).
+  // Changing beltLength, motorPosition etc. must NOT move the camera.
   useEffect(() => {
+    if (initialised.current) {
+      return;
+    }
+    initialised.current = true;
+
     const length = config.beltLength;
     const width = config.frameWidth;
     const standHeight = config.withStand ? config.standHeight : 0;
-
-    if (
-      prev.current.length === length &&
-      prev.current.width === width &&
-      prev.current.standHeight === standHeight
-    ) {
-      return;
-    }
-
-    prev.current = { length, width, standHeight };
 
     const diagonal = Math.sqrt(length * length + width * width);
     const distance = diagonal * 0.9 + standHeight * 0.5;
@@ -230,7 +227,31 @@ function CameraRig({ config, resetCameraTick }: { config: ConveyorConfig; resetC
     (camera as THREE.PerspectiveCamera).far = diagonal * 12;
     (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     invalidate();
-  }, [camera, config.beltLength, config.frameWidth, config.standHeight, config.withStand, invalidate, resetCameraTick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // On explicit reset: re-initialise and reposition.
+  useEffect(() => {
+    if (resetCameraTick === 0) {
+      return;
+    }
+    initialised.current = false;
+
+    const length = config.beltLength;
+    const width = config.frameWidth;
+    const standHeight = config.withStand ? config.standHeight : 0;
+
+    const diagonal = Math.sqrt(length * length + width * width);
+    const distance = diagonal * 0.9 + standHeight * 0.5;
+
+    camera.position.set(distance * 0.7, standHeight + distance * 0.55, distance * 0.8);
+    camera.lookAt(0, standHeight * 0.5, 0);
+    (camera as THREE.PerspectiveCamera).near = diagonal * 0.002;
+    (camera as THREE.PerspectiveCamera).far = diagonal * 12;
+    (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+    invalidate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetCameraTick]);
 
   return null;
 }
@@ -326,7 +347,7 @@ function ParametricIndirectMotor({
   centerMounted: boolean;
   centerOffset?: number;
 }) {
-  const xPos = centerMounted ? centerOffset : -length / 2;
+  const xPos = centerMounted ? centerOffset : length / 2;
   return (
     <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15), 0]}>
       <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />

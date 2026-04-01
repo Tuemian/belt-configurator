@@ -95,26 +95,37 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
               <span className="ml-2 text-xs font-normal text-muted-foreground">({t('centerDriveOffsetRange', lang)})</span>
             </Label>
             <div className="flex items-center gap-4">
-              <Slider
-                value={[config.centerDriveOffset]}
-                min={-300}
-                max={300}
-                step={5}
-                onValueChange={([v]) => onChange({ centerDriveOffset: v })}
-                className="flex-1"
-              />
-              <div className="flex min-w-[120px] items-center gap-1">
-                <Input
-                  type="number"
-                  value={config.centerDriveOffset}
-                  min={-300}
-                  max={300}
-                  step={5}
-                  onChange={(e) => onChange({ centerDriveOffset: Math.min(300, Math.max(-300, Number(e.target.value))) })}
-                  className="h-9 w-24 text-right"
-                />
-                <span className="text-sm text-muted-foreground">mm</span>
-              </div>
+              {(() => {
+                const maxOffset = Math.max(0, Math.floor(config.beltLength / 2 - 300));
+                const clampedVal = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
+                return (
+                  <>
+                    <Slider
+                      value={[clampedVal]}
+                      min={-maxOffset}
+                      max={maxOffset}
+                      step={5}
+                      onValueChange={([v]) => onChange({ centerDriveOffset: v })}
+                      className="flex-1"
+                    />
+                    <div className="flex min-w-[120px] items-center gap-1">
+                      <Input
+                        type="number"
+                        value={clampedVal}
+                        min={-maxOffset}
+                        max={maxOffset}
+                        step={5}
+                        onChange={(e) => {
+                          const raw = Number(e.target.value);
+                          onChange({ centerDriveOffset: Math.max(-maxOffset, Math.min(maxOffset, raw)) });
+                        }}
+                        className="h-9 w-24 text-right"
+                      />
+                      <span className="text-sm text-muted-foreground">mm</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
