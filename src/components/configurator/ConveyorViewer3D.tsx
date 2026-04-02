@@ -406,22 +406,39 @@ function ParametricIndirectMotor({
   const zPos = centerMounted ? 0 : side * (width / 2 + 4);
 
   if (!centerMounted) {
+    const plateW = Math.max(120, motorWidth * 0.95);
+    const plateH = Math.max(90, motorHeight * 0.9);
+    const plateT = 8;
+    const motorW = Math.max(90, motorWidth * 0.8);
+    const motorH = Math.max(70, motorHeight * 0.65);
+    const motorT = Math.max(60, motorDepth * 0.5);
+
     return (
       <group position={[xPos, yPos, zPos]}>
         <group rotation={[0, 0, effectiveAngleRad]}>
           {/* Side-mounted placeholder plate at toothed-belt location. */}
           <Box
             pos={[0, 0, 0]}
-            size={[Math.max(120, motorWidth * 0.95), Math.max(90, motorHeight * 0.9), 8]}
+            size={[plateW, plateH, plateT]}
             color={C.motorBody}
             metalness={0.6}
             roughness={0.35}
           />
+
+          {/* Visible motor block mounted on the plate. */}
+          <Box
+            pos={[0, 0, effectiveSide * (plateT / 2 + motorT / 2 + 6)]}
+            size={[motorW, motorH, motorT]}
+            color={C.motor}
+            metalness={0.55}
+            roughness={0.4}
+          />
+
           <Cyl
-            pos={[0, -8, effectiveSide * 16]}
+            pos={[0, -8, effectiveSide * (plateT / 2 + motorT + 20)]}
             rot={[Math.PI / 2, 0, 0]}
-            r={18}
-            h={24}
+            r={Math.max(14, motorCylinderRadius * 0.55)}
+            h={Math.max(22, motorCylinderHeight * 0.45)}
             color={C.motor}
           />
         </group>
