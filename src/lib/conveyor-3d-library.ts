@@ -110,9 +110,9 @@ const defaultLibrary: Conveyor3DLibrary = {
     },
     castors: {
       variants: [
-        { id: 'castor', url: '/models/floor-elements/castor.glb?v=2', rotationDeg: [-90, 180, 0], scale: [1000, 1000, 1000], rules: {} },
+        { id: 'castor', url: '/models/floor-elements/castor.glb?v=2', rotationDeg: [0, 180, 0], scale: [1000, 1000, 1000], rules: {} },
       ],
-      positionOffset: [0, -58, 0],
+      positionOffset: [0, 0, 0],
     },
   },
   accessories: {

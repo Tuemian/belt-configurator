@@ -543,7 +543,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const motorCylinderHeight = motorHeight * 1.3;
 
   const inclineRadians = -(inclineAngle * Math.PI) / 180;
-  const castorLegTrim = withStand && floorElement === 'castors' ? 16 : 0;
+  const castorLegTrim = withStand && floorElement === 'castors' ? frameHeight / 2 + 53 : 0;
   const legLength = withStand ? Math.max(standHeight - castorLegTrim, 0) : 0;
   const groupY = withStand ? standHeight : 0;
   const legInsetX = beltLength / 2 - Math.min(150, beltLength * 0.08);
@@ -571,7 +571,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   });
 
   const footPositions: Vec3[] = legSpecs.map(({ x, bottomY, z }) => [x, bottomY - 12, z]);
-  const castorPositions: Vec3[] = legSpecs.map(({ x, bottomY, z }) => [x, bottomY - 58, z]);
+  const castorPositions: Vec3[] = legSpecs.map(({ x, bottomY, z }) => [x, bottomY, z]);
   const shortestLegLength = legSpecs.reduce((minLength, spec) => Math.min(minLength, spec.length), legLength);
 
   const measurements: Conveyor3DMeasurements = {
