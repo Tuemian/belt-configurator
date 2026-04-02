@@ -30,6 +30,37 @@ const C = {
   arrow: '#ef4444',
 } as const;
 
+const ARROW_STYLE = 'standard' as const;
+const ARROW_PRESETS = {
+  subtle: {
+    length: 220,
+    widthFactor: 0.075,
+    minWidth: 18,
+    maxWidth: 30,
+    platePadding: 8,
+    plateOpacity: 0.75,
+    tipLength: 46,
+  },
+  standard: {
+    length: 260,
+    widthFactor: 0.1,
+    minWidth: 24,
+    maxWidth: 42,
+    platePadding: 10,
+    plateOpacity: 0.9,
+    tipLength: 56,
+  },
+  bold: {
+    length: 300,
+    widthFactor: 0.125,
+    minWidth: 32,
+    maxWidth: 58,
+    platePadding: 14,
+    plateOpacity: 0.96,
+    tipLength: 68,
+  },
+} as const;
+
 const sceneCache = new Map<string, THREE.Object3D>();
 const unavailableAssets = new Set<string>();
 
@@ -369,19 +400,20 @@ function DirectionArrow({
   beltTopY: number;
   frameWidth: number;
 }) {
+  const preset = ARROW_PRESETS[ARROW_STYLE];
   const arrowY = beltTopY + 0.7;
-  const arrowLength = 260;
-  const arrowWidth = Math.max(24, Math.min(42, frameWidth * 0.1));
+  const arrowLength = preset.length;
+  const arrowWidth = Math.max(preset.minWidth, Math.min(preset.maxWidth, frameWidth * preset.widthFactor));
   const arrowPlateThickness = 0.9;
-  const tipLength = 56;
+  const tipLength = preset.tipLength;
 
   return (
     <group position={[0, arrowY, 0]}>
       <Box
         pos={[-arrowLength * 0.16, 0, 0]}
-        size={[arrowLength + 20, arrowPlateThickness, arrowWidth + 10]}
+        size={[arrowLength + preset.platePadding * 2, arrowPlateThickness, arrowWidth + preset.platePadding]}
         color="#ffffff"
-        opacity={0.9}
+        opacity={preset.plateOpacity}
         metalness={0.05}
         roughness={0.9}
       />
