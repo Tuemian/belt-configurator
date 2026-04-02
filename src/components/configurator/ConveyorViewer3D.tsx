@@ -30,37 +30,6 @@ const C = {
   arrow: '#ef4444',
 } as const;
 
-const ARROW_STYLE = 'bold' as const;
-const ARROW_PRESETS = {
-  subtle: {
-    length: 220,
-    widthFactor: 0.075,
-    minWidth: 18,
-    maxWidth: 30,
-    platePadding: 8,
-    plateOpacity: 0.75,
-    tipLength: 46,
-  },
-  standard: {
-    length: 260,
-    widthFactor: 0.1,
-    minWidth: 24,
-    maxWidth: 42,
-    platePadding: 10,
-    plateOpacity: 0.9,
-    tipLength: 56,
-  },
-  bold: {
-    length: 300,
-    widthFactor: 0.125,
-    minWidth: 32,
-    maxWidth: 58,
-    platePadding: 14,
-    plateOpacity: 0.96,
-    tipLength: 68,
-  },
-} as const;
-
 const sceneCache = new Map<string, THREE.Object3D>();
 const unavailableAssets = new Set<string>();
 
@@ -394,41 +363,91 @@ function ParametricIndirectMotor({
 }
 
 function DirectionArrow({
+  beltLength,
   beltTopY,
   frameWidth,
 }: {
+  beltLength: number;
   beltTopY: number;
   frameWidth: number;
 }) {
-  const preset = ARROW_PRESETS[ARROW_STYLE];
-  const arrowY = beltTopY + 0.7;
-  const arrowLength = preset.length;
-  const arrowWidth = Math.max(preset.minWidth, Math.min(preset.maxWidth, frameWidth * preset.widthFactor));
-  const arrowPlateThickness = 0.9;
-  const tipLength = preset.tipLength;
+  const arrowY = beltTopY + 0.15;
+  const arrowLength = Math.max(180, Math.min(420, beltLength * 0.22));
+  const arrowWidth = Math.max(24, Math.min(72, frameWidth * 0.2));
+
+  const arrowTexture = useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 256;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const pad = 18;
+    const h = canvas.height - pad * 2;
+    const y = pad;
+    const bodyH = h * 0.56;
+    const bodyY = y + (h - bodyH) / 2;
+    const bodyStart = canvas.width * 0.08;
+    const headStart = canvas.width * 0.74;
+    const bodyEnd = headStart;
+    const tipX = canvas.width * 0.95;
+    const centerY = y + h / 2;
+
+    // White outline improves contrast on dark belts.
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(bodyStart - 10, bodyY - 8);
+    ctx.lineTo(bodyEnd + 6, bodyY - 8);
+    ctx.lineTo(tipX + 6, centerY);
+    ctx.lineTo(bodyEnd + 6, bodyY + bodyH + 8);
+    ctx.lineTo(bodyStart - 10, bodyY + bodyH + 8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = C.arrow;
+    ctx.beginPath();
+    ctx.moveTo(bodyStart, bodyY);
+    ctx.lineTo(bodyEnd, bodyY);
+    ctx.lineTo(tipX, centerY);
+    ctx.lineTo(bodyEnd, bodyY + bodyH);
+    ctx.lineTo(bodyStart, bodyY + bodyH);
+    ctx.closePath();
+    ctx.fill();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    return texture;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      arrowTexture?.dispose();
+    };
+  }, [arrowTexture]);
+
+  if (!arrowTexture) {
+    return null;
+  }
 
   return (
-    <group position={[0, arrowY, 0]}>
-      <Box
-        pos={[-arrowLength * 0.16, 0, 0]}
-        size={[arrowLength + preset.platePadding * 2, arrowPlateThickness, arrowWidth + preset.platePadding]}
-        color="#ffffff"
-        opacity={preset.plateOpacity}
-        metalness={0.05}
-        roughness={0.9}
+    <mesh position={[0, arrowY, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={8}>
+      <planeGeometry args={[arrowLength, arrowWidth]} />
+      <meshBasicMaterial
+        map={arrowTexture}
+        transparent
+        depthWrite={false}
+        polygonOffset
+        polygonOffsetFactor={-2}
       />
-      <Box
-        pos={[-arrowLength * 0.16, 0.2, 0]}
-        size={[arrowLength, arrowPlateThickness, arrowWidth]}
-        color={C.arrow}
-        metalness={0.3}
-        roughness={0.5}
-      />
-      <mesh position={[arrowLength * 0.34, 0.2, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[arrowWidth * 0.52, tipLength, 16]} />
-        <meshStandardMaterial color={C.arrow} />
-      </mesh>
-    </group>
+    </mesh>
   );
 }
 
@@ -649,7 +668,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           />
         )}
 
-        <DirectionArrow beltTopY={beltTopY} frameWidth={frameWidth} />
+        <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} frameWidth={frameWidth} />
       </group>
 
       {/* Stand — always vertical, not tilted */}
