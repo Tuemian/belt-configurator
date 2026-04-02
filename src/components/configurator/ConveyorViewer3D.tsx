@@ -399,10 +399,11 @@ function ParametricIndirectMotor({
   const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
   const effectiveSide = centerMounted ? 1 : side;
+  const indirectDrop = centerMounted ? 0 : 150;
   const xPos = centerMounted ? centerOffset : length / 2 - motorWidth * 0.25;
   const zPos = centerMounted ? 0 : side * (width / 2 + motorDepth / 2 + 12);
   return (
-    <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15), zPos]}>
+    <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15 + indirectDrop), zPos]}>
       <group rotation={[0, 0, effectiveAngleRad]}>
         <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
         <Cyl

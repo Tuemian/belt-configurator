@@ -434,7 +434,7 @@ export function resolveConveyor3DAssets(
       url: variant.url,
       position: [
         measurements.beltLength / 2 - measurements.motorWidth * 0.25,
-        -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
+        -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 165),
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], indirectAngleDeg * (Math.PI / 180)),

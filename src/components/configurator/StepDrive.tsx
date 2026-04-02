@@ -71,12 +71,21 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
           <Label className="text-sm font-semibold text-foreground">{t('motorAngle', lang)}</Label>
           <div className="grid grid-cols-4 gap-2">
             {motorAngles.map((angle) => (
+              (() => {
+                const isDisabled = angle === 180;
+                return (
               <button
                 key={angle}
                 type="button"
-                onClick={() => onChange({ motorAngle: angle })}
+                onClick={() => {
+                  if (!isDisabled) {
+                    onChange({ motorAngle: angle });
+                  }
+                }}
+                disabled={isDisabled}
                 className={cn(
                   'p-3 rounded-lg border-2 transition-all font-medium text-sm',
+                  isDisabled && 'opacity-40 cursor-not-allowed border-border bg-muted/20 text-muted-foreground hover:border-border',
                   config.motorAngle === angle
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50'
@@ -84,6 +93,8 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
               >
                 {angle}°
               </button>
+                );
+              })()
             ))}
           </div>
         </div>
