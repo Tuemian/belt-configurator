@@ -114,18 +114,46 @@ function useExternalScene(url?: string) {
     let cancelled = false;
     const loader = new GLTFLoader();
 
+    const commitScene = (cacheKey: string, loadedScene: THREE.Object3D) => {
+      if (cancelled) {
+        return;
+      }
+      sceneCache.set(cacheKey, loadedScene);
+      setScene(loadedScene);
+    };
+
     loader.load(
       url,
       (gltf) => {
-        if (cancelled) {
-          return;
-        }
-        sceneCache.set(url, gltf.scene);
-        setScene(gltf.scene);
+        commitScene(url, gltf.scene);
       },
       undefined,
-      () => {
+      (error) => {
+        const fallbackUrl = url.includes('?') ? url.split('?')[0] : undefined;
+
+        if (fallbackUrl) {
+          loader.load(
+            fallbackUrl,
+            (gltf) => {
+              // Keep cache entries for both keys so future lookups are instant.
+              sceneCache.set(fallbackUrl, gltf.scene);
+              commitScene(url, gltf.scene);
+            },
+            undefined,
+            (fallbackError) => {
+              unavailableAssets.add(url);
+              unavailableAssets.add(fallbackUrl);
+              console.warn('Failed to load external 3D asset', { url, fallbackUrl, error, fallbackError });
+              if (!cancelled) {
+                setScene(null);
+              }
+            },
+          );
+          return;
+        }
+
         unavailableAssets.add(url);
+        console.warn('Failed to load external 3D asset', { url, error });
         if (!cancelled) {
           setScene(null);
         }
