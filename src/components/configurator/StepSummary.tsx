@@ -137,7 +137,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
 
       // Download
-      pdf.save('novamotis-gurtfoerderer-konfiguration.pdf');
+      pdf.save(lang === 'de' ? 'novamotis-gurtfoerderer-konfiguration.pdf' : 'novamotis-belt-conveyor-configuration.pdf');
 
       // Cleanup
       document.body.removeChild(container);

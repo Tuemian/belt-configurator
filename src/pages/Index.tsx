@@ -72,7 +72,7 @@ const Index = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div>
-                <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">Online-Konfigurator</p>
+                <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">{t('onlineConfigurator', lang)}</p>
                 <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
                   {t('configuratorTitle', lang)}
                 </h1>

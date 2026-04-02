@@ -3,6 +3,7 @@ export type Language = 'de' | 'en';
 const translations = {
   de: {
     // Header
+    onlineConfigurator: 'Online-Konfigurator',
     configuratorTitle: 'Gurtförderer-Konfigurator',
     configuratorSubtitle: 'Konfigurieren Sie Ihren individuellen Gurtförderer in wenigen Schritten',
     stepOf: 'Schritt {current} von {total}',
@@ -102,6 +103,7 @@ const translations = {
     required: 'Pflichtfeld',
   },
   en: {
+    onlineConfigurator: 'Online Configurator',
     configuratorTitle: 'Belt Conveyor Configurator',
     configuratorSubtitle: 'Configure your individual belt conveyor in just a few steps',
     stepOf: 'Step {current} of {total}',
