@@ -104,13 +104,13 @@ const defaultLibrary: Conveyor3DLibrary = {
   floorElements: {
     feet: {
       variants: [
-        { id: 'foot', url: '/models/floor-elements/foot.glb', rules: {} },
+        { id: 'foot', url: '/models/floor-elements/foot.glb?v=2', rules: {} },
       ],
       positionOffset: [0, -12, 0],
     },
     castors: {
       variants: [
-        { id: 'castor', url: '/models/floor-elements/castor.glb', rules: {} },
+        { id: 'castor', url: '/models/floor-elements/castor.glb?v=2', rules: {} },
       ],
       positionOffset: [0, -28, 0],
     },
