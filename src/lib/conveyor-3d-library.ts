@@ -104,15 +104,13 @@ const defaultLibrary: Conveyor3DLibrary = {
   floorElements: {
     feet: {
       variants: [
-        { id: 'foot-standard', url: '/models/floor-elements/foot.glb', rules: { maxFrameWidth: 700 } },
-        { id: 'foot-heavy', url: '/models/floor-elements/foot-heavy.glb', rules: { minFrameWidth: 701 } },
+        { id: 'foot', url: '/models/floor-elements/foot.glb', rules: {} },
       ],
       positionOffset: [0, -12, 0],
     },
     castors: {
       variants: [
-        { id: 'castor-standard', url: '/models/floor-elements/castor.glb', rules: { maxFrameWidth: 700 } },
-        { id: 'castor-heavy', url: '/models/floor-elements/castor-heavy.glb', rules: { minFrameWidth: 701 } },
+        { id: 'castor', url: '/models/floor-elements/castor.glb', rules: {} },
       ],
       positionOffset: [0, -28, 0],
     },
