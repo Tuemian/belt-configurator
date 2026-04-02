@@ -290,6 +290,7 @@ function ParametricDirectMotor({
   motorCylinderHeight,
   motorCylinderRadius,
   motorPosition,
+  motorAngle,
 }: {
   length: number;
   width: number;
@@ -299,29 +300,34 @@ function ParametricDirectMotor({
   motorCylinderHeight: number;
   motorCylinderRadius: number;
   motorPosition: ConveyorConfig['motorPosition'];
+  motorAngle: ConveyorConfig['motorAngle'];
 }) {
   const side = motorPosition === 'left' ? -1 : 1;
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
+  const directOffsetDeg = motorPosition === 'right' ? 90 : 270;
+  const directAngleRad = ((motorAngle + directOffsetDeg) % 360) * (Math.PI / 180);
 
   return (
     <group position={[motorX, 0, motorZ]}>
-      <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
-      <Cyl
-        pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
-        rot={[Math.PI / 2, 0, 0]}
-        r={motorCylinderRadius}
-        h={motorCylinderHeight}
-        color={C.motorBody}
-      />
-      {[-20, 0, 20].map((offsetX) => (
-        <Box
-          key={offsetX}
-          pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
-          size={[8, motorHeight * 0.2, 6]}
+      <group rotation={[0, 0, directAngleRad]}>
+        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
+        <Cyl
+          pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
+          rot={[Math.PI / 2, 0, 0]}
+          r={motorCylinderRadius}
+          h={motorCylinderHeight}
           color={C.motorBody}
         />
-      ))}
+        {[-20, 0, 20].map((offsetX) => (
+          <Box
+            key={offsetX}
+            pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
+            size={[8, motorHeight * 0.2, 6]}
+            color={C.motorBody}
+          />
+        ))}
+      </group>
     </group>
   );
 }
@@ -625,6 +631,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
                 motorCylinderHeight={motorCylinderHeight}
                 motorCylinderRadius={motorCylinderRadius}
                 motorPosition={motorPosition}
+                motorAngle={config.motorAngle}
               />
             }
           />
