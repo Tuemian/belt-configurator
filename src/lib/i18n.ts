@@ -21,6 +21,9 @@ const translations = {
     downloadStepSolidUnavailableTitle: 'Solid-Export nicht verfuegbar',
     downloadStepSolidUnavailableDesc: 'Solid-Export derzeit nicht verfuegbar. Bitte Anfrage mit Datenblatt an office@novamotis.com senden.',
     newConfig: 'Neue Konfiguration',
+    cameraCenter: 'Kamera zentrieren',
+    previewLoading: '3D-Vorschau wird geladen...',
+    previewMissingFilesNote: 'Hinweis: Einige 3D-Dateien fehlen. Parametrischer Fallback ist aktiv.',
 
     // Step 1 - Dimensions
     step1Title: 'Grundmaße',
@@ -120,6 +123,9 @@ const translations = {
     downloadStepSolidUnavailableTitle: 'Solid export unavailable',
     downloadStepSolidUnavailableDesc: 'Solid export is currently unavailable. Please email office@novamotis.com and attach the datasheet.',
     newConfig: 'New Configuration',
+    cameraCenter: 'Center Camera',
+    previewLoading: 'Loading 3D preview...',
+    previewMissingFilesNote: 'Note: Some 3D files are missing. Parametric fallback is active.',
 
     step1Title: 'Dimensions',
     step1Desc: 'Enter the basic dimensions of your belt conveyor',

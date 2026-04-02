@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { Language, t } from '@/lib/i18n';
 import { ConveyorConfig } from '@/lib/configurator-types';
 import {
   getSelectedConveyorAssetUrls,
@@ -43,7 +44,7 @@ async function fileExists(url: string): Promise<boolean> {
   }
 }
 
-export function ConveyorPreview({ config }: { config: ConveyorConfig }) {
+export function ConveyorPreview({ config, lang }: { config: ConveyorConfig; lang: Language }) {
   const [missingFiles, setMissingFiles] = useState<string[]>([]);
   const [resetCameraTick, setResetCameraTick] = useState(0);
 
@@ -100,7 +101,7 @@ export function ConveyorPreview({ config }: { config: ConveyorConfig }) {
                   d="M4 12a8 8 0 018-8v8H4z"
                 />
               </svg>
-              <span className="text-sm font-medium">3D-Vorschau wird geladen...</span>
+              <span className="text-sm font-medium">{t('previewLoading', lang)}</span>
             </div>
           </div>
         }
@@ -113,12 +114,12 @@ export function ConveyorPreview({ config }: { config: ConveyorConfig }) {
         onClick={() => setResetCameraTick((v) => v + 1)}
         className="absolute right-3 top-3 rounded-md border border-border bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted"
       >
-        Kamera zentrieren
+        {t('cameraCenter', lang)}
       </button>
 
       {missingFiles.length > 0 && (
         <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <div className="font-semibold">Hinweis: Einige 3D-Dateien fehlen. Parametrischer Fallback ist aktiv.</div>
+          <div className="font-semibold">{t('previewMissingFilesNote', lang)}</div>
           <div className="mt-1 break-all">{missingFiles.join(' | ')}</div>
         </div>
       )}

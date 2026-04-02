@@ -95,7 +95,7 @@ export const StepStand = ({ config, onChange, lang }: Props) => {
       </div>
 
       <div className="w-full min-h-[380px] overflow-hidden rounded-xl border aspect-[16/10]">
-        <ConveyorPreview config={config} />
+        <ConveyorPreview config={config} lang={lang} />
       </div>
     </div>
   );
