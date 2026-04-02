@@ -448,16 +448,31 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const groupY = legLength;
   const legInsetX = beltLength / 2 - Math.min(150, beltLength * 0.08);
   const legInsetZ = frameWidth / 2 - Math.max(frameSectionWidth, 15);
+  const legBottomY = -(frameHeight / 2 + legLength);
+  const supportClearance = 2;
+  const frameBottomYAtX = (x: number) => x * Math.sin(inclineRadians) - (frameHeight / 2) * Math.cos(inclineRadians);
 
-  const legPostPositions: Vec3[] = [
-    [-legInsetX, -(frameHeight / 2 + legLength / 2), -legInsetZ],
-    [-legInsetX, -(frameHeight / 2 + legLength / 2), legInsetZ],
-    [legInsetX, -(frameHeight / 2 + legLength / 2), -legInsetZ],
-    [legInsetX, -(frameHeight / 2 + legLength / 2), legInsetZ],
-  ];
+  const legSpecs = [
+    { x: -legInsetX, z: -legInsetZ },
+    { x: -legInsetX, z: legInsetZ },
+    { x: legInsetX, z: -legInsetZ },
+    { x: legInsetX, z: legInsetZ },
+  ].map(({ x, z }) => {
+    const topY = frameBottomYAtX(x) - supportClearance;
+    const currentLegLength = Math.max(topY - legBottomY, 80);
+    return {
+      x,
+      z,
+      topY,
+      bottomY: legBottomY,
+      length: currentLegLength,
+      centerY: legBottomY + currentLegLength / 2,
+    };
+  });
 
-  const footPositions: Vec3[] = legPostPositions.map(([x, y, z]) => [x, y - legLength / 2 - 12, z]);
-  const castorPositions: Vec3[] = legPostPositions.map(([x, y, z]) => [x, y - legLength / 2 - 28, z]);
+  const footPositions: Vec3[] = legSpecs.map(({ x, bottomY, z }) => [x, bottomY - 12, z]);
+  const castorPositions: Vec3[] = legSpecs.map(({ x, bottomY, z }) => [x, bottomY - 28, z]);
+  const shortestLegLength = legSpecs.reduce((minLength, spec) => Math.min(minLength, spec.length), legLength);
 
   const measurements: Conveyor3DMeasurements = {
     beltLength,
@@ -602,10 +617,10 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
       {/* Stand — always vertical, not tilted */}
       {withStand && legLength > 0 && (
         <>
-          {legPostPositions.map((position, index) => (
-            <group key={`leg-${index}`} position={position}>
-              <Box pos={[0, 0, 0]} size={[38, legLength, 38]} color={C.leg} metalness={0.7} roughness={0.3} />
-              <Box pos={[0, legLength * 0.15, 0]} size={[12, legLength * 0.25, 12]} color="#1f2937" />
+          {legSpecs.map((spec, index) => (
+            <group key={`leg-${index}`} position={[spec.x, spec.centerY, spec.z]}>
+              <Box pos={[0, 0, 0]} size={[38, spec.length, 38]} color={C.leg} metalness={0.7} roughness={0.3} />
+              <Box pos={[0, spec.length * 0.15, 0]} size={[12, spec.length * 0.25, 12]} color="#1f2937" />
             </group>
           ))}
 
@@ -624,7 +639,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           )}
 
           <Box
-            pos={[0, -(frameHeight / 2 + legLength * 0.72), 0]}
+            pos={[0, legBottomY + shortestLegLength * 0.28, 0]}
             size={[
               beltLength - 2 * Math.min(150, beltLength * 0.08) - 38,
               28,
