@@ -60,7 +60,10 @@ export const StepStand = ({ config, onChange, lang }: Props) => {
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => onChange({ floorElement: opt.value })}
+                    onClick={() => onChange({
+                      floorElement: opt.value,
+                      floorBolts: opt.value === 'feet' ? config.floorBolts : false,
+                    })}
                     className={cn(
                       'p-3 rounded-lg border-2 transition-all font-medium text-sm text-left',
                       config.floorElement === opt.value
@@ -82,13 +85,15 @@ export const StepStand = ({ config, onChange, lang }: Props) => {
                   onCheckedChange={(v) => onChange({ heightAdjust: v })}
                 />
               </div>
-              <div className="flex items-center justify-between p-4 rounded-lg border">
-                <Label className="text-sm font-semibold text-foreground">{t('floorBolts', lang)}</Label>
-                <Switch
-                  checked={config.floorBolts}
-                  onCheckedChange={(v) => onChange({ floorBolts: v })}
-                />
-              </div>
+              {config.floorElement === 'feet' && (
+                <div className="flex items-center justify-between p-4 rounded-lg border">
+                  <Label className="text-sm font-semibold text-foreground">{t('floorBolts', lang)}</Label>
+                  <Switch
+                    checked={config.floorBolts}
+                    onCheckedChange={(v) => onChange({ floorBolts: v })}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}
