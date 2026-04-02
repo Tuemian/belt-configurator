@@ -405,7 +405,7 @@ function DirectionArrow({
     const headBaseX = bodyEnd;
     const tipX = canvas.width * 0.95;
     const centerY = y + h / 2;
-    const headH = h * 0.84;
+    const headH = h * 1.02;
     const headTop = centerY - headH / 2;
     const headBottom = centerY + headH / 2;
 
