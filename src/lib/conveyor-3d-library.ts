@@ -315,6 +315,22 @@ function rotateAroundConveyorAxis(rotation: Vec3 | undefined, angleRad: number):
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
+function snapIndirectMotorAngle(angleDeg: number): number {
+  const normalized = ((angleDeg % 360) + 360) % 360;
+  const allowed = [0, 90, 270] as const;
+  return allowed.reduce((best, candidate) => {
+    const delta = Math.min(
+      Math.abs(normalized - candidate),
+      360 - Math.abs(normalized - candidate),
+    );
+    const bestDelta = Math.min(
+      Math.abs(normalized - best),
+      360 - Math.abs(normalized - best),
+    );
+    return delta < bestDelta ? candidate : best;
+  }, allowed[0]);
+}
+
 export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   const library = getConveyor3DLibrary();
   const urls: string[] = [];
@@ -406,17 +422,23 @@ export function resolveConveyor3DAssets(
   }
 
   if (config.driveType === 'indirect') {
+    const side = config.motorPosition === 'left' ? -1 : 1;
     const variant = selectVariant(measurements.frameWidth, library.motors.indirect);
-    // Indirect drive is at the head (drive) drum, same end as direct — positive X.
+    const snappedIndirectAngle = snapIndirectMotorAngle(config.motorAngle);
+    const indirectAngleDeg = config.motorPosition === 'right'
+      ? (90 - snappedIndirectAngle + 360) % 360
+      : (snappedIndirectAngle + 270) % 360;
+    const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
+    // Place indirect motor at drive end, side-mounted like direct drive.
     resolved.motor = {
       url: variant.url,
       position: [
-        measurements.beltLength / 2,
+        measurements.beltLength / 2 - measurements.motorWidth * 0.25,
         -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
-        0,
+        side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
-      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
-      scale: variant.scale ?? [1, 1, 1],
+      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], indirectAngleDeg * (Math.PI / 180)),
+      scale: variant.scale ?? [1, 1, mirrorScaleZ],
     };
   }
 

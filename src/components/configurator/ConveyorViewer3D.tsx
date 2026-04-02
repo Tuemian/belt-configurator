@@ -361,36 +361,58 @@ function ParametricDirectMotor({
 
 function ParametricIndirectMotor({
   length,
+  width,
   frameHeight,
   motorWidth,
   motorHeight,
   motorDepth,
   motorCylinderHeight,
   motorCylinderRadius,
+  motorPosition,
+  motorAngle,
   centerMounted,
   centerOffset = 0,
 }: {
   length: number;
+  width: number;
   frameHeight: number;
   motorWidth: number;
   motorHeight: number;
   motorDepth: number;
   motorCylinderHeight: number;
   motorCylinderRadius: number;
+  motorPosition: ConveyorConfig['motorPosition'];
+  motorAngle: ConveyorConfig['motorAngle'];
   centerMounted: boolean;
   centerOffset?: number;
 }) {
-  const xPos = centerMounted ? centerOffset : length / 2;
+  const snappedAngle = [0, 90, 270].reduce((best, candidate) => {
+    const normalized = ((motorAngle % 360) + 360) % 360;
+    const delta = Math.min(Math.abs(normalized - candidate), 360 - Math.abs(normalized - candidate));
+    const bestDelta = Math.min(Math.abs(normalized - best), 360 - Math.abs(normalized - best));
+    return delta < bestDelta ? candidate : best;
+  }, 0);
+  const side = motorPosition === 'left' ? -1 : 1;
+  const indirectAngleDeg = motorPosition === 'right'
+    ? (90 - snappedAngle + 360) % 360
+    : (snappedAngle + 270) % 360;
+  const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
+  const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
+  const effectiveSide = centerMounted ? 1 : side;
+  const xPos = centerMounted ? centerOffset : length / 2 - motorWidth * 0.25;
+  const zPos = centerMounted ? 0 : side * (width / 2 + motorDepth / 2 + 12);
   return (
-    <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15), 0]}>
-      <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
-      <Cyl
-        pos={[0, 0, motorDepth / 2 + motorCylinderHeight / 2 + 8]}
-        rot={[Math.PI / 2, 0, 0]}
-        r={motorCylinderRadius}
-        h={motorCylinderHeight}
-        color={C.motorBody}
-      />
+    <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15), zPos]}>
+      <group rotation={[0, 0, effectiveAngleRad]}>
+        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
+        <Cyl
+          pos={[0, 0, effectiveSide * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
+          rot={[Math.PI / 2, 0, 0]}
+          r={motorCylinderRadius}
+          h={motorCylinderHeight}
+          color={C.motorBody}
+        />
+      </group>
     </group>
   );
 }
@@ -680,12 +702,15 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
             fallback={
               <ParametricIndirectMotor
                 length={beltLength}
+                width={frameWidth}
                 frameHeight={frameHeight}
                 motorWidth={motorWidth}
                 motorHeight={motorHeight}
                 motorDepth={motorDepth}
                 motorCylinderHeight={motorCylinderHeight}
                 motorCylinderRadius={motorCylinderRadius}
+                motorPosition={motorPosition}
+                motorAngle={config.motorAngle}
                 centerMounted={false}
                 centerOffset={0}
               />
@@ -699,12 +724,15 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
             fallback={
               <ParametricIndirectMotor
                 length={beltLength}
+                width={frameWidth}
                 frameHeight={frameHeight}
                 motorWidth={motorWidth}
                 motorHeight={motorHeight}
                 motorDepth={motorDepth}
                 motorCylinderHeight={motorCylinderHeight}
                 motorCylinderRadius={motorCylinderRadius}
+                motorPosition={motorPosition}
+                motorAngle={config.motorAngle}
                 centerMounted
                 centerOffset={config.centerDriveOffset}
               />
