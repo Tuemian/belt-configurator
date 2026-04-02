@@ -398,32 +398,41 @@ function DirectionArrow({
     const pad = 18;
     const h = canvas.height - pad * 2;
     const y = pad;
-    const bodyH = h * 0.56;
+    const bodyH = h * 0.5;
     const bodyY = y + (h - bodyH) / 2;
     const bodyStart = canvas.width * 0.08;
-    const headStart = canvas.width * 0.74;
-    const bodyEnd = headStart;
+    const bodyEnd = canvas.width * 0.72;
+    const headBaseX = bodyEnd;
     const tipX = canvas.width * 0.95;
     const centerY = y + h / 2;
+    const headH = h * 0.84;
+    const headTop = centerY - headH / 2;
+    const headBottom = centerY + headH / 2;
 
-    // White outline improves contrast on dark belts.
+    // White underlay improves contrast on dark belts.
+    const o = 7;
+
+    // Body underlay.
     ctx.fillStyle = '#ffffff';
+    ctx.fillRect(bodyStart - o, bodyY - o, bodyEnd - bodyStart + o * 2, bodyH + o * 2);
+
+    // Head underlay.
     ctx.beginPath();
-    ctx.moveTo(bodyStart - 10, bodyY - 8);
-    ctx.lineTo(bodyEnd + 6, bodyY - 8);
-    ctx.lineTo(tipX + 6, centerY);
-    ctx.lineTo(bodyEnd + 6, bodyY + bodyH + 8);
-    ctx.lineTo(bodyStart - 10, bodyY + bodyH + 8);
+    ctx.moveTo(headBaseX - o, headTop - o);
+    ctx.lineTo(tipX + o, centerY);
+    ctx.lineTo(headBaseX - o, headBottom + o);
     ctx.closePath();
     ctx.fill();
 
+    // Red body.
     ctx.fillStyle = C.arrow;
+    ctx.fillRect(bodyStart, bodyY, bodyEnd - bodyStart, bodyH);
+
+    // Red mounted tip (separate head with visible shoulders).
     ctx.beginPath();
-    ctx.moveTo(bodyStart, bodyY);
-    ctx.lineTo(bodyEnd, bodyY);
+    ctx.moveTo(headBaseX, headTop);
     ctx.lineTo(tipX, centerY);
-    ctx.lineTo(bodyEnd, bodyY + bodyH);
-    ctx.lineTo(bodyStart, bodyY + bodyH);
+    ctx.lineTo(headBaseX, headBottom);
     ctx.closePath();
     ctx.fill();
 
