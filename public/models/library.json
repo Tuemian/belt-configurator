@@ -81,7 +81,7 @@
       "variants": [
         {
           "id": "foot",
-          "url": "/models/floor-elements/foot.glb",
+          "url": "/models/floor-elements/foot.glb?v=2",
           "rules": {}
         }
       ]
@@ -91,7 +91,7 @@
       "variants": [
         {
           "id": "castor",
-          "url": "/models/floor-elements/castor.glb",
+          "url": "/models/floor-elements/castor.glb?v=2",
           "rules": {}
         }
       ]
