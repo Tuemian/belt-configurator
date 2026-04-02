@@ -305,29 +305,12 @@ function selectVariant(frameWidth: number, variants: readonly ModelVariant[]): M
   return variants.find((variant) => matchesRule(frameWidth, variant.rules)) ?? variants[0];
 }
 
-function withAddedYRotation(rotation: Vec3 | undefined, deltaY: number): Vec3 {
-  const [x, y, z] = rotation ?? [0, 0, 0];
-  return [x, y + deltaY, z];
-}
-
 function rotateAroundConveyorAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
   const [x, y, z] = rotation ?? [0, 0, 0];
   const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
 
   // Drive roller axis in the conveyor scene is Z.
   const axisQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), angleRad);
-  const finalQuat = axisQuat.multiply(baseQuat);
-  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
-
-  return [finalEuler.x, finalEuler.y, finalEuler.z];
-}
-
-function rotateAroundMotorMountAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
-  const [x, y, z] = rotation ?? [0, 0, 0];
-  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
-
-  // Motor angle changes within the Y/Z plane, so rotate around X.
-  const axisQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleRad);
   const finalQuat = axisQuat.multiply(baseQuat);
   const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
 
@@ -402,16 +385,12 @@ export function resolveConveyor3DAssets(
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
     const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
-    // Direct drive angle semantics must stay identical on both sides:
-    // 0° = down, 90° = toward belt, 180° = up, 270° = away from belt.
-    // The asset's natural pose is treated as shaft outward on the right side.
-    // For the left side we rotate the asset 180° around Y, then apply the angle
-    // around X with opposite sign so the visible behaviour stays consistent.
-    const sideBaseRot = config.motorPosition === 'left'
-      ? withAddedYRotation(variant.rotation, Math.PI)
-      : (variant.rotation ?? [0, 0, 0]);
-    const signedMountAngle = side * -(motorAngleRad + Math.PI / 2);
-    const finalRot = rotateAroundMotorMountAxis(sideBaseRot, signedMountAngle);
+    // Mirror left motor in Z so both sides share identical angle semantics.
+    const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
+    // Base rotation aligns asset so shaft points outward (+Z right, -Z left after mirror).
+    // Then rotate by motorAngle around X (conveyor axis) to implement the 0/90/180/270 mapping.
+    const baseRot = variant.rotation ?? [0, 0, 0];
+    const finalRot = rotateAroundConveyorAxis(baseRot, motorAngleRad);
     resolved.motor = {
       url: variant.url,
       position: [
@@ -420,7 +399,7 @@ export function resolveConveyor3DAssets(
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: finalRot,
-      scale: variant.scale ?? [1, 1, 1],
+      scale: variant.scale ?? [1, 1, mirrorScaleZ],
     };
   }
 

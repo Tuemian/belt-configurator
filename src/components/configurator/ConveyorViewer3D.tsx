@@ -290,7 +290,6 @@ function ParametricDirectMotor({
   motorCylinderHeight,
   motorCylinderRadius,
   motorPosition,
-  motorAngle,
 }: {
   length: number;
   width: number;
@@ -300,33 +299,29 @@ function ParametricDirectMotor({
   motorCylinderHeight: number;
   motorCylinderRadius: number;
   motorPosition: ConveyorConfig['motorPosition'];
-  motorAngle: ConveyorConfig['motorAngle'];
 }) {
   const side = motorPosition === 'left' ? -1 : 1;
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
-  const mountRotation = side * -((motorAngle * Math.PI) / 180 + Math.PI / 2);
 
   return (
     <group position={[motorX, 0, motorZ]}>
-      <group rotation={[mountRotation, 0, 0]}>
-        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
-        <Cyl
-          pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
-          rot={[Math.PI / 2, 0, 0]}
-          r={motorCylinderRadius}
-          h={motorCylinderHeight}
+      <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
+      <Cyl
+        pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
+        rot={[Math.PI / 2, 0, 0]}
+        r={motorCylinderRadius}
+        h={motorCylinderHeight}
+        color={C.motorBody}
+      />
+      {[-20, 0, 20].map((offsetX) => (
+        <Box
+          key={offsetX}
+          pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
+          size={[8, motorHeight * 0.2, 6]}
           color={C.motorBody}
         />
-        {[-20, 0, 20].map((offsetX) => (
-          <Box
-            key={offsetX}
-            pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
-            size={[8, motorHeight * 0.2, 6]}
-            color={C.motorBody}
-          />
-        ))}
-      </group>
+      ))}
     </group>
   );
 }
@@ -374,30 +369,31 @@ function DirectionArrow({
   beltTopY: number;
   frameWidth: number;
 }) {
-  const arrowY = beltTopY + Math.max(28, frameWidth * 0.06);
-  const arrowLength = 240;
-  const arrowThickness = 12;
-  const tipLength = 40;
+  const arrowY = beltTopY + 0.7;
+  const arrowLength = 260;
+  const arrowWidth = Math.max(24, Math.min(42, frameWidth * 0.1));
+  const arrowPlateThickness = 0.9;
+  const tipLength = 56;
 
   return (
     <group position={[0, arrowY, 0]}>
       <Box
-        pos={[-18, 0, 0]}
-        size={[arrowLength + 36, arrowThickness + 8, arrowThickness + 8]}
+        pos={[-arrowLength * 0.16, 0, 0]}
+        size={[arrowLength + 20, arrowPlateThickness, arrowWidth + 10]}
         color="#ffffff"
-        opacity={0.72}
+        opacity={0.9}
         metalness={0.05}
         roughness={0.9}
       />
       <Box
-        pos={[-arrowLength * 0.5, 0.4, 0]}
-        size={[arrowLength, arrowThickness, arrowThickness]}
+        pos={[-arrowLength * 0.16, 0.2, 0]}
+        size={[arrowLength, arrowPlateThickness, arrowWidth]}
         color={C.arrow}
         metalness={0.3}
         roughness={0.5}
       />
-      <mesh position={[arrowLength * 0.1, 0.4, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[arrowThickness * 0.8, tipLength, 12]} />
+      <mesh position={[arrowLength * 0.34, 0.2, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <coneGeometry args={[arrowWidth * 0.52, tipLength, 16]} />
         <meshStandardMaterial color={C.arrow} />
       </mesh>
     </group>
@@ -578,7 +574,6 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
                 motorCylinderHeight={motorCylinderHeight}
                 motorCylinderRadius={motorCylinderRadius}
                 motorPosition={motorPosition}
-                motorAngle={config.motorAngle}
               />
             }
           />
