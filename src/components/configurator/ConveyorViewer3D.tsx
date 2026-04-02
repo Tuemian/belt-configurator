@@ -290,6 +290,7 @@ function ParametricDirectMotor({
   motorCylinderHeight,
   motorCylinderRadius,
   motorPosition,
+  motorAngle,
 }: {
   length: number;
   width: number;
@@ -299,29 +300,33 @@ function ParametricDirectMotor({
   motorCylinderHeight: number;
   motorCylinderRadius: number;
   motorPosition: ConveyorConfig['motorPosition'];
+  motorAngle: ConveyorConfig['motorAngle'];
 }) {
   const side = motorPosition === 'left' ? -1 : 1;
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
+  const mountRotation = side * -((motorAngle * Math.PI) / 180 + Math.PI / 2);
 
   return (
     <group position={[motorX, 0, motorZ]}>
-      <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
-      <Cyl
-        pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
-        rot={[Math.PI / 2, 0, 0]}
-        r={motorCylinderRadius}
-        h={motorCylinderHeight}
-        color={C.motorBody}
-      />
-      {[-20, 0, 20].map((offsetX) => (
-        <Box
-          key={offsetX}
-          pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
-          size={[8, motorHeight * 0.2, 6]}
+      <group rotation={[mountRotation, 0, 0]}>
+        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
+        <Cyl
+          pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
+          rot={[Math.PI / 2, 0, 0]}
+          r={motorCylinderRadius}
+          h={motorCylinderHeight}
           color={C.motorBody}
         />
-      ))}
+        {[-20, 0, 20].map((offsetX) => (
+          <Box
+            key={offsetX}
+            pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
+            size={[8, motorHeight * 0.2, 6]}
+            color={C.motorBody}
+          />
+        ))}
+      </group>
     </group>
   );
 }
@@ -363,22 +368,27 @@ function ParametricIndirectMotor({
 }
 
 function DirectionArrow({
-  beltLength,
   beltTopY,
-  driveType,
+  frameWidth,
 }: {
-  beltLength: number;
   beltTopY: number;
-  driveType: ConveyorConfig['driveType'];
+  frameWidth: number;
 }) {
-  const towardMotor = driveType === 'indirect' ? -1 : 1;
-  const arrowY = beltTopY + 2;
-  const arrowLength = Math.max(80, beltLength * 0.08);
-  const arrowThickness = Math.max(6, arrowLength * 0.08);
-  const tipLength = Math.max(20, arrowLength * 0.28);
+  const arrowY = beltTopY + Math.max(28, frameWidth * 0.06);
+  const arrowLength = 240;
+  const arrowThickness = 12;
+  const tipLength = 40;
 
   return (
-    <group position={[0, arrowY, 0]} rotation={[0, towardMotor > 0 ? 0 : Math.PI, 0]}>
+    <group position={[0, arrowY, 0]}>
+      <Box
+        pos={[-18, 0, 0]}
+        size={[arrowLength + 36, arrowThickness + 8, arrowThickness + 8]}
+        color="#ffffff"
+        opacity={0.72}
+        metalness={0.05}
+        roughness={0.9}
+      />
       <Box
         pos={[-arrowLength * 0.5, 0.4, 0]}
         size={[arrowLength, arrowThickness, arrowThickness]}
@@ -568,6 +578,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
                 motorCylinderHeight={motorCylinderHeight}
                 motorCylinderRadius={motorCylinderRadius}
                 motorPosition={motorPosition}
+                motorAngle={config.motorAngle}
               />
             }
           />
@@ -611,7 +622,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           />
         )}
 
-        <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} driveType={driveType} />
+        <DirectionArrow beltTopY={beltTopY} frameWidth={frameWidth} />
       </group>
 
       {/* Stand — always vertical, not tilted */}
