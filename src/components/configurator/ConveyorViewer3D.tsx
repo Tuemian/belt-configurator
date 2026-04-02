@@ -30,7 +30,7 @@ const C = {
   arrow: '#ef4444',
 } as const;
 
-const ARROW_STYLE = 'standard' as const;
+const ARROW_STYLE = 'bold' as const;
 const ARROW_PRESETS = {
   subtle: {
     length: 220,
