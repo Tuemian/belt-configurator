@@ -385,8 +385,10 @@ export function resolveConveyor3DAssets(
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
     const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
-    const directOffsetDeg = config.motorPosition === 'right' ? 90 : 270;
-    const directAngleRad = ((config.motorAngle + directOffsetDeg) % 360) * (Math.PI / 180);
+    const directAngleDeg = config.motorPosition === 'right'
+      ? (90 - config.motorAngle + 360) % 360
+      : (config.motorAngle + 270) % 360;
+    const directAngleRad = directAngleDeg * (Math.PI / 180);
     // Mirror left motor in Z so both sides share identical angle semantics.
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     // Base rotation aligns asset so shaft points outward (+Z right, -Z left after mirror).

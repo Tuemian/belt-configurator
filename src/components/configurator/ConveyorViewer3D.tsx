@@ -305,8 +305,10 @@ function ParametricDirectMotor({
   const side = motorPosition === 'left' ? -1 : 1;
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
-  const directOffsetDeg = motorPosition === 'right' ? 90 : 270;
-  const directAngleRad = ((motorAngle + directOffsetDeg) % 360) * (Math.PI / 180);
+  const directAngleDeg = motorPosition === 'right'
+    ? (90 - motorAngle + 360) % 360
+    : (motorAngle + 270) % 360;
+  const directAngleRad = directAngleDeg * (Math.PI / 180);
 
   return (
     <group position={[motorX, 0, motorZ]}>
