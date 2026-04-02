@@ -399,11 +399,38 @@ function ParametricIndirectMotor({
   const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
   const effectiveSide = centerMounted ? 1 : side;
-  const indirectDrop = centerMounted ? 0 : 150;
   const xPos = centerMounted ? centerOffset : length / 2 - motorWidth * 0.25;
-  const zPos = centerMounted ? 0 : side * (width / 2 + motorDepth / 2 + 12);
+  const yPos = centerMounted
+    ? -(frameHeight / 2 + motorHeight / 2 + 15)
+    : -(frameHeight / 2 + 46);
+  const zPos = centerMounted ? 0 : side * (width / 2 + 4);
+
+  if (!centerMounted) {
+    return (
+      <group position={[xPos, yPos, zPos]}>
+        <group rotation={[0, 0, effectiveAngleRad]}>
+          {/* Side-mounted placeholder plate at toothed-belt location. */}
+          <Box
+            pos={[0, 0, 0]}
+            size={[Math.max(120, motorWidth * 0.95), Math.max(90, motorHeight * 0.9), 8]}
+            color={C.motorBody}
+            metalness={0.6}
+            roughness={0.35}
+          />
+          <Cyl
+            pos={[0, -8, effectiveSide * 16]}
+            rot={[Math.PI / 2, 0, 0]}
+            r={18}
+            h={24}
+            color={C.motor}
+          />
+        </group>
+      </group>
+    );
+  }
+
   return (
-    <group position={[xPos, -(frameHeight / 2 + motorHeight / 2 + 15 + indirectDrop), zPos]}>
+    <group position={[xPos, yPos, zPos]}>
       <group rotation={[0, 0, effectiveAngleRad]}>
         <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
         <Cyl
@@ -698,24 +725,19 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         )}
 
         {driveType === 'indirect' && (
-          <ExternalAsset
-            asset={resolvedAssets.motor}
-            fallback={
-              <ParametricIndirectMotor
-                length={beltLength}
-                width={frameWidth}
-                frameHeight={frameHeight}
-                motorWidth={motorWidth}
-                motorHeight={motorHeight}
-                motorDepth={motorDepth}
-                motorCylinderHeight={motorCylinderHeight}
-                motorCylinderRadius={motorCylinderRadius}
-                motorPosition={motorPosition}
-                motorAngle={config.motorAngle}
-                centerMounted={false}
-                centerOffset={0}
-              />
-            }
+          <ParametricIndirectMotor
+            length={beltLength}
+            width={frameWidth}
+            frameHeight={frameHeight}
+            motorWidth={motorWidth}
+            motorHeight={motorHeight}
+            motorDepth={motorDepth}
+            motorCylinderHeight={motorCylinderHeight}
+            motorCylinderRadius={motorCylinderRadius}
+            motorPosition={motorPosition}
+            motorAngle={config.motorAngle}
+            centerMounted={false}
+            centerOffset={0}
           />
         )}
 
