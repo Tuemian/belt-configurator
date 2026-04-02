@@ -94,7 +94,13 @@ function useExternalScene(url?: string) {
   });
 
   useEffect(() => {
-    if (!url || unavailableAssets.has(url)) {
+    if (!url) {
+      setScene(null);
+      return;
+    }
+
+    if (unavailableAssets.has(url)) {
+      setScene(null);
       return;
     }
 
@@ -103,37 +109,28 @@ function useExternalScene(url?: string) {
       return;
     }
 
+    setScene(null);
+
     let cancelled = false;
     const loader = new GLTFLoader();
 
-    const loadScene = async () => {
-      try {
-        const headResponse = await fetch(url, { method: 'HEAD' });
-        if (!headResponse.ok) {
-          unavailableAssets.add(url);
+    loader.load(
+      url,
+      (gltf) => {
+        if (cancelled) {
           return;
         }
-
-        loader.load(
-          url,
-          (gltf) => {
-            if (cancelled) {
-              return;
-            }
-            sceneCache.set(url, gltf.scene);
-            setScene(gltf.scene);
-          },
-          undefined,
-          () => {
-            unavailableAssets.add(url);
-          },
-        );
-      } catch {
+        sceneCache.set(url, gltf.scene);
+        setScene(gltf.scene);
+      },
+      undefined,
+      () => {
         unavailableAssets.add(url);
-      }
-    };
-
-    void loadScene();
+        if (!cancelled) {
+          setScene(null);
+        }
+      },
+    );
 
     return () => {
       cancelled = true;
