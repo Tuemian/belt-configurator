@@ -82,6 +82,7 @@
         {
           "id": "foot",
           "url": "/models/floor-elements/foot.glb?v=2",
+          "rotationDeg": [-90, 0, 0],
           "rules": {}
         }
       ]
