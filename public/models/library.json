@@ -93,6 +93,7 @@
         {
           "id": "castor",
           "url": "/models/floor-elements/castor.glb?v=2",
+          "rotationDeg": [-90, 0, 0],
           "rules": {}
         }
       ]
