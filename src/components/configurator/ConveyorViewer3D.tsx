@@ -306,6 +306,50 @@ function ControlsRig({ config, resetCameraTick }: { config: ConveyorConfig; rese
   );
 }
 
+function SnapshotRig({
+  requestId,
+  onSnapshotReady,
+}: {
+  requestId?: number;
+  onSnapshotReady?: (dataUrl: string) => void;
+}) {
+  const { gl, invalidate } = useThree();
+
+  useEffect(() => {
+    if (!requestId || !onSnapshotReady) {
+      return;
+    }
+
+    let cancelled = false;
+
+    invalidate();
+
+    const timeoutId = window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (cancelled) {
+            return;
+          }
+
+          try {
+            onSnapshotReady(gl.domElement.toDataURL('image/png'));
+          } catch (error) {
+            console.error('3D snapshot error:', error);
+            onSnapshotReady('');
+          }
+        });
+      });
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [gl, invalidate, onSnapshotReady, requestId]);
+
+  return null;
+}
+
 function ParametricDirectMotor({
   length,
   width,
@@ -824,9 +868,13 @@ function FloorPlane({ config }: { config: ConveyorConfig }) {
 export function ConveyorViewer3D({
   config,
   resetCameraTick = 0,
+  snapshotRequest = 0,
+  onSnapshotReady,
 }: {
   config: ConveyorConfig;
   resetCameraTick?: number;
+  snapshotRequest?: number;
+  onSnapshotReady?: (dataUrl: string) => void;
 }) {
   useEffect(() => {
     void loadConveyor3DLibraryFromPublic();
@@ -835,7 +883,7 @@ export function ConveyorViewer3D({
   return (
     <Canvas
       dpr={[1, 1.5]}
-      gl={{ antialias: true, alpha: false }}
+      gl={{ antialias: true, alpha: false, preserveDrawingBuffer: Boolean(onSnapshotReady) }}
       camera={{ fov: 45, position: [3000, 2000, 3000], near: 1, far: 100000 }}
     >
       <color attach="background" args={['#f1f5f9']} />
@@ -851,6 +899,7 @@ export function ConveyorViewer3D({
 
       <CameraRig config={config} resetCameraTick={resetCameraTick} />
       <ControlsRig config={config} resetCameraTick={resetCameraTick} />
+      <SnapshotRig requestId={snapshotRequest} onSnapshotReady={onSnapshotReady} />
     </Canvas>
   );
 }
