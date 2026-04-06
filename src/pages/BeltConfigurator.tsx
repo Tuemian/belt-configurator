@@ -50,7 +50,7 @@ const BeltConfigurator = () => {
   if (step === 0) {
     return (
       <div className="min-h-screen flex flex-col">
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -110,7 +110,7 @@ const BeltConfigurator = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
