@@ -130,9 +130,10 @@ const Index = () => {
                       <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-primary">
                         <Icon className="h-6 w-6" />
                       </div>
-                      <Badge variant={tool.available ? 'default' : 'secondary'} className={tool.available ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}>
+                      <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-sm text-muted-foreground shadow-sm ring-1 ring-black/5">
+                        <span className={`h-2 w-2 rounded-full ${tool.available ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                         {t(tool.statusKey, lang)}
-                      </Badge>
+                      </span>
                     </div>
                     <div>
                       <CardTitle className="text-xl">{t(tool.titleKey, lang)}</CardTitle>
