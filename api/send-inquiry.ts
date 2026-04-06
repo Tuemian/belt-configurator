@@ -128,6 +128,11 @@ export default async function handler(request: ApiRequest, response: ApiResponse
       user: smtpUser,
       pass: smtpPass,
     },
+    // Required for Office365 / Outlook SMTP
+    tls: {
+      ciphers: 'SSLv3',
+      rejectUnauthorized: false,
+    },
   });
 
   const officeSubject = lang === 'de'
@@ -137,21 +142,28 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     ? 'Ihre Anfrage bei NOVAMOTIS'
     : 'Your inquiry at NOVAMOTIS';
 
-  await transporter.sendMail({
-    from: fromEmail,
-    to: officeEmail,
-    replyTo: email,
-    subject: officeSubject,
-    text: buildOfficeText({ lang, name, company, email, phone, message, summary }),
-  });
+  try {
+    await transporter.sendMail({
+      from: fromEmail,
+      to: officeEmail,
+      replyTo: email,
+      subject: officeSubject,
+      text: buildOfficeText({ lang, name, company, email, phone, message, summary }),
+    });
 
-  await transporter.sendMail({
-    from: fromEmail,
-    to: email,
-    replyTo: officeEmail,
-    subject: customerSubject,
-    text: buildCustomerText({ lang, name, officeEmail }),
-  });
+    await transporter.sendMail({
+      from: fromEmail,
+      to: email,
+      replyTo: officeEmail,
+      subject: customerSubject,
+      text: buildCustomerText({ lang, name, officeEmail }),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('SMTP send error:', message);
+    response.status(502).json({ error: 'Mail delivery failed', detail: message });
+    return;
+  }
 
   response.status(200).json({ ok: true });
 }
