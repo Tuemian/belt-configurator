@@ -36,6 +36,12 @@ const BRAND_GRAY: [number, number, number] = [98, 108, 122];
 const BORDER_GRAY: [number, number, number] = [210, 214, 220];
 const PANEL_FILL: [number, number, number] = [255, 255, 255];
 
+type CachedImageAsset = {
+  dataUrl: string;
+  width: number;
+  height: number;
+};
+
 export const StepSummary = ({ config, lang, onReset }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
@@ -43,8 +49,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   const [snapshotRequest, setSnapshotRequest] = useState(0);
   const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
   const modelSnapshotRef = useRef<string | null>(null);
-  const headerImageRef = useRef<string | null>(null);
-  const footerImageRef = useRef<string | null>(null);
+  const headerImageRef = useRef<CachedImageAsset | null>(null);
+  const footerImageRef = useRef<CachedImageAsset | null>(null);
 
   const summaryRows = [
     {
@@ -106,14 +112,14 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
   const loadImageDataUrl = async (
     imageSrc: string,
-    cacheRef: React.MutableRefObject<string | null>,
+    cacheRef: React.MutableRefObject<CachedImageAsset | null>,
     errorMessage: string,
   ) => {
     if (cacheRef.current) {
       return cacheRef.current;
     }
 
-    const dataUrl = await new Promise<string>((resolve, reject) => {
+    const imageAsset = await new Promise<CachedImageAsset>((resolve, reject) => {
       const image = new Image();
       image.onload = () => {
         const canvas = document.createElement('canvas');
@@ -129,14 +135,18 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         }
 
         context.drawImage(image, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/png'));
+        resolve({
+          dataUrl: canvas.toDataURL('image/png'),
+          width,
+          height,
+        });
       };
       image.onerror = () => reject(new Error(errorMessage));
       image.src = imageSrc;
     });
 
-    cacheRef.current = dataUrl;
-    return dataUrl;
+    cacheRef.current = imageAsset;
+    return imageAsset;
   };
 
   const getHeaderImage = async () => {
@@ -182,17 +192,23 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     const rightX = pageWidth - 16;
     const contentWidth = rightX - leftX;
     const dateLabel = new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US');
-    const headerHeight = 26;
-    const footerHeight = 26;
-    const contentTopY = 44;
+    const headerAsset = await getHeaderImage();
+    const footerAsset = await getFooterImage();
+    const headerHeight = pageWidth * (headerAsset.height / headerAsset.width);
+    const footerHeight = pageWidth * (footerAsset.height / footerAsset.width);
+    const contentTopY = headerHeight + 18;
     const contentBottomY = pageHeight - footerHeight - 8;
+
+    const valueColumnWidth = contentWidth * 0.48;
+    const labelColumnWidth = contentWidth - valueColumnWidth - 10;
+    const contentLineHeight = 4.8;
 
     const drawFooter = () => {
       const footerY = pageHeight - footerHeight;
       try {
-        const footerImage = footerImageRef.current;
+        const footerImage = footerAsset;
         if (footerImage) {
-          pdf.addImage(footerImage, 'PNG', 0, footerY, pageWidth, footerHeight, undefined, 'FAST');
+          pdf.addImage(footerImage.dataUrl, 'PNG', 0, footerY, pageWidth, footerHeight, undefined, 'FAST');
           return;
         }
       } catch (error) {
@@ -205,8 +221,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
     const drawHeader = async (title: string, subtitle?: string) => {
       try {
-        const headerImage = await getHeaderImage();
-        pdf.addImage(headerImage, 'PNG', 0, 0, pageWidth, headerHeight, undefined, 'FAST');
+        pdf.addImage(headerAsset.dataUrl, 'PNG', 0, 0, pageWidth, headerHeight, undefined, 'FAST');
       } catch (error) {
         console.error('Header render error:', error);
         pdf.setFillColor(255, 255, 255);
@@ -240,10 +255,12 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       pdf.setFillColor(...PANEL_FILL);
       pdf.setDrawColor(...BORDER_GRAY);
       const heights = items.map(([label, value]) => {
-        const valueLines = pdf.splitTextToSize(String(value), contentWidth * 0.46);
-        return Math.max(6.2, valueLines.length * 4.8);
+        const labelLines = pdf.splitTextToSize(String(label), labelColumnWidth);
+        const valueLines = pdf.splitTextToSize(String(value), valueColumnWidth);
+        const textHeight = Math.max(labelLines.length, valueLines.length) * contentLineHeight;
+        return Math.max(8, textHeight + 2.5);
       });
-      const blockHeight = 14 + heights.reduce((sum, height) => sum + height, 0) + 6;
+      const blockHeight = 15 + heights.reduce((sum, height) => sum + height, 0) + 7;
       pdf.roundedRect(leftX, y, contentWidth, blockHeight, 3, 3, 'FD');
       y += 8;
       pdf.setFont('helvetica', 'bold');
@@ -254,31 +271,31 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
       items.forEach(([label, value], index) => {
         const rowHeight = heights[index];
+        const rowTop = y;
+        const labelLines = pdf.splitTextToSize(String(label), labelColumnWidth);
+        const valueLines = pdf.splitTextToSize(String(value), valueColumnWidth);
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10.2);
         pdf.setTextColor(...BRAND_GRAY);
-        pdf.text(String(label), leftX + 5, y);
+        pdf.text(labelLines, leftX + 5, rowTop + 1.2);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(48, 63, 79);
-        const valueLines = pdf.splitTextToSize(String(value), contentWidth * 0.46);
-        pdf.text(valueLines, rightX - 5, y, { align: 'right' });
-        y += rowHeight;
+        pdf.text(valueLines, rightX - 5, rowTop + 1.2, { align: 'right' });
+        y = rowTop + rowHeight;
         if (index < items.length - 1) {
           pdf.setDrawColor(232, 236, 241);
-          pdf.line(leftX + 5, y - 2.5, rightX - 5, y - 2.5);
+          pdf.line(leftX + 5, y - 1.2, rightX - 5, y - 1.2);
         }
       });
 
       return blockHeight;
     };
 
-    await Promise.all([getHeaderImage(), getFooterImage()]);
-
     await drawHeader(`NOVAMOTIS - ${t('configuratorTitle', lang)}`, lang === 'de'
       ? 'Technische Übersicht mit 3D-Vorschau und Konfigurationsdaten'
       : 'Technical overview with 3D preview and configuration data');
 
-    const imageY = 62;
+    const imageY = contentTopY + 18;
     const imageHeight = 82;
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(...BORDER_GRAY);
@@ -302,33 +319,62 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       [t('speed', lang), `${config.speed} m/min`],
     ] as Array<[string, string]>;
 
-    let factsY = imageY + imageHeight + 8;
+    const factsY = imageY + imageHeight + 8;
+    const columnGap = 10;
+    const columnWidth = (contentWidth - columnGap - 10) / 2;
+    const quickFactRows = quickFacts.map(([label, value]) => {
+      const labelLines = pdf.splitTextToSize(String(label), columnWidth * 0.44);
+      const valueLines = pdf.splitTextToSize(String(value), columnWidth * 0.5);
+      return {
+        labelLines,
+        valueLines,
+        rowHeight: Math.max(labelLines.length, valueLines.length) * 4.6 + 3.5,
+      };
+    });
+    const quickFactsHeight = 14 + [0, 1, 2].reduce((sum, rowIndex) => {
+      const leftRow = quickFactRows[rowIndex * 2];
+      const rightRow = quickFactRows[rowIndex * 2 + 1];
+      return sum + Math.max(leftRow?.rowHeight ?? 0, rightRow?.rowHeight ?? 0);
+    }, 0) + 6;
+
     pdf.setFillColor(...PANEL_FILL);
     pdf.setDrawColor(...BORDER_GRAY);
-    pdf.roundedRect(leftX, factsY, contentWidth, 40, 3, 3, 'FD');
+    pdf.roundedRect(leftX, factsY, contentWidth, quickFactsHeight, 3, 3, 'FD');
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(12.5);
     pdf.setTextColor(...BRAND_BLUE);
     pdf.text(lang === 'de' ? 'Kompaktübersicht' : 'Quick overview', leftX + 5, factsY + 8);
 
-    const columnGap = 10;
-    const columnWidth = (contentWidth - columnGap - 10) / 2;
-    quickFacts.forEach(([label, value], index) => {
-      const column = index % 2;
-      const row = Math.floor(index / 2);
-      const baseX = leftX + 5 + column * (columnWidth + columnGap);
-      const baseY = factsY + 16 + row * 7.2;
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9.8);
-      pdf.setTextColor(...BRAND_GRAY);
-      pdf.text(label, baseX, baseY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(48, 63, 79);
-      pdf.text(value, baseX + columnWidth, baseY, { align: 'right' });
+    let quickFactsCursorY = factsY + 16;
+    [0, 1, 2].forEach((rowIndex) => {
+      const leftItem = quickFactRows[rowIndex * 2];
+      const rightItem = quickFactRows[rowIndex * 2 + 1];
+      const rowHeight = Math.max(leftItem?.rowHeight ?? 0, rightItem?.rowHeight ?? 0);
+
+      [leftItem, rightItem].forEach((item, column) => {
+        if (!item) {
+          return;
+        }
+
+        const baseX = leftX + 5 + column * (columnWidth + columnGap);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9.4);
+        pdf.setTextColor(...BRAND_GRAY);
+        pdf.text(item.labelLines, baseX, quickFactsCursorY);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(48, 63, 79);
+        pdf.text(item.valueLines, baseX + columnWidth, quickFactsCursorY, { align: 'right' });
+      });
+
+      quickFactsCursorY += rowHeight;
+      if (rowIndex < 2) {
+        pdf.setDrawColor(232, 236, 241);
+        pdf.line(leftX + 5, quickFactsCursorY - 1.3, rightX - 5, quickFactsCursorY - 1.3);
+      }
     });
 
     const summaryTitle = lang === 'de' ? 'Zusammenfassung der Konfiguration' : 'Configuration summary';
-    let sectionY = factsY + 50;
+    let sectionY = factsY + quickFactsHeight + 10;
 
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(13);
@@ -343,8 +389,12 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
     for (const { section, items } of summaryRows) {
       const normalizedItems = items.map(([label, value]) => [String(label), String(value)] as [string, string]);
-      const heights = normalizedItems.map(([, value]) => Math.max(6.2, pdf.splitTextToSize(value, contentWidth * 0.46).length * 4.8));
-      const estimatedBlockHeight = 14 + heights.reduce((sum, height) => sum + height, 0) + 6;
+      const heights = normalizedItems.map(([label, value]) => {
+        const labelLines = pdf.splitTextToSize(label, labelColumnWidth);
+        const valueLines = pdf.splitTextToSize(value, valueColumnWidth);
+        return Math.max(8, Math.max(labelLines.length, valueLines.length) * contentLineHeight + 2.5);
+      });
+      const estimatedBlockHeight = 15 + heights.reduce((sum, height) => sum + height, 0) + 7;
 
       if (sectionY + estimatedBlockHeight > contentBottomY) {
         drawFooter();
