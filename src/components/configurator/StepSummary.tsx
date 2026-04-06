@@ -89,7 +89,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
   const getPdfFilename = () => (
     lang === 'de'
-      ? 'novamotis-gurtfoerderer-konfiguration.pdf'
+      ? 'novamotis-gurtförderer-konfiguration.pdf'
       : 'novamotis-belt-conveyor-configuration.pdf'
   );
 
