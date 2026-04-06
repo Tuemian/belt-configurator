@@ -46,7 +46,7 @@ function buildOfficeText(params: {
   message: string;
   summary: string;
 }): string {
-  const title = params.lang === 'de' ? 'Neue Anfrage aus dem Gurtfoerderer-Konfigurator' : 'New inquiry from belt conveyor configurator';
+  const title = params.lang === 'de' ? 'Neue Anfrage aus dem Gurtförderer-Konfigurator' : 'New inquiry from belt conveyor configurator';
   return [
     title,
     '',
@@ -72,11 +72,11 @@ function buildCustomerText(params: {
     return [
       `Hallo ${params.name},`,
       '',
-      'vielen Dank fuer Ihre Anfrage. Wir haben Ihre Daten erhalten und melden uns zeitnah bei Ihnen.',
+      'vielen Dank für Ihre Anfrage. Wir haben Ihre Daten erhalten und melden uns zeitnah bei Ihnen.',
       '',
-      `Rueckfragen: ${params.officeEmail}`,
+      `Rückfragen: ${params.officeEmail}`,
       '',
-      'Viele Gruesse',
+      'Viele Grüße',
       'NOVAMOTIS',
     ].join('\n');
   }
