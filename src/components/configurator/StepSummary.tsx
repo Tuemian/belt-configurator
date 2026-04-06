@@ -166,10 +166,38 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     e.preventDefault();
     if (!form.privacy) return;
     setSending(true);
-    // Simulate sending — in production this would call a backend API
-    await new Promise((r) => setTimeout(r, 1500));
-    setSending(false);
-    toast({ title: t('submitSuccess', lang) });
+    try {
+      const response = await fetch('/api/send-inquiry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lang,
+          form: {
+            name: form.name,
+            company: form.company,
+            email: form.email,
+            phone: form.phone,
+            message: form.message,
+          },
+          config,
+          summary: generatePdfContent(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Inquiry request failed with status ${response.status}`);
+      }
+
+      setForm({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
+      toast({ title: t('submitSuccess', lang) });
+    } catch (error) {
+      console.error('Inquiry submit error:', error);
+      toast({ title: t('submitError', lang) });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
