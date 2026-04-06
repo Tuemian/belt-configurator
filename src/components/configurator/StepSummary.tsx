@@ -11,7 +11,8 @@ import { FileDown, Send, RotateCcw, Wrench } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import briefpapier from '@/assets/Briefpapier.pdf';
+import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
+import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
 import { ConveyorViewer3D } from '@/components/configurator/ConveyorViewer3D';
 
 interface Props {
@@ -30,6 +31,11 @@ function getDriveLabel(type: ConveyorConfig['driveType'], lang: Language) {
   return t(map[type], lang);
 }
 
+const BRAND_BLUE: [number, number, number] = [0, 51, 102];
+const BRAND_GRAY: [number, number, number] = [98, 108, 122];
+const BORDER_GRAY: [number, number, number] = [210, 214, 220];
+const PANEL_FILL: [number, number, number] = [255, 255, 255];
+
 export const StepSummary = ({ config, lang, onReset }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
@@ -37,7 +43,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   const [snapshotRequest, setSnapshotRequest] = useState(0);
   const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
   const modelSnapshotRef = useRef<string | null>(null);
-  const briefpapierImageRef = useRef<string | null>(null);
+  const headerImageRef = useRef<string | null>(null);
+  const footerImageRef = useRef<string | null>(null);
 
   const summaryRows = [
     {
@@ -97,30 +104,47 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       : 'novamotis-belt-conveyor-configuration.pdf'
   );
 
-  const getBriefpapierImage = async () => {
-    if (briefpapierImageRef.current) {
-      return briefpapierImageRef.current;
+  const loadImageDataUrl = async (
+    imageSrc: string,
+    cacheRef: React.MutableRefObject<string | null>,
+    errorMessage: string,
+  ) => {
+    if (cacheRef.current) {
+      return cacheRef.current;
     }
 
-    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const loadingTask = getDocument({ url: briefpapier, disableWorker: true });
-    const pdfDocument = await loadingTask.promise;
-    const page = await pdfDocument.getPage(1);
-    const viewport = page.getViewport({ scale: 1.5 });
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const width = image.naturalWidth || 1200;
+        const height = image.naturalHeight || 260;
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
 
-    if (!context) {
-      throw new Error('Canvas context unavailable');
-    }
+        if (!context) {
+          reject(new Error('Canvas context unavailable'));
+          return;
+        }
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      image.onerror = () => reject(new Error(errorMessage));
+      image.src = imageSrc;
+    });
 
-    await page.render({ canvasContext: context, viewport }).promise;
-    const dataUrl = canvas.toDataURL('image/png');
-    briefpapierImageRef.current = dataUrl;
+    cacheRef.current = dataUrl;
     return dataUrl;
+  };
+
+  const getHeaderImage = async () => {
+    return await loadImageDataUrl(headerBackground, headerImageRef, 'Header image unavailable');
+  };
+
+  const getFooterImage = async () => {
+    return await loadImageDataUrl(footerBackground, footerImageRef, 'Footer image unavailable');
   };
 
   useEffect(() => {
@@ -154,114 +178,186 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    try {
-      const backgroundImage = await getBriefpapierImage();
-      pdf.addImage(backgroundImage, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
-    } catch (error) {
-      console.error('Briefpapier render error:', error);
-    }
-
-    const leftX = 22;
-    const rightX = pageWidth - 22;
+    const leftX = 16;
+    const rightX = pageWidth - 16;
     const contentWidth = rightX - leftX;
-    const previewX = leftX;
-    const previewY = 48;
-    const previewWidth = 82;
-    const previewHeight = 58;
-    const detailsX = previewX + previewWidth + 10;
-    const detailsWidth = rightX - detailsX;
-    let cursorY = 38;
+    const dateLabel = new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US');
+    const headerHeight = 26;
+    const footerHeight = 26;
+    const contentTopY = 44;
+    const contentBottomY = pageHeight - footerHeight - 8;
 
-    pdf.setTextColor(0, 51, 102);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(19);
-    pdf.text(`NOVAMOTIS - ${t('configuratorTitle', lang)}`, leftX, cursorY);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.setTextColor(110, 110, 110);
-    pdf.text(new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US'), rightX, cursorY, { align: 'right' });
+    const drawFooter = () => {
+      const footerY = pageHeight - footerHeight;
+      try {
+        const footerImage = footerImageRef.current;
+        if (footerImage) {
+          pdf.addImage(footerImage, 'PNG', 0, footerY, pageWidth, footerHeight, undefined, 'FAST');
+          return;
+        }
+      } catch (error) {
+        console.error('Footer render error:', error);
+      }
 
-    pdf.setDrawColor(210, 210, 210);
-    pdf.setLineWidth(0.45);
-    pdf.line(leftX, 42, rightX, 42);
+      pdf.setFillColor(0, 124, 184);
+      pdf.rect(0, footerY, pageWidth, footerHeight, 'F');
+    };
 
-    pdf.setDrawColor(203, 213, 225);
+    const drawHeader = async (title: string, subtitle?: string) => {
+      try {
+        const headerImage = await getHeaderImage();
+        pdf.addImage(headerImage, 'PNG', 0, 0, pageWidth, headerHeight, undefined, 'FAST');
+      } catch (error) {
+        console.error('Header render error:', error);
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pageWidth, headerHeight, 'F');
+      }
+
+      pdf.setDrawColor(225, 229, 235);
+      pdf.setLineWidth(0.4);
+      pdf.line(0, headerHeight, pageWidth, headerHeight);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(20);
+      pdf.setTextColor(...BRAND_BLUE);
+      pdf.text(title, leftX, contentTopY);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10.5);
+      pdf.setTextColor(...BRAND_GRAY);
+      pdf.text(dateLabel, rightX, contentTopY, { align: 'right' });
+      pdf.setDrawColor(...BORDER_GRAY);
+      pdf.setLineWidth(0.45);
+      pdf.line(leftX, contentTopY + 4, rightX, contentTopY + 4);
+      if (subtitle) {
+        pdf.setFontSize(10.5);
+        const lines = pdf.splitTextToSize(subtitle, contentWidth);
+        pdf.text(lines, leftX, contentTopY + 11);
+      }
+    };
+
+    const drawSectionBlock = (section: string, items: Array<[string, string]>, startY: number) => {
+      let y = startY;
+      pdf.setFillColor(...PANEL_FILL);
+      pdf.setDrawColor(...BORDER_GRAY);
+      const heights = items.map(([label, value]) => {
+        const valueLines = pdf.splitTextToSize(String(value), contentWidth * 0.46);
+        return Math.max(6.2, valueLines.length * 4.8);
+      });
+      const blockHeight = 14 + heights.reduce((sum, height) => sum + height, 0) + 6;
+      pdf.roundedRect(leftX, y, contentWidth, blockHeight, 3, 3, 'FD');
+      y += 8;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12.5);
+      pdf.setTextColor(...BRAND_BLUE);
+      pdf.text(section, leftX + 5, y);
+      y += 7;
+
+      items.forEach(([label, value], index) => {
+        const rowHeight = heights[index];
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10.2);
+        pdf.setTextColor(...BRAND_GRAY);
+        pdf.text(String(label), leftX + 5, y);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(48, 63, 79);
+        const valueLines = pdf.splitTextToSize(String(value), contentWidth * 0.46);
+        pdf.text(valueLines, rightX - 5, y, { align: 'right' });
+        y += rowHeight;
+        if (index < items.length - 1) {
+          pdf.setDrawColor(232, 236, 241);
+          pdf.line(leftX + 5, y - 2.5, rightX - 5, y - 2.5);
+        }
+      });
+
+      return blockHeight;
+    };
+
+    await Promise.all([getHeaderImage(), getFooterImage()]);
+
+    await drawHeader(`NOVAMOTIS - ${t('configuratorTitle', lang)}`, lang === 'de'
+      ? 'Technische Übersicht mit 3D-Vorschau und Konfigurationsdaten'
+      : 'Technical overview with 3D preview and configuration data');
+
+    const imageY = 62;
+    const imageHeight = 82;
     pdf.setFillColor(248, 250, 252);
-    pdf.roundedRect(previewX, previewY, previewWidth, previewHeight, 4, 4, 'FD');
+    pdf.setDrawColor(...BORDER_GRAY);
+    pdf.roundedRect(leftX, imageY, contentWidth, imageHeight, 4, 4, 'FD');
 
     if (modelImageDataUrl) {
-      pdf.addImage(modelImageDataUrl, 'PNG', previewX + 3, previewY + 3, previewWidth - 6, previewHeight - 6, undefined, 'FAST');
+      pdf.addImage(modelImageDataUrl, 'PNG', leftX + 4, imageY + 4, contentWidth - 8, imageHeight - 8, undefined, 'FAST');
     } else {
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11);
-      pdf.setTextColor(100, 116, 139);
-      pdf.text(lang === 'de' ? '3D-Vorschau' : '3D preview', previewX + previewWidth / 2, previewY + previewHeight / 2, { align: 'center' });
+      pdf.setFontSize(13);
+      pdf.setTextColor(...BRAND_GRAY);
+      pdf.text(lang === 'de' ? '3D-Vorschau nicht verfügbar' : '3D preview unavailable', pageWidth / 2, imageY + imageHeight / 2, { align: 'center' });
     }
 
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(226, 232, 240);
-    pdf.roundedRect(detailsX, previewY, detailsWidth, previewHeight, 4, 4, 'FD');
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(0, 51, 102);
-    pdf.text(t('summaryTitle', lang), detailsX + 4, previewY + 9);
-
-    const highlights: Array<[string, string]> = [
+    const quickFacts = [
       [t('frameWidth', lang), `${config.frameWidth} mm`],
       [t('beltLength', lang), `${config.beltLength} mm`],
       [t('driveType', lang), getDriveLabel(config.driveType, lang)],
       [t('beltType', lang), getBeltLabel(config.beltType, lang)],
       [t('withStand', lang), config.withStand ? t('yes', lang) : t('no', lang)],
-    ];
+      [t('speed', lang), `${config.speed} m/min`],
+    ] as Array<[string, string]>;
 
-    let highlightY = previewY + 17;
-    highlights.forEach(([label, value]) => {
+    let factsY = imageY + imageHeight + 8;
+    pdf.setFillColor(...PANEL_FILL);
+    pdf.setDrawColor(...BORDER_GRAY);
+    pdf.roundedRect(leftX, factsY, contentWidth, 40, 3, 3, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12.5);
+    pdf.setTextColor(...BRAND_BLUE);
+    pdf.text(lang === 'de' ? 'Kompaktübersicht' : 'Quick overview', leftX + 5, factsY + 8);
+
+    const columnGap = 10;
+    const columnWidth = (contentWidth - columnGap - 10) / 2;
+    quickFacts.forEach(([label, value], index) => {
+      const column = index % 2;
+      const row = Math.floor(index / 2);
+      const baseX = leftX + 5 + column * (columnWidth + columnGap);
+      const baseY = factsY + 16 + row * 7.2;
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9.5);
-      pdf.setTextColor(100, 116, 139);
-      pdf.text(label, detailsX + 4, highlightY);
+      pdf.setFontSize(9.8);
+      pdf.setTextColor(...BRAND_GRAY);
+      pdf.text(label, baseX, baseY);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(30, 41, 59);
-      pdf.text(value, rightX - 4, highlightY, { align: 'right' });
-      highlightY += 7.2;
+      pdf.setTextColor(48, 63, 79);
+      pdf.text(value, baseX + columnWidth, baseY, { align: 'right' });
     });
 
-    cursorY = previewY + previewHeight + 14;
+    const summaryTitle = lang === 'de' ? 'Zusammenfassung der Konfiguration' : 'Configuration summary';
+    let sectionY = factsY + 50;
 
-    summaryRows.forEach(({ section, items }) => {
-      pdf.setFillColor(255, 255, 255);
-      pdf.setDrawColor(210, 210, 210);
-      pdf.roundedRect(leftX, cursorY, contentWidth, 10 + items.length * 6.5, 3, 3, 'FD');
-      cursorY += 7.5;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(...BRAND_BLUE);
+    pdf.text(summaryTitle, leftX, sectionY);
+    sectionY += 7;
 
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.setTextColor(0, 51, 102);
-      pdf.text(section, leftX + 4, cursorY);
-      cursorY += 6.5;
+    pdf.setDrawColor(...BORDER_GRAY);
+    pdf.setLineWidth(0.3);
+    pdf.line(leftX, sectionY, rightX, sectionY);
+    sectionY += 6;
 
-      items.forEach(([label, value]) => {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-        pdf.setTextColor(90, 90, 90);
-        pdf.text(String(label), leftX + 4, cursorY);
+    for (const { section, items } of summaryRows) {
+      const normalizedItems = items.map(([label, value]) => [String(label), String(value)] as [string, string]);
+      const heights = normalizedItems.map(([, value]) => Math.max(6.2, pdf.splitTextToSize(value, contentWidth * 0.46).length * 4.8));
+      const estimatedBlockHeight = 14 + heights.reduce((sum, height) => sum + height, 0) + 6;
 
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(40, 40, 40);
-        const valueLines = pdf.splitTextToSize(String(value), contentWidth * 0.45);
-        pdf.text(valueLines, rightX - 4, cursorY, { align: 'right' });
-        cursorY += Math.max(5.5, valueLines.length * 4.6);
-      });
+      if (sectionY + estimatedBlockHeight > contentBottomY) {
+        drawFooter();
+        pdf.addPage();
+        await drawHeader(summaryTitle);
+        sectionY = 54;
+      }
 
-      cursorY += 5;
-    });
+      const blockHeight = drawSectionBlock(section, normalizedItems, sectionY);
+      sectionY += blockHeight + 8;
+    }
 
-    pdf.setDrawColor(210, 210, 210);
-    pdf.line(leftX, pageHeight - 24, rightX, pageHeight - 24);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(110, 110, 110);
-    pdf.text(new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US'), leftX, pageHeight - 18);
+    drawFooter();
 
     return pdf.output('blob');
   };
