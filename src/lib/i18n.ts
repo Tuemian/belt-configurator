@@ -63,7 +63,7 @@ const translations = {
     // Step 2 - Belt & Speed
     step2Title: 'Gurt & Geschwindigkeit',
     step2Desc: 'Wählen Sie Gurttyp, Geschwindigkeit und Zuladung',
-    beltType: 'Gurtauswahl',
+    beltType: 'Gurttyp',
     beltStandard: 'Standard - für allgemeine Transportaufgaben',
     beltGrip: 'Grip - für leichte Steigtransporte',
     beltHeavyGrip: 'Heavy Grip - für stärkere Steigtransporte',
@@ -185,7 +185,7 @@ const translations = {
 
     step2Title: 'Belt & Speed',
     step2Desc: 'Select belt type, speed and load capacity',
-    beltType: 'Belt Selection',
+    beltType: 'Belt Type',
     beltStandard: 'Standard - for general transport tasks',
     beltGrip: 'Grip - for light incline transport',
     beltHeavyGrip: 'Heavy Grip - for steeper incline transport',
