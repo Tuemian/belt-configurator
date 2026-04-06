@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileDown, Send, RotateCcw, Wrench } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf';
 import briefpapier from '@/assets/Briefpapier.pdf';
 
 interface Props {
@@ -34,6 +35,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
   const [sending, setSending] = useState(false);
+  const briefpapierImageRef = useRef<string | null>(null);
 
   const summaryRows = [
     {
@@ -87,34 +89,74 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     return text;
   };
 
-  const handleDownloadPdf = async () => {
+  const getPdfFilename = () => (
+    lang === 'de'
+      ? 'novamotis-gurtfoerderer-konfiguration.pdf'
+      : 'novamotis-belt-conveyor-configuration.pdf'
+  );
+
+  const getBriefpapierImage = async () => {
+    if (briefpapierImageRef.current) {
+      return briefpapierImageRef.current;
+    }
+
+    const loadingTask = getDocument({ url: briefpapier, disableWorker: true });
+    const pdfDocument = await loadingTask.promise;
+    const page = await pdfDocument.getPage(1);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Canvas context unavailable');
+    }
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: context, viewport }).promise;
+    const dataUrl = canvas.toDataURL('image/png');
+    briefpapierImageRef.current = dataUrl;
+    return dataUrl;
+  };
+
+  const buildPdfBlob = async () => {
+    const container = document.createElement('div');
+    container.style.width = '210mm';
+    container.style.height = '297mm';
+    container.style.padding = '28mm 22mm 24mm 22mm';
+    container.style.boxSizing = 'border-box';
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.backgroundColor = 'white';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.fontSize = '11px';
+    container.style.color = '#333';
+    container.style.backgroundRepeat = 'no-repeat';
+    container.style.backgroundPosition = 'center';
+    container.style.backgroundSize = 'cover';
+
     try {
-      // Create temporary container for content
-      const container = document.createElement('div');
-      container.style.width = '210mm';
-      container.style.padding = '40mm';
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.backgroundColor = 'white';
-      container.style.fontFamily = 'Arial, sans-serif';
-      container.style.fontSize = '11px';
-      container.style.color = '#333';
+      container.style.backgroundImage = `url(${await getBriefpapierImage()})`;
+    } catch (error) {
+      console.error('Briefpapier render error:', error);
+    }
 
-      let html = `<h2 style="color: #003366; font-size: 16px; margin-bottom: 20px;">NOVAMOTIS - ${t('configuratorTitle', lang)}</h2>`;
+    let html = `<h2 style="color: #003366; font-size: 16px; margin-bottom: 20px;">NOVAMOTIS - ${t('configuratorTitle', lang)}</h2>`;
 
-      summaryRows.forEach(({ section, items }) => {
-        html += `<h3 style="color: #003366; font-size: 12px; font-weight: bold; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">${section}</h3>`;
-        items.forEach(([label, value]) => {
-          html += `<div style="margin: 5px 0; display: flex; justify-content: space-between;"><span>${label}:</span><span style="font-weight: bold;">${value}</span></div>`;
-        });
+    summaryRows.forEach(({ section, items }) => {
+      html += `<h3 style="color: #003366; font-size: 12px; font-weight: bold; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">${section}</h3>`;
+      items.forEach(([label, value]) => {
+        html += `<div style="margin: 5px 0; display: flex; justify-content: space-between;"><span>${label}:</span><span style="font-weight: bold;">${value}</span></div>`;
       });
+    });
 
-      html += `<div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ccc; font-size: 9px; color: #666;">${new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}</div>`;
+    html += `<div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ccc; font-size: 9px; color: #666;">${new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}</div>`;
 
-      container.innerHTML = html;
-      document.body.appendChild(container);
+    container.innerHTML = html;
+    document.body.appendChild(container);
 
-      // Convert to canvas
+    try {
       const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
@@ -122,7 +164,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         backgroundColor: '#ffffff'
       });
 
-      // Create PDF with briefpapier background
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -131,16 +172,31 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-
-      // Add briefpapier background
       const imgData = canvas.toDataURL('image/png');
       pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
 
-      // Download
-      pdf.save(lang === 'de' ? 'novamotis-gurtfoerderer-konfiguration.pdf' : 'novamotis-belt-conveyor-configuration.pdf');
-
-      // Cleanup
+      return pdf.output('blob');
+    } finally {
       document.body.removeChild(container);
+    }
+  };
+
+  const blobToBase64 = async (blob: Blob) => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error ?? new Error('Failed to read blob'));
+      reader.readAsDataURL(blob);
+    });
+
+    const [, base64 = ''] = dataUrl.split(',');
+    return base64;
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const pdfBlob = await buildPdfBlob();
+      triggerBlobDownload(pdfBlob, getPdfFilename());
       toast({ title: lang === 'de' ? 'PDF heruntergeladen' : 'PDF downloaded' });
     } catch (error) {
       console.error('PDF generation error:', error);
@@ -167,6 +223,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     if (!form.privacy) return;
     setSending(true);
     try {
+      const pdfBlob = await buildPdfBlob();
+      const pdfBase64 = await blobToBase64(pdfBlob);
+
       const response = await fetch('/api/send-inquiry', {
         method: 'POST',
         headers: {
@@ -183,6 +242,11 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           },
           config,
           summary: generatePdfContent(),
+          attachment: {
+            filename: getPdfFilename(),
+            contentType: 'application/pdf',
+            contentBase64: pdfBase64,
+          },
         }),
       });
 
@@ -289,7 +353,19 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
                 checked={form.privacy}
                 onCheckedChange={(v) => setForm({ ...form, privacy: v === true })}
               />
-              <Label htmlFor="privacy" className="text-sm cursor-pointer">{t('privacyConsent', lang)} *</Label>
+              <Label htmlFor="privacy" className="text-sm cursor-pointer leading-relaxed">
+                {t('privacyConsentPrefix', lang)}{' '}
+                <a
+                  href="https://www.novamotis.com/protection"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline underline-offset-2"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {t('privacyConsentLink', lang)}
+                </a>
+                {t('privacyConsentSuffix', lang) ? ` ${t('privacyConsentSuffix', lang)}` : ''} *
+              </Label>
             </div>
             <Button type="submit" disabled={sending || !form.privacy} className="w-full">
               <Send className="w-4 h-4 mr-2" />
