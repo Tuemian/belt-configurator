@@ -11,8 +11,6 @@ import { FileDown, Send, RotateCcw, Wrench } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf';
 import briefpapier from '@/assets/Briefpapier.pdf';
 
 interface Props {
@@ -100,10 +98,11 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       return briefpapierImageRef.current;
     }
 
+    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const loadingTask = getDocument({ url: briefpapier, disableWorker: true });
     const pdfDocument = await loadingTask.promise;
     const page = await pdfDocument.getPage(1);
-    const viewport = page.getViewport({ scale: 2 });
+    const viewport = page.getViewport({ scale: 1.5 });
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -121,64 +120,67 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   };
 
   const buildPdfBlob = async () => {
-    const container = document.createElement('div');
-    container.style.width = '210mm';
-    container.style.height = '297mm';
-    container.style.padding = '28mm 22mm 24mm 22mm';
-    container.style.boxSizing = 'border-box';
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.backgroundColor = 'white';
-    container.style.fontFamily = 'Arial, sans-serif';
-    container.style.fontSize = '11px';
-    container.style.color = '#333';
-    container.style.backgroundRepeat = 'no-repeat';
-    container.style.backgroundPosition = 'center';
-    container.style.backgroundSize = 'cover';
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+    });
 
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
     try {
-      container.style.backgroundImage = `url(${await getBriefpapierImage()})`;
+      const backgroundImage = await getBriefpapierImage();
+      pdf.addImage(backgroundImage, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
     } catch (error) {
       console.error('Briefpapier render error:', error);
     }
 
-    let html = `<h2 style="color: #003366; font-size: 16px; margin-bottom: 20px;">NOVAMOTIS - ${t('configuratorTitle', lang)}</h2>`;
+    const leftX = 24;
+    const rightX = pageWidth - 24;
+    let cursorY = 48;
+
+    pdf.setTextColor(0, 51, 102);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(18);
+    pdf.text(`NOVAMOTIS - ${t('configuratorTitle', lang)}`, leftX, cursorY);
+    cursorY += 10;
 
     summaryRows.forEach(({ section, items }) => {
-      html += `<h3 style="color: #003366; font-size: 12px; font-weight: bold; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">${section}</h3>`;
+      pdf.setDrawColor(210, 210, 210);
+      pdf.setLineWidth(0.4);
+      pdf.line(leftX, cursorY, rightX, cursorY);
+      cursorY += 7;
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 51, 102);
+      pdf.text(section, leftX, cursorY);
+      cursorY += 6;
+
       items.forEach(([label, value]) => {
-        html += `<div style="margin: 5px 0; display: flex; justify-content: space-between;"><span>${label}:</span><span style="font-weight: bold;">${value}</span></div>`;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        pdf.setTextColor(90, 90, 90);
+        pdf.text(String(label), leftX, cursorY);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(40, 40, 40);
+        pdf.text(String(value), rightX, cursorY, { align: 'right' });
+        cursorY += 5.5;
       });
+
+      cursorY += 4;
     });
 
-    html += `<div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ccc; font-size: 9px; color: #666;">${new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}</div>`;
+    pdf.setDrawColor(210, 210, 210);
+    pdf.line(leftX, pageHeight - 24, rightX, pageHeight - 24);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(110, 110, 110);
+    pdf.text(new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US'), leftX, pageHeight - 18);
 
-    container.innerHTML = html;
-    document.body.appendChild(container);
-
-    try {
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-
-      return pdf.output('blob');
-    } finally {
-      document.body.removeChild(container);
-    }
+    return pdf.output('blob');
   };
 
   const blobToBase64 = async (blob: Blob) => {
@@ -251,7 +253,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Inquiry request failed with status ${response.status}`);
+        const errorBody = await response.text();
+        throw new Error(`Inquiry request failed with status ${response.status}: ${errorBody}`);
       }
 
       setForm({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
