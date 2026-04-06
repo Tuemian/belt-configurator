@@ -33,3 +33,24 @@ The endpoint is expected to return JSON:
 5. Use STEP download in the configurator summary.
 
 If the solid service is offline, the application still downloads a wireframe STEP as fallback.
+
+## Inquiry Mail Setup
+
+The contact form in the summary step posts to `POST /api/send-inquiry`.
+
+It sends:
+- the inquiry to `office@novamotis.com` (or `INQUIRY_TO_EMAIL`)
+- a confirmation email to the sender address entered in the form
+
+Set these environment variables in your runtime (local and production):
+
+- `SMTP_HOST`
+- `SMTP_PORT` (for example `587`)
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_SECURE` (`true` for SMTPS/465, otherwise `false`)
+
+Optional:
+
+- `INQUIRY_TO_EMAIL` (default: `office@novamotis.com`)
+- `INQUIRY_FROM_EMAIL` (default: `SMTP_USER`)
