@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileDown, Send, RotateCcw, Wrench } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import briefpapier from '@/assets/Briefpapier.pdf';
+import { ConveyorViewer3D } from '@/components/configurator/ConveyorViewer3D';
 
 interface Props {
   config: ConveyorConfig;
@@ -33,6 +34,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
   const [sending, setSending] = useState(false);
+  const [snapshotRequest, setSnapshotRequest] = useState(0);
+  const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
+  const modelSnapshotRef = useRef<string | null>(null);
   const briefpapierImageRef = useRef<string | null>(null);
 
   const summaryRows = [
@@ -119,7 +123,28 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     return dataUrl;
   };
 
-  const buildPdfBlob = async () => {
+  useEffect(() => {
+    modelSnapshotRef.current = null;
+  }, [config]);
+
+  const captureModelSnapshot = async () => {
+    if (modelSnapshotRef.current) {
+      return modelSnapshotRef.current;
+    }
+
+    return await new Promise<string>((resolve) => {
+      snapshotResolveRef.current = resolve;
+      setSnapshotRequest((value) => value + 1);
+    });
+  };
+
+  const handleSnapshotReady = (dataUrl: string) => {
+    modelSnapshotRef.current = dataUrl || null;
+    snapshotResolveRef.current?.(dataUrl);
+    snapshotResolveRef.current = null;
+  };
+
+  const buildPdfBlob = async (modelImageDataUrl?: string) => {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -136,41 +161,99 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       console.error('Briefpapier render error:', error);
     }
 
-    const leftX = 24;
-    const rightX = pageWidth - 24;
-    let cursorY = 48;
+    const leftX = 22;
+    const rightX = pageWidth - 22;
+    const contentWidth = rightX - leftX;
+    const previewX = leftX;
+    const previewY = 48;
+    const previewWidth = 82;
+    const previewHeight = 58;
+    const detailsX = previewX + previewWidth + 10;
+    const detailsWidth = rightX - detailsX;
+    let cursorY = 38;
 
     pdf.setTextColor(0, 51, 102);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(18);
+    pdf.setFontSize(19);
     pdf.text(`NOVAMOTIS - ${t('configuratorTitle', lang)}`, leftX, cursorY);
-    cursorY += 10;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(110, 110, 110);
+    pdf.text(new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US'), rightX, cursorY, { align: 'right' });
+
+    pdf.setDrawColor(210, 210, 210);
+    pdf.setLineWidth(0.45);
+    pdf.line(leftX, 42, rightX, 42);
+
+    pdf.setDrawColor(203, 213, 225);
+    pdf.setFillColor(248, 250, 252);
+    pdf.roundedRect(previewX, previewY, previewWidth, previewHeight, 4, 4, 'FD');
+
+    if (modelImageDataUrl) {
+      pdf.addImage(modelImageDataUrl, 'PNG', previewX + 3, previewY + 3, previewWidth - 6, previewHeight - 6, undefined, 'FAST');
+    } else {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(lang === 'de' ? '3D-Vorschau' : '3D preview', previewX + previewWidth / 2, previewY + previewHeight / 2, { align: 'center' });
+    }
+
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(226, 232, 240);
+    pdf.roundedRect(detailsX, previewY, detailsWidth, previewHeight, 4, 4, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(0, 51, 102);
+    pdf.text(t('summaryTitle', lang), detailsX + 4, previewY + 9);
+
+    const highlights: Array<[string, string]> = [
+      [t('frameWidth', lang), `${config.frameWidth} mm`],
+      [t('beltLength', lang), `${config.beltLength} mm`],
+      [t('driveType', lang), getDriveLabel(config.driveType, lang)],
+      [t('beltType', lang), getBeltLabel(config.beltType, lang)],
+      [t('withStand', lang), config.withStand ? t('yes', lang) : t('no', lang)],
+    ];
+
+    let highlightY = previewY + 17;
+    highlights.forEach(([label, value]) => {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(label, detailsX + 4, highlightY);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(30, 41, 59);
+      pdf.text(value, rightX - 4, highlightY, { align: 'right' });
+      highlightY += 7.2;
+    });
+
+    cursorY = previewY + previewHeight + 14;
 
     summaryRows.forEach(({ section, items }) => {
+      pdf.setFillColor(255, 255, 255);
       pdf.setDrawColor(210, 210, 210);
-      pdf.setLineWidth(0.4);
-      pdf.line(leftX, cursorY, rightX, cursorY);
-      cursorY += 7;
+      pdf.roundedRect(leftX, cursorY, contentWidth, 10 + items.length * 6.5, 3, 3, 'FD');
+      cursorY += 7.5;
 
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
       pdf.setTextColor(0, 51, 102);
-      pdf.text(section, leftX, cursorY);
-      cursorY += 6;
+      pdf.text(section, leftX + 4, cursorY);
+      cursorY += 6.5;
 
       items.forEach(([label, value]) => {
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
         pdf.setTextColor(90, 90, 90);
-        pdf.text(String(label), leftX, cursorY);
+        pdf.text(String(label), leftX + 4, cursorY);
 
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(40, 40, 40);
-        pdf.text(String(value), rightX, cursorY, { align: 'right' });
-        cursorY += 5.5;
+        const valueLines = pdf.splitTextToSize(String(value), contentWidth * 0.45);
+        pdf.text(valueLines, rightX - 4, cursorY, { align: 'right' });
+        cursorY += Math.max(5.5, valueLines.length * 4.6);
       });
 
-      cursorY += 4;
+      cursorY += 5;
     });
 
     pdf.setDrawColor(210, 210, 210);
@@ -197,7 +280,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
   const handleDownloadPdf = async () => {
     try {
-      const pdfBlob = await buildPdfBlob();
+      const modelImageDataUrl = await captureModelSnapshot();
+      const pdfBlob = await buildPdfBlob(modelImageDataUrl);
       triggerBlobDownload(pdfBlob, getPdfFilename());
       toast({ title: lang === 'de' ? 'PDF heruntergeladen' : 'PDF downloaded' });
     } catch (error) {
@@ -225,7 +309,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     if (!form.privacy) return;
     setSending(true);
     try {
-      const pdfBlob = await buildPdfBlob();
+      const modelImageDataUrl = await captureModelSnapshot();
+      const pdfBlob = await buildPdfBlob(modelImageDataUrl);
       const pdfBase64 = await blobToBase64(pdfBlob);
 
       const response = await fetch('/api/send-inquiry', {
@@ -268,7 +353,16 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <>
+      <div className="pointer-events-none fixed -left-[200vw] top-0 h-[360px] w-[720px] overflow-hidden rounded-xl opacity-0">
+        <ConveyorViewer3D
+          config={config}
+          snapshotRequest={snapshotRequest}
+          onSnapshotReady={handleSnapshotReady}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Summary */}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-foreground">{t('summaryTitle', lang)}</h3>
@@ -377,6 +471,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           </form>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 };
