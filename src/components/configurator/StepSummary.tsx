@@ -199,9 +199,16 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     const contentTopY = headerHeight + 18;
     const contentBottomY = pageHeight - footerHeight - 8;
 
-    const valueColumnWidth = contentWidth * 0.48;
-    const labelColumnWidth = contentWidth - valueColumnWidth - 10;
-    const contentLineHeight = 4.8;
+    const rowInnerWidth = contentWidth - 10;
+    const getStackedRowHeight = (label: string, value: string) => {
+      const labelLines = pdf.splitTextToSize(String(label), rowInnerWidth);
+      const valueLines = pdf.splitTextToSize(String(value), rowInnerWidth);
+      return {
+        labelLines,
+        valueLines,
+        rowHeight: labelLines.length * 4.2 + valueLines.length * 4.8 + 4,
+      };
+    };
 
     const drawFooter = () => {
       const footerY = pageHeight - footerHeight;
@@ -254,13 +261,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       let y = startY;
       pdf.setFillColor(...PANEL_FILL);
       pdf.setDrawColor(...BORDER_GRAY);
-      const heights = items.map(([label, value]) => {
-        const labelLines = pdf.splitTextToSize(String(label), labelColumnWidth);
-        const valueLines = pdf.splitTextToSize(String(value), valueColumnWidth);
-        const textHeight = Math.max(labelLines.length, valueLines.length) * contentLineHeight;
-        return Math.max(8, textHeight + 2.5);
-      });
-      const blockHeight = 15 + heights.reduce((sum, height) => sum + height, 0) + 7;
+      const stackedRows = items.map(([label, value]) => getStackedRowHeight(label, value));
+      const blockHeight = 15 + stackedRows.reduce((sum, row) => sum + row.rowHeight, 0) + 7;
       pdf.roundedRect(leftX, y, contentWidth, blockHeight, 3, 3, 'FD');
       y += 8;
       pdf.setFont('helvetica', 'bold');
@@ -269,18 +271,21 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       pdf.text(section, leftX + 5, y);
       y += 7;
 
-      items.forEach(([label, value], index) => {
-        const rowHeight = heights[index];
+      items.forEach((_, index) => {
+        const { labelLines, valueLines, rowHeight } = stackedRows[index];
         const rowTop = y;
-        const labelLines = pdf.splitTextToSize(String(label), labelColumnWidth);
-        const valueLines = pdf.splitTextToSize(String(value), valueColumnWidth);
+
         pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10.2);
+        pdf.setFontSize(10);
         pdf.setTextColor(...BRAND_GRAY);
-        pdf.text(labelLines, leftX + 5, rowTop + 1.2);
+        pdf.text(labelLines, leftX + 5, rowTop + 1.5);
+
         pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10.6);
         pdf.setTextColor(48, 63, 79);
-        pdf.text(valueLines, rightX - 5, rowTop + 1.2, { align: 'right' });
+        const valueStartY = rowTop + 1.5 + labelLines.length * 4.2 + 1;
+        pdf.text(valueLines, leftX + 5, valueStartY);
+
         y = rowTop + rowHeight;
         if (index < items.length - 1) {
           pdf.setDrawColor(232, 236, 241);
@@ -320,22 +325,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     ] as Array<[string, string]>;
 
     const factsY = imageY + imageHeight + 8;
-    const columnGap = 10;
-    const columnWidth = (contentWidth - columnGap - 10) / 2;
-    const quickFactRows = quickFacts.map(([label, value]) => {
-      const labelLines = pdf.splitTextToSize(String(label), columnWidth * 0.44);
-      const valueLines = pdf.splitTextToSize(String(value), columnWidth * 0.5);
-      return {
-        labelLines,
-        valueLines,
-        rowHeight: Math.max(labelLines.length, valueLines.length) * 4.6 + 3.5,
-      };
-    });
-    const quickFactsHeight = 14 + [0, 1, 2].reduce((sum, rowIndex) => {
-      const leftRow = quickFactRows[rowIndex * 2];
-      const rightRow = quickFactRows[rowIndex * 2 + 1];
-      return sum + Math.max(leftRow?.rowHeight ?? 0, rightRow?.rowHeight ?? 0);
-    }, 0) + 6;
+    const quickFactRows = quickFacts.map(([label, value]) => getStackedRowHeight(label, value));
+    const quickFactsHeight = 14 + quickFactRows.reduce((sum, row) => sum + row.rowHeight, 0) + 6;
 
     pdf.setFillColor(...PANEL_FILL);
     pdf.setDrawColor(...BORDER_GRAY);
@@ -346,28 +337,19 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     pdf.text(lang === 'de' ? 'Kompaktübersicht' : 'Quick overview', leftX + 5, factsY + 8);
 
     let quickFactsCursorY = factsY + 16;
-    [0, 1, 2].forEach((rowIndex) => {
-      const leftItem = quickFactRows[rowIndex * 2];
-      const rightItem = quickFactRows[rowIndex * 2 + 1];
-      const rowHeight = Math.max(leftItem?.rowHeight ?? 0, rightItem?.rowHeight ?? 0);
+    quickFactRows.forEach((item, index) => {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9.8);
+      pdf.setTextColor(...BRAND_GRAY);
+      pdf.text(item.labelLines, leftX + 5, quickFactsCursorY);
 
-      [leftItem, rightItem].forEach((item, column) => {
-        if (!item) {
-          return;
-        }
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10.4);
+      pdf.setTextColor(48, 63, 79);
+      pdf.text(item.valueLines, leftX + 5, quickFactsCursorY + item.labelLines.length * 4.2 + 1);
 
-        const baseX = leftX + 5 + column * (columnWidth + columnGap);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9.4);
-        pdf.setTextColor(...BRAND_GRAY);
-        pdf.text(item.labelLines, baseX, quickFactsCursorY);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(48, 63, 79);
-        pdf.text(item.valueLines, baseX + columnWidth, quickFactsCursorY, { align: 'right' });
-      });
-
-      quickFactsCursorY += rowHeight;
-      if (rowIndex < 2) {
+      quickFactsCursorY += item.rowHeight;
+      if (index < quickFactRows.length - 1) {
         pdf.setDrawColor(232, 236, 241);
         pdf.line(leftX + 5, quickFactsCursorY - 1.3, rightX - 5, quickFactsCursorY - 1.3);
       }
@@ -389,18 +371,15 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
     for (const { section, items } of summaryRows) {
       const normalizedItems = items.map(([label, value]) => [String(label), String(value)] as [string, string]);
-      const heights = normalizedItems.map(([label, value]) => {
-        const labelLines = pdf.splitTextToSize(label, labelColumnWidth);
-        const valueLines = pdf.splitTextToSize(value, valueColumnWidth);
-        return Math.max(8, Math.max(labelLines.length, valueLines.length) * contentLineHeight + 2.5);
-      });
-      const estimatedBlockHeight = 15 + heights.reduce((sum, height) => sum + height, 0) + 7;
+      const estimatedBlockHeight = 15
+        + normalizedItems.reduce((sum, [label, value]) => sum + getStackedRowHeight(label, value).rowHeight, 0)
+        + 7;
 
       if (sectionY + estimatedBlockHeight > contentBottomY) {
         drawFooter();
         pdf.addPage();
         await drawHeader(summaryTitle);
-        sectionY = 54;
+        sectionY = contentTopY + 10;
       }
 
       const blockHeight = drawSectionBlock(section, normalizedItems, sectionY);
