@@ -1,5 +1,3 @@
-import nodemailer from 'nodemailer';
-
 type InquiryPayload = {
   lang?: 'de' | 'en';
   form?: {
@@ -106,34 +104,44 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     return;
   }
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = Number(process.env.SMTP_PORT ?? '587');
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const tenantId = process.env.GRAPH_TENANT_ID;
+  const clientId = process.env.GRAPH_CLIENT_ID;
+  const clientSecret = process.env.GRAPH_CLIENT_SECRET;
+  const officeEmail = process.env.INQUIRY_TO_EMAIL ?? 'office@novamotis.com';
+  const fromEmail = process.env.INQUIRY_FROM_EMAIL ?? officeEmail;
 
-  if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
-    response.status(500).json({ error: 'SMTP is not configured' });
+  if (!tenantId || !clientId || !clientSecret) {
+    response.status(500).json({ error: 'Mail service is not configured' });
     return;
   }
 
-  const officeEmail = process.env.INQUIRY_TO_EMAIL ?? 'office@novamotis.com';
-  const fromEmail = process.env.INQUIRY_FROM_EMAIL ?? smtpUser;
-  const secure = (process.env.SMTP_SECURE ?? '').toLowerCase() === 'true' || smtpPort === 465;
-
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-    // Required for Office365 / Outlook SMTP
-    tls: {
-      ciphers: 'SSLv3',
-      rejectUnauthorized: false,
-    },
-  });
+  // Fetch OAuth2 access token via client credentials
+  let accessToken: string;
+  try {
+    const tokenRes = await fetch(
+      `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: clientId,
+          client_secret: clientSecret,
+          scope: 'https://graph.microsoft.com/.default',
+        }),
+      }
+    );
+    const tokenData = await tokenRes.json() as { access_token?: string; error_description?: string };
+    if (!tokenData.access_token) {
+      throw new Error(tokenData.error_description ?? 'Token request failed');
+    }
+    accessToken = tokenData.access_token;
+  } catch (err) {
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.error('Graph token error:', errMessage);
+    response.status(502).json({ error: 'Mail delivery failed', detail: errMessage });
+    return;
+  }
 
   const officeSubject = lang === 'de'
     ? `Neue Anfrage Konfigurator - ${name}`
@@ -142,26 +150,48 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     ? 'Ihre Anfrage bei NOVAMOTIS'
     : 'Your inquiry at NOVAMOTIS';
 
-  try {
-    await transporter.sendMail({
-      from: fromEmail,
-      to: officeEmail,
-      replyTo: email,
-      subject: officeSubject,
-      text: buildOfficeText({ lang, name, company, email, phone, message, summary }),
-    });
+  async function sendMail(to: string, subject: string, body: string, replyTo: string): Promise<void> {
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/users/${fromEmail}/sendMail`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            subject,
+            body: { contentType: 'Text', content: body },
+            toRecipients: [{ emailAddress: { address: to } }],
+            replyTo: [{ emailAddress: { address: replyTo } }],
+          },
+        }),
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(`Graph sendMail ${res.status}: ${detail}`);
+    }
+  }
 
-    await transporter.sendMail({
-      from: fromEmail,
-      to: email,
-      replyTo: officeEmail,
-      subject: customerSubject,
-      text: buildCustomerText({ lang, name, officeEmail }),
-    });
+  try {
+    await sendMail(
+      officeEmail,
+      officeSubject,
+      buildOfficeText({ lang, name, company, email, phone, message, summary }),
+      email,
+    );
+    await sendMail(
+      email,
+      customerSubject,
+      buildCustomerText({ lang, name, officeEmail }),
+      officeEmail,
+    );
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('SMTP send error:', message);
-    response.status(502).json({ error: 'Mail delivery failed', detail: message });
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.error('Graph mail error:', errMessage);
+    response.status(502).json({ error: 'Mail delivery failed', detail: errMessage });
     return;
   }
 
