@@ -287,10 +287,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         pdf.text(valueLines, leftX + 5, valueStartY);
 
         y = rowTop + rowHeight;
-        if (index < items.length - 1) {
-          pdf.setDrawColor(232, 236, 241);
-          pdf.line(leftX + 5, y - 1.2, rightX - 5, y - 1.2);
-        }
       });
 
       return blockHeight;
@@ -349,10 +345,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       pdf.text(item.valueLines, leftX + 5, quickFactsCursorY + item.labelLines.length * 4.2 + 1);
 
       quickFactsCursorY += item.rowHeight;
-      if (index < quickFactRows.length - 1) {
-        pdf.setDrawColor(232, 236, 241);
-        pdf.line(leftX + 5, quickFactsCursorY - 1.3, rightX - 5, quickFactsCursorY - 1.3);
-      }
     });
 
     const summaryTitle = lang === 'de' ? 'Zusammenfassung der Konfiguration' : 'Configuration summary';
@@ -364,9 +356,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     pdf.text(summaryTitle, leftX, sectionY);
     sectionY += 7;
 
-    pdf.setDrawColor(...BORDER_GRAY);
-    pdf.setLineWidth(0.3);
-    pdf.line(leftX, sectionY, rightX, sectionY);
     sectionY += 6;
 
     for (const { section, items } of summaryRows) {
