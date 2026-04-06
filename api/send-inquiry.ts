@@ -8,6 +8,15 @@ type InquiryPayload = {
     message?: string;
   };
   summary?: string;
+  attachment?: {
+    filename?: string;
+    contentType?: string;
+    contentBase64?: string;
+  };
+};
+
+declare const process: {
+  env: Record<string, string | undefined>;
 };
 
 type ApiRequest = {
@@ -98,6 +107,9 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const phone = asNonEmptyString(body.form?.phone);
   const message = asNonEmptyString(body.form?.message);
   const summary = asNonEmptyString(body.summary);
+  const attachmentFilename = asNonEmptyString(body.attachment?.filename);
+  const attachmentContentType = asNonEmptyString(body.attachment?.contentType);
+  const attachmentContentBase64 = asNonEmptyString(body.attachment?.contentBase64);
 
   if (!name || !email || !looksLikeEmail(email)) {
     response.status(400).json({ error: 'Invalid payload' });
@@ -151,6 +163,15 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     : 'Your inquiry at NOVAMOTIS';
 
   async function sendMail(to: string, subject: string, body: string, replyTo: string): Promise<void> {
+    const attachments = attachmentContentBase64
+      ? [{
+          '@odata.type': '#microsoft.graph.fileAttachment',
+          name: attachmentFilename || 'configuration.pdf',
+          contentType: attachmentContentType || 'application/pdf',
+          contentBytes: attachmentContentBase64,
+        }]
+      : undefined;
+
     const res = await fetch(
       `https://graph.microsoft.com/v1.0/users/${fromEmail}/sendMail`,
       {
@@ -165,6 +186,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
             body: { contentType: 'Text', content: body },
             toRecipients: [{ emailAddress: { address: to } }],
             replyTo: [{ emailAddress: { address: replyTo } }],
+            attachments,
           },
         }),
       }
