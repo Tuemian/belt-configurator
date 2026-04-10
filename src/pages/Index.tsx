@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Globe, Package2, PanelsTopLeft, Settings2, Warehouse } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
+import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
 const tools = [
@@ -47,7 +48,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,148,204,0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)]">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-end">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
+          </div>
           <Button
             variant="ghost"
             size="sm"
