@@ -5,7 +5,7 @@ const translations = {
     // Header
     onlineConfigurator: 'Online-Konfigurator',
     configuratorTitle: 'Gurtförderer-Konfigurator',
-    configuratorSubtitle: 'Konfigurieren Sie Ihren individuellen Gurtförderer in wenigen Schritten',
+    configuratorSubtitle: 'Konfigurieren Sie Ihren individuellen Gurtförderer in nur 5 Schritten',
     stepOf: 'Schritt {current} von {total}',
     configuratorIntroSteps: 'In {total} Schritten zum fertigen Förderband',
     langSwitch: 'EN',
