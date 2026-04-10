@@ -7,6 +7,7 @@ const translations = {
     configuratorTitle: 'Gurtförderer-Konfigurator',
     configuratorSubtitle: 'Konfigurieren Sie Ihren individuellen Gurtförderer in wenigen Schritten',
     stepOf: 'Schritt {current} von {total}',
+    configuratorIntroSteps: 'In {total} Schritten zum fertigen Förderband',
     langSwitch: 'EN',
     toolOverviewBack: 'Zur Tool-Übersicht',
 
@@ -132,6 +133,7 @@ const translations = {
     configuratorTitle: 'Belt Conveyor Configurator',
     configuratorSubtitle: 'Configure your individual belt conveyor in just a few steps',
     stepOf: 'Step {current} of {total}',
+    configuratorIntroSteps: 'In {total} steps to a finished conveyor',
     langSwitch: 'DE',
     toolOverviewBack: 'Back to Tool Overview',
 
