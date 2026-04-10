@@ -85,10 +85,6 @@ const BeltConfigurator = () => {
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
                 {t('configuratorSubtitle', lang)}
               </p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="w-2 h-2 rounded-full bg-primary" />
-                {t('configuratorIntroSteps', lang, { total: TOTAL_STEPS })}
-              </div>
               <Button size="lg" onClick={() => setStep(1)} className="text-base px-8 py-6">
                 {t('startConfig', lang)}
                 <ChevronRight className="w-5 h-5 ml-2" />
