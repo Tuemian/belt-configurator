@@ -69,8 +69,12 @@ const Index = () => {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center">
             <div className="space-y-6">
-              <Badge variant="secondary" className="bg-white/80 text-primary border border-primary/10 px-3 py-1">
-                {t('hubEyebrow', lang)}
+              <Badge
+                variant="secondary"
+                className="inline-flex items-center gap-3 rounded-2xl border border-primary/20 bg-white/95 px-4 py-2.5 text-base font-semibold text-primary shadow-[0_8px_24px_rgba(13,81,126,0.12)]"
+              >
+                <img src={logo} alt="" aria-hidden="true" className="h-6 w-auto" />
+                <span>{t('hubEyebrow', lang)}</span>
               </Badge>
               <div className="space-y-4">
                 <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
