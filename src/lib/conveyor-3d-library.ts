@@ -421,7 +421,8 @@ export function resolveConveyor3DAssets(
       url: '/models/complete-conveyor.glb',
       position: [0, 0, 0],
       rotation: [0, 0, 0],
-      scale: [1, 1, 1],
+      // CAD exports are often in meters while this scene uses millimeters.
+      scale: [1000, 1000, 1000],
     };
     return resolved;
   }
