@@ -39,11 +39,11 @@ const DoorConfiguratorIcon = ({ className }: ToolIconProps) => (
 
 const RollerConveyorIcon = ({ className }: ToolIconProps) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <rect x="1.8" y="7.1" width="20.4" height="9.8" rx="4.9" stroke="currentColor" strokeWidth="1.4" />
-    <circle cx="5.2" cy="12" r="2.15" stroke="currentColor" strokeWidth="1.4" />
-    <circle cx="10.7" cy="12" r="2.15" stroke="currentColor" strokeWidth="1.4" />
-    <circle cx="16.2" cy="12" r="2.15" stroke="currentColor" strokeWidth="1.4" />
-    <circle cx="20" cy="12" r="1.75" stroke="currentColor" strokeWidth="1.4" />
+    <rect x="2.2" y="7.6" width="19.6" height="8.8" rx="4.4" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="6" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="10.4" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="14.8" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
+    <circle cx="19.2" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
   </svg>
 );
 
@@ -163,8 +163,8 @@ const Index = () => {
                   <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-sky-400 to-cyan-300" />
                   <CardHeader className="space-y-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary text-primary">
-                        <Icon className="h-6 w-6" />
+                      <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-primary">
+                        <Icon className="h-8 w-8" />
                       </div>
                       <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-sm text-muted-foreground shadow-sm ring-1 ring-black/5">
                         <span className={`h-2 w-2 rounded-full ${tool.available ? 'bg-emerald-500' : 'bg-amber-500'}`} />
