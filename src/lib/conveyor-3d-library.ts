@@ -91,7 +91,7 @@ const defaultLibrary: Conveyor3DLibrary = {
         { id: 'drive-unit', url: '/models/motors/direct-right.glb', rotationDeg: [0, 0, 0], scale: [1000, 1000, 1000] },
       ],
       motor: [
-        { id: 'motor', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000] },
+        { id: 'motor', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
       ],
     },
     indirect: {
@@ -424,13 +424,15 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
 
     // Drive unit — replaces the parametric drum at the drive end.
+    // Reference frame width of the CAD model is 500 mm; scale Z proportionally.
     const driveUnitVariant = selectVariant(measurements.frameWidth, library.motors.direct.driveUnit);
-    const duScale = driveUnitVariant.scale ?? [1, 1, 1];
+    const duScale = driveUnitVariant.scale ?? [1000, 1000, 1000];
+    const widthFactor = measurements.frameWidth / 500;
     resolved.driveUnit = {
       url: driveUnitVariant.url,
       position: [measurements.beltLength / 2, 0, 0],
       rotation: driveUnitVariant.rotation ?? [0, 0, 0],
-      scale: [duScale[0], duScale[1], duScale[2] * mirrorScaleZ],
+      scale: [duScale[0], duScale[1], duScale[2] * widthFactor * mirrorScaleZ],
     };
 
     // Motor body — mounted on the drive unit, outside the frame.
@@ -445,9 +447,9 @@ export function resolveConveyor3DAssets(
     resolved.motor = {
       url: motorVariant.url,
       position: [
-        measurements.beltLength / 2 - measurements.motorWidth * 0.3,
+        measurements.beltLength / 2,
         0,
-        side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
+        side * (measurements.frameWidth / 2 + 10),
       ],
       rotation: finalRot,
       scale: [mScale[0], mScale[1], mScale[2] * mirrorScaleZ],
@@ -457,22 +459,16 @@ export function resolveConveyor3DAssets(
   if (config.driveType === 'indirect') {
     const side = config.motorPosition === 'left' ? -1 : 1;
     const variant = selectVariant(measurements.frameWidth, library.motors.indirect[config.motorPosition]);
-    const snappedIndirectAngle = snapIndirectMotorAngle(config.motorAngle);
-    const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - snappedIndirectAngle + 360) % 360
-      : (snappedIndirectAngle + 270) % 360;
-    // Lower return shaft center in the current conveyor model.
-    const lowerShaftY = -(measurements.frameHeight / 2 + 2);
-    // Place indirect motor at drive end and on the lower shaft side.
+    const iScale = variant.scale ?? [1000, 1000, 1000];
     resolved.motor = {
       url: variant.url,
       position: [
-        measurements.beltLength / 2 - measurements.motorWidth * 0.25,
-        lowerShaftY,
-        side * (measurements.frameWidth / 2 + 4),
+        measurements.beltLength / 2,
+        0,
+        side * (measurements.frameWidth / 2 + 10),
       ],
-      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], indirectAngleDeg * (Math.PI / 180)),
-      scale: variant.scale ?? [1, 1, 1],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: iScale,
     };
   }
 
