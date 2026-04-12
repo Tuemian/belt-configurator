@@ -9,6 +9,7 @@ import { StepDrive } from '@/components/configurator/StepDrive';
 import { StepStand } from '@/components/configurator/StepStand';
 import { StepSummary } from '@/components/configurator/StepSummary';
 import { ChevronLeft, ChevronRight, Globe } from 'lucide-react';
+import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
@@ -90,21 +91,13 @@ const BeltConfigurator = () => {
               </Button>
             </div>
             <div className="flex justify-center">
-              <div className="w-full max-w-2xl rounded-2xl border border-white/70 bg-white/85 p-6 sm:p-8 shadow-2xl backdrop-blur">
-                <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-                  {lang === 'de' ? 'So läuft die Konfiguration' : 'How the configuration works'}
-                </p>
-                <ol className="mt-5 space-y-3">
-                  {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-                    <li key={i} className="flex items-center gap-3 rounded-xl bg-secondary/60 px-4 py-3">
-                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        {i + 1}
-                      </span>
-                      <span className="text-sm font-medium text-foreground">{stepTitles[i + 1]}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+              <img
+                src={conveyorHero}
+                alt="Belt conveyor"
+                className="max-w-full h-auto rounded-2xl shadow-2xl"
+                width={1200}
+                height={600}
+              />
             </div>
           </div>
         </main>
