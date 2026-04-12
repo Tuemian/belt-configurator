@@ -95,12 +95,12 @@ const defaultLibrary: Conveyor3DLibrary = {
     },
     indirect: {
       left: [
-        { id: 'indirect-left-compact', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
-        { id: 'indirect-left-large', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
+        { id: 'indirect-left-compact', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-left-large', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { minFrameWidth: 501 } },
       ],
       right: [
-        { id: 'indirect-right-compact', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
-        { id: 'indirect-right-large', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
+        { id: 'indirect-right-compact', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-right-large', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { minFrameWidth: 501 } },
       ],
     },
     center: [
@@ -359,6 +359,14 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
     urls.push(selectVariant(config.frameWidth, library.motors.direct[config.motorPosition]).url);
   }
 
+  if (config.driveType === 'indirect') {
+    urls.push(selectVariant(config.frameWidth, library.motors.indirect[config.motorPosition]).url);
+  }
+
+  if (config.driveType === 'center') {
+    urls.push(selectVariant(config.frameWidth, library.motors.center).url);
+  }
+
   if (config.withStand) {
     if (config.floorElement === 'feet') {
       urls.push(selectVariant(config.frameWidth, library.floorElements.feet.variants).url);
@@ -427,6 +435,40 @@ export function resolveConveyor3DAssets(
       ],
       rotation: finalRot,
       scale: variant.scale ?? [1, 1, mirrorScaleZ],
+    };
+  }
+
+  if (config.driveType === 'indirect') {
+    const side = config.motorPosition === 'left' ? -1 : 1;
+    const variant = selectVariant(measurements.frameWidth, library.motors.indirect[config.motorPosition]);
+    const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
+    const indirectAngleDeg = config.motorPosition === 'right'
+      ? (90 - config.motorAngle + 360) % 360
+      : (config.motorAngle + 90) % 360;
+    const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
+    const baseRot = variant.rotation ?? [0, 0, 0];
+    const finalRot = rotateAroundConveyorAxis(baseRot, indirectAngleRad);
+    resolved.motor = {
+      url: variant.url,
+      position: [
+        measurements.beltLength / 2 - measurements.frameSectionWidth * 0.4,
+        -(measurements.frameHeight / 2 + 6),
+        side * (measurements.frameWidth / 2 + 4),
+      ],
+      rotation: finalRot,
+      scale: variant.scale ?? [1, 1, mirrorScaleZ],
+    };
+  }
+
+  if (config.driveType === 'center') {
+    const variant = selectVariant(measurements.frameWidth, library.motors.center);
+    const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
+    const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
+    resolved.motor = {
+      url: variant.url,
+      position: [clampedOffset, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
+      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
+      scale: variant.scale ?? [1, 1, 1],
     };
   }
 
