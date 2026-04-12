@@ -49,7 +49,10 @@ export interface Conveyor3DLibrary {
       left: ModelVariant[];
       right: ModelVariant[];
     };
-    indirect: ModelVariant[];
+    indirect: {
+      left: ModelVariant[];
+      right: ModelVariant[];
+    };
     center: ModelVariant[];
   };
   floorElements: {
@@ -92,10 +95,16 @@ const defaultLibrary: Conveyor3DLibrary = {
         { id: 'direct-right-large', url: '/models/motors/direct-left-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
       ],
     },
-    indirect: [
-      { id: 'indirect-compact', url: '/models/motors/indirect.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
-      { id: 'indirect-large', url: '/models/motors/indirect-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
-    ],
+    indirect: {
+      left: [
+        { id: 'indirect-left-compact', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-left-large', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
+      ],
+      right: [
+        { id: 'indirect-right-compact', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-right-large', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
+      ],
+    },
     center: [
       { id: 'center-compact', url: '/models/motors/center.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
       { id: 'center-large', url: '/models/motors/center-large.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
@@ -218,7 +227,13 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
 
   const directLeft = parseVariantArray(value.motors.direct.left);
   const directRight = parseVariantArray(value.motors.direct.right);
-  const indirect = parseVariantArray(value.motors.indirect);
+  const indirectLegacy = parseVariantArray(value.motors.indirect);
+  const indirect = isObject(value.motors.indirect)
+    ? {
+        left: parseVariantArray(value.motors.indirect.left),
+        right: parseVariantArray(value.motors.indirect.right),
+      }
+    : null;
   const center = parseVariantArray(value.motors.center);
   const feet = toFloorElement(value.floorElements.feet);
   const castors = toFloorElement(value.floorElements.castors);
@@ -232,7 +247,14 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       }
     : undefined;
 
-  if (!directLeft || !directRight || !indirect || !center || !feet || !castors) {
+  const resolvedIndirect =
+    indirect?.left && indirect?.right
+      ? { left: indirect.left, right: indirect.right }
+      : indirectLegacy
+        ? { left: indirectLegacy, right: indirectLegacy }
+        : null;
+
+  if (!directLeft || !directRight || !resolvedIndirect || !center || !feet || !castors) {
     return null;
   }
 
@@ -242,7 +264,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         left: directLeft,
         right: directRight,
       },
-      indirect,
+      indirect: resolvedIndirect,
       center,
     },
     floorElements: {
@@ -340,7 +362,7 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   }
 
   if (config.driveType === 'indirect') {
-    urls.push(selectVariant(config.frameWidth, library.motors.indirect).url);
+    urls.push(selectVariant(config.frameWidth, library.motors.indirect[config.motorPosition]).url);
   }
 
   if (config.driveType === 'center') {
@@ -423,22 +445,23 @@ export function resolveConveyor3DAssets(
 
   if (config.driveType === 'indirect') {
     const side = config.motorPosition === 'left' ? -1 : 1;
-    const variant = selectVariant(measurements.frameWidth, library.motors.indirect);
+    const variant = selectVariant(measurements.frameWidth, library.motors.indirect[config.motorPosition]);
     const snappedIndirectAngle = snapIndirectMotorAngle(config.motorAngle);
     const indirectAngleDeg = config.motorPosition === 'right'
       ? (90 - snappedIndirectAngle + 360) % 360
       : (snappedIndirectAngle + 270) % 360;
-    const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
-    // Place indirect motor at drive end, side-mounted like direct drive.
+    // Lower return shaft center in the current conveyor model.
+    const lowerShaftY = -(measurements.frameHeight / 2 + 2);
+    // Place indirect motor at drive end and on the lower shaft side.
     resolved.motor = {
       url: variant.url,
       position: [
         measurements.beltLength / 2 - measurements.motorWidth * 0.25,
-        -(measurements.frameHeight / 2 + 46),
+        lowerShaftY,
         side * (measurements.frameWidth / 2 + 4),
       ],
       rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], indirectAngleDeg * (Math.PI / 180)),
-      scale: variant.scale ?? [1, 1, mirrorScaleZ],
+      scale: variant.scale ?? [1, 1, 1],
     };
   }
 
