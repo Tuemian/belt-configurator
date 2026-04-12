@@ -2,10 +2,50 @@ import { useState } from 'react';
 import { Language, t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Circle, DoorOpen, Globe, MoveRight, Ruler } from 'lucide-react';
+import { ArrowRight, Globe } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
+
+type ToolIconProps = {
+  className?: string;
+};
+
+const BeltConveyorIcon = ({ className }: ToolIconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <rect x="2" y="9" width="20" height="6" rx="3" stroke="currentColor" strokeWidth="1.7" />
+    <path d="M6 12h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <path d="M14.5 10.3L17.2 12l-2.7 1.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const DeflectionIcon = ({ className }: ToolIconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <path d="M3 8.5h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <path d="M4.2 8.5c3.4 6.2 12.2 6.2 15.6 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <path d="M4 18.5h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <path d="M8 16.8v3.4M12 16.8v3.4M16 16.8v3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+  </svg>
+);
+
+const DoorConfiguratorIcon = ({ className }: ToolIconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.7" />
+    <path d="M8 20V8h8v12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <path d="M12 14V9.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    <path d="M10.3 10.8 12 9.1l1.7 1.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const RollerConveyorIcon = ({ className }: ToolIconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <rect x="1.8" y="7.1" width="20.4" height="9.8" rx="4.9" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="5.2" cy="12" r="2.15" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="10.7" cy="12" r="2.15" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="16.2" cy="12" r="2.15" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="20" cy="12" r="1.75" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+);
 
 const tools = [
   {
@@ -14,7 +54,7 @@ const tools = [
     descKey: 'hubToolBeltDesc',
     statusKey: 'hubAvailableNow',
     available: true,
-    icon: MoveRight,
+    icon: BeltConveyorIcon,
   },
   {
     slug: 'deflection',
@@ -22,7 +62,7 @@ const tools = [
     descKey: 'hubToolDeflectionDesc',
     statusKey: 'hubPlanned',
     available: false,
-    icon: Ruler,
+    icon: DeflectionIcon,
   },
   {
     slug: 'high-speed-door',
@@ -30,7 +70,7 @@ const tools = [
     descKey: 'hubToolDoorDesc',
     statusKey: 'hubPlanned',
     available: false,
-    icon: DoorOpen,
+    icon: DoorConfiguratorIcon,
   },
   {
     slug: 'roller-conveyor',
@@ -38,7 +78,7 @@ const tools = [
     descKey: 'hubToolRollerDesc',
     statusKey: 'hubPlanned',
     available: false,
-    icon: Circle,
+    icon: RollerConveyorIcon,
   },
 ] as const;
 
