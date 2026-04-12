@@ -88,20 +88,20 @@ const defaultLibrary: Conveyor3DLibrary = {
   motors: {
     direct: {
       driveUnit: [
-        { id: 'drive-unit', url: '/models/motors/direct-right.glb', rotationDeg: [0, 0, 0] },
+        { id: 'drive-unit', url: '/models/motors/direct-right.glb', rotationDeg: [0, 0, 0], scale: [1000, 1000, 1000] },
       ],
       motor: [
-        { id: 'motor', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0] },
+        { id: 'motor', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000] },
       ],
     },
     indirect: {
       left: [
-        { id: 'indirect-left-compact', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
-        { id: 'indirect-left-large', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
+        { id: 'indirect-left-compact', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-left-large', url: '/models/motors/indirect-left.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
       ],
       right: [
-        { id: 'indirect-right-compact', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
-        { id: 'indirect-right-large', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
+        { id: 'indirect-right-compact', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-right-large', url: '/models/motors/indirect-right.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
       ],
     },
     center: [
@@ -425,15 +425,17 @@ export function resolveConveyor3DAssets(
 
     // Drive unit — replaces the parametric drum at the drive end.
     const driveUnitVariant = selectVariant(measurements.frameWidth, library.motors.direct.driveUnit);
+    const duScale = driveUnitVariant.scale ?? [1, 1, 1];
     resolved.driveUnit = {
       url: driveUnitVariant.url,
       position: [measurements.beltLength / 2, 0, 0],
       rotation: driveUnitVariant.rotation ?? [0, 0, 0],
-      scale: driveUnitVariant.scale ?? [1, 1, mirrorScaleZ],
+      scale: [duScale[0], duScale[1], duScale[2] * mirrorScaleZ],
     };
 
     // Motor body — mounted on the drive unit, outside the frame.
     const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct.motor);
+    const mScale = motorVariant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
       ? (90 - config.motorAngle + 360) % 360
       : (config.motorAngle + 270) % 360;
@@ -448,7 +450,7 @@ export function resolveConveyor3DAssets(
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: finalRot,
-      scale: motorVariant.scale ?? [1, 1, mirrorScaleZ],
+      scale: [mScale[0], mScale[1], mScale[2] * mirrorScaleZ],
     };
   }
 
