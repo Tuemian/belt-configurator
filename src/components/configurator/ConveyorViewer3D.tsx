@@ -407,6 +407,7 @@ function ParametricIndirectMotor({
   length,
   width,
   frameHeight,
+  drumRadius,
   motorWidth,
   motorHeight,
   motorDepth,
@@ -420,6 +421,7 @@ function ParametricIndirectMotor({
   length: number;
   width: number;
   frameHeight: number;
+  drumRadius: number;
   motorWidth: number;
   motorHeight: number;
   motorDepth: number;
@@ -444,9 +446,10 @@ function ParametricIndirectMotor({
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
   const effectiveSide = centerMounted ? 1 : side;
   const xPos = centerMounted ? centerOffset : length / 2 - motorWidth * 0.25;
+  const lowerShaftY = -(frameHeight / 2 + 2);
   const yPos = centerMounted
     ? -(frameHeight / 2 + motorHeight / 2 + 15)
-    : -(frameHeight / 2 + 46);
+    : lowerShaftY;
   const zPos = centerMounted ? 0 : side * (width / 2 + 4);
 
   if (!centerMounted) {
@@ -466,7 +469,7 @@ function ParametricIndirectMotor({
           />
 
           <Cyl
-            pos={[0, -8, effectiveSide * (motorT + 20)]}
+            pos={[0, -Math.max(6, drumRadius * 0.15), effectiveSide * (motorT + 20)]}
             rot={[Math.PI / 2, 0, 0]}
             r={Math.max(14, motorCylinderRadius * 0.55)}
             h={Math.max(22, motorCylinderHeight * 0.45)}
@@ -773,19 +776,25 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         )}
 
         {driveType === 'indirect' && (
-          <ParametricIndirectMotor
-            length={beltLength}
-            width={frameWidth}
-            frameHeight={frameHeight}
-            motorWidth={motorWidth}
-            motorHeight={motorHeight}
-            motorDepth={motorDepth}
-            motorCylinderHeight={motorCylinderHeight}
-            motorCylinderRadius={motorCylinderRadius}
-            motorPosition={motorPosition}
-            motorAngle={config.motorAngle}
-            centerMounted={false}
-            centerOffset={0}
+          <ExternalAsset
+            asset={resolvedAssets.motor}
+            fallback={
+              <ParametricIndirectMotor
+                length={beltLength}
+                width={frameWidth}
+                frameHeight={frameHeight}
+                drumRadius={drumRadius}
+                motorWidth={motorWidth}
+                motorHeight={motorHeight}
+                motorDepth={motorDepth}
+                motorCylinderHeight={motorCylinderHeight}
+                motorCylinderRadius={motorCylinderRadius}
+                motorPosition={motorPosition}
+                motorAngle={config.motorAngle}
+                centerMounted={false}
+                centerOffset={0}
+              />
+            }
           />
         )}
 
@@ -797,6 +806,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
                 length={beltLength}
                 width={frameWidth}
                 frameHeight={frameHeight}
+                drumRadius={drumRadius}
                 motorWidth={motorWidth}
                 motorHeight={motorHeight}
                 motorDepth={motorDepth}
