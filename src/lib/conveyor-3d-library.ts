@@ -336,6 +336,14 @@ function rotateAroundConveyorAxis(rotation: Vec3 | undefined, angleRad: number):
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
+function combineRotations(base: Vec3, delta: Vec3): Vec3 {
+  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(base[0], base[1], base[2], 'XYZ'));
+  const deltaQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(delta[0], delta[1], delta[2], 'XYZ'));
+  const finalQuat = deltaQuat.multiply(baseQuat);
+  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
+  return [finalEuler.x, finalEuler.y, finalEuler.z];
+}
+
 function transformLocalPoint(point: Vec3, rotation: Vec3, scale: Vec3): Vec3 {
   const vec = new THREE.Vector3(point[0] * scale[0], point[1] * scale[1], point[2] * scale[2]);
   vec.applyEuler(new THREE.Euler(rotation[0], rotation[1], rotation[2], 'XYZ'));
@@ -463,7 +471,9 @@ export function resolveConveyor3DAssets(
     const baseZ = side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12);
 
     // Indirect side component stays fixed; motor angle control rotates only the motor.
-    const mountRot = mountVariant.rotation ?? [0, 0, 0];
+    // Apply a fixed 180° yaw so the logo side points away from the belt.
+    const mountBaseRot = mountVariant.rotation ?? [0, 0, 0];
+    const mountRot = combineRotations(mountBaseRot, [0, Math.PI, 0]);
     const motorRot = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
     const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2] * mirrorScaleZ];
 
@@ -487,7 +497,7 @@ export function resolveConveyor3DAssets(
       url: motorVariant.url,
       position: [
         baseX,
-        -(measurements.frameHeight / 2 + measurements.motorHeight * 0.85),
+        -(measurements.frameHeight / 2 + measurements.motorHeight * 0.85 + 30),
         baseZ,
       ],
       rotation: motorRot,
