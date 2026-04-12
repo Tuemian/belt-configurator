@@ -414,7 +414,7 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const directAngleDeg = config.motorPosition === 'right'
       ? (90 - config.motorAngle + 360) % 360
-      : (config.motorAngle + 270) % 360;
+      : (config.motorAngle + 90) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
     const finalRot = rotateAroundConveyorAxis(baseRot, directAngleRad);
