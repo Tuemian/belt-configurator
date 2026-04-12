@@ -95,12 +95,12 @@ const defaultLibrary: Conveyor3DLibrary = {
     },
     indirect: {
       left: [
-        { id: 'indirect-left-compact', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { maxFrameWidth: 500 } },
-        { id: 'indirect-left-large', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { minFrameWidth: 501 } },
+        { id: 'indirect-left-compact', url: '/models/motors/indirect_side.glb?v=2', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-left-large', url: '/models/motors/indirect_side.glb?v=2', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
       ],
       right: [
-        { id: 'indirect-right-compact', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { maxFrameWidth: 500 } },
-        { id: 'indirect-right-large', url: '/models/motors/indirect_side.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1], rules: { minFrameWidth: 501 } },
+        { id: 'indirect-right-compact', url: '/models/motors/indirect_side.glb?v=2', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
+        { id: 'indirect-right-large', url: '/models/motors/indirect_side.glb?v=2', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
       ],
     },
     center: [
