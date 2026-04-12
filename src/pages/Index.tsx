@@ -3,7 +3,6 @@ import { Language, t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Globe } from 'lucide-react';
-import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
@@ -130,14 +129,28 @@ const Index = () => {
 
             <div className="relative">
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-sky-200/10 to-transparent blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 p-3 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
-                <img
-                  src={conveyorHero}
-                  alt="NOVAMOTIS tool overview"
-                  className="h-full w-full rounded-[1.4rem] object-cover"
-                  width={1200}
-                  height={800}
-                />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-6 sm:p-8 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
+                <div className="absolute -top-16 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
+                <div className="absolute -bottom-14 right-8 h-36 w-36 rounded-full bg-cyan-200/30 blur-2xl" />
+
+                <div className="relative grid grid-cols-2 gap-4">
+                  {tools.map((tool) => {
+                    const HeroIcon = tool.icon;
+
+                    return (
+                      <div
+                        key={`hero-${tool.slug}`}
+                        className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm"
+                      >
+                        <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-primary">
+                          <HeroIcon className="h-7 w-7" />
+                        </div>
+                        <div className="mt-3 h-2.5 w-3/4 rounded-full bg-slate-200/90" />
+                        <div className="mt-2 h-2.5 w-1/2 rounded-full bg-slate-100" />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
