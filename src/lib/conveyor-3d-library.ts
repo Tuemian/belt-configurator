@@ -417,12 +417,23 @@ export function resolveConveyor3DAssets(
 
   // Full conveyor model currently available for direct-right at 0°.
   if (config.driveType === 'direct' && config.motorPosition === 'right' && config.motorAngle === 0) {
+    // Reference model dimensions provided by user (mm): X=1669, Y=650, Z=500.
+    const refLength = 1669;
+    const refHeight = 650;
+    const refWidth = 500;
+    const targetHeight = config.withStand ? config.standHeight : measurements.frameHeight;
+    const inclineRad = -(config.inclineAngle * Math.PI) / 180;
+
     resolved.completeConveyor = {
       url: '/models/complete-conveyor.glb',
       position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      // CAD exports are often in meters while this scene uses millimeters.
-      scale: [1000, 1000, 1000],
+      rotation: [0, 0, inclineRad],
+      // CAD exports are often meters; convert to scene millimeters and apply config scaling.
+      scale: [
+        1000 * (config.beltLength / refLength),
+        1000 * (targetHeight / refHeight),
+        1000 * (config.frameWidth / refWidth),
+      ],
     };
     return resolved;
   }
