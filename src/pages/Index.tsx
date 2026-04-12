@@ -156,9 +156,9 @@ const Index = () => {
                 <div className="absolute -top-16 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
                 <div className="absolute -bottom-14 right-8 h-36 w-36 rounded-full bg-cyan-200/30 blur-2xl" />
 
-                {/* Logo centered */}
+                {/* Full logo centered */}
                 <div className="relative mb-5 flex justify-center">
-                  <LogoIconSvg className="h-14 w-14 drop-shadow-sm" />
+                  <img src={logo} alt="NOVAMOTIS" className="h-10 w-auto" />
                 </div>
 
                 {/* Animated tool tiles */}
@@ -166,16 +166,15 @@ const Index = () => {
                   {tools.map((tool, idx) => {
                     const HeroIcon = tool.icon;
                     const isActive = activeToolIndex === idx;
-
-                    return (
-                      <div
-                        key={`hero-${tool.slug}`}
-                        className={`rounded-2xl border p-3.5 transition-all duration-500 ${
-                          isActive
-                            ? 'border-primary/30 bg-primary/5 shadow-md ring-1 ring-primary/20 scale-[1.03]'
-                            : 'border-slate-200/80 bg-white/90 shadow-sm scale-100'
-                        }`}
-                      >
+                    const tileClass = `rounded-2xl border p-3.5 transition-all duration-500 block ${
+                      isActive
+                        ? 'border-primary/30 bg-primary/5 shadow-md ring-1 ring-primary/20 scale-[1.03]'
+                        : 'border-slate-200/80 bg-white/90 shadow-sm scale-100'
+                    } ${
+                      tool.available ? 'cursor-pointer hover:border-primary/40 hover:shadow-lg' : 'cursor-default'
+                    }`;
+                    const inner = (
+                      <>
                         <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-500 ${
                           isActive ? 'bg-primary text-white' : 'bg-secondary text-primary'
                         }`}>
@@ -186,6 +185,16 @@ const Index = () => {
                         }`}>
                           {t(tool.titleKey, lang)}
                         </p>
+                      </>
+                    );
+
+                    return tool.available ? (
+                      <Link key={`hero-${tool.slug}`} to={`/${tool.slug}`} className={tileClass}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div key={`hero-${tool.slug}`} className={tileClass}>
+                        {inner}
                       </div>
                     );
                   })}
