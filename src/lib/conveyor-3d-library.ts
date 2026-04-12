@@ -77,6 +77,7 @@ export interface ModelInstances extends ModelAssetDefinition {
 }
 
 export interface Conveyor3DResolvedAssets {
+  indirectMount?: ModelPlacement;
   motor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
@@ -335,6 +336,12 @@ function rotateAroundConveyorAxis(rotation: Vec3 | undefined, angleRad: number):
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
+function transformLocalPoint(point: Vec3, rotation: Vec3, scale: Vec3): Vec3 {
+  const vec = new THREE.Vector3(point[0] * scale[0], point[1] * scale[1], point[2] * scale[2]);
+  vec.applyEuler(new THREE.Euler(rotation[0], rotation[1], rotation[2], 'XYZ'));
+  return [vec.x, vec.y, vec.z];
+}
+
 function snapIndirectMotorAngle(angleDeg: number): number {
   const normalized = ((angleDeg % 360) + 360) % 360;
   const allowed = [0, 90, 270] as const;
@@ -361,6 +368,7 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
 
   if (config.driveType === 'indirect') {
     urls.push(selectVariant(config.frameWidth, library.motors.indirect[config.motorPosition]).url);
+    urls.push(selectVariant(config.frameWidth, library.motors.direct[config.motorPosition]).url);
   }
 
   if (config.driveType === 'center') {
@@ -420,6 +428,7 @@ export function resolveConveyor3DAssets(
     const side = config.motorPosition === 'left' ? -1 : 1;
     const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
+    const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
       ? (90 - config.motorAngle + 360) % 360
       : (config.motorAngle + 90) % 360;
@@ -434,29 +443,54 @@ export function resolveConveyor3DAssets(
         side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: finalRot,
-      scale: variant.scale ?? [1, 1, mirrorScaleZ],
+      scale: [dScale[0], dScale[1], dScale[2] * mirrorScaleZ],
     };
   }
 
   if (config.driveType === 'indirect') {
     const side = config.motorPosition === 'left' ? -1 : 1;
-    const variant = selectVariant(measurements.frameWidth, library.motors.indirect[config.motorPosition]);
+    const mountVariant = selectVariant(measurements.frameWidth, library.motors.indirect[config.motorPosition]);
+    const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
+    const mountScale = mountVariant.scale ?? [1, 1, 1];
+    const motorScale = motorVariant.scale ?? [1, 1, 1];
     const indirectAngleDeg = config.motorPosition === 'right'
       ? (90 - config.motorAngle + 360) % 360
       : (config.motorAngle + 90) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
-    const baseRot = variant.rotation ?? [0, 0, 0];
-    const finalRot = rotateAroundConveyorAxis(baseRot, indirectAngleRad);
-    resolved.motor = {
-      url: variant.url,
+    const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
+    const baseY = 0;
+    const baseZ = side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12);
+
+    const mountRot = rotateAroundConveyorAxis(mountVariant.rotation ?? [0, 0, 0], indirectAngleRad);
+    const motorRot = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
+    const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2] * mirrorScaleZ];
+
+    // CAD export of indirect_side.glb uses an offset scene origin; compensate so the component
+    // is mounted at the conveyor side instead of floating away from the frame.
+    const mountLocalCenter: Vec3 = [0.75, -0.08, 0.275];
+    const mountCenterWorld = transformLocalPoint(mountLocalCenter, mountRot, mountFinalScale);
+
+    resolved.indirectMount = {
+      url: mountVariant.url,
       position: [
-        measurements.beltLength / 2 - measurements.frameSectionWidth * 0.4,
-        -(measurements.frameHeight / 2 + 6),
-        side * (measurements.frameWidth / 2 + 4),
+        baseX - mountCenterWorld[0],
+        baseY - mountCenterWorld[1],
+        baseZ - mountCenterWorld[2],
       ],
-      rotation: finalRot,
-      scale: variant.scale ?? [1, 1, mirrorScaleZ],
+      rotation: mountRot,
+      scale: mountFinalScale,
+    };
+
+    resolved.motor = {
+      url: motorVariant.url,
+      position: [
+        baseX,
+        baseY - measurements.motorHeight * 0.95,
+        baseZ,
+      ],
+      rotation: motorRot,
+      scale: [motorScale[0], motorScale[1], motorScale[2] * mirrorScaleZ],
     };
   }
 
