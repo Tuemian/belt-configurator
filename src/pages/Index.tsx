@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Language, t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,15 +98,6 @@ const tools = [
 
 const Index = () => {
   const [lang, setLang] = useState<Language>('de');
-  const [activeToolIndex, setActiveToolIndex] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setActiveToolIndex(i => (i + 1) % tools.length);
-    }, 1800);
-    return () => clearInterval(id);
-  }, []);
-
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,148,204,0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)]">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
@@ -133,21 +124,6 @@ const Index = () => {
               <div className="space-y-4">
                 <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
                   {t('hubTitle', lang)}
-                </h1>
-                <p className="max-w-2xl text-lg text-muted-foreground leading-relaxed">
-                  {t('hubSubtitle', lang)}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 shadow-sm ring-1 ring-black/5">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  {t('hubAvailableNow', lang)}
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 shadow-sm ring-1 ring-black/5">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  {t('hubGrowingLibrary', lang)}
-                </span>
-              </div>
             </div>
 
             <div className="relative">
