@@ -1,17 +1,17 @@
 {
   "motors": {
     "direct": {
-      "driveUnit": [
+      "left": [
         {
-          "id": "drive-unit",
-          "url": "/models/motors/direct-right.glb",
-          "rotationDeg": [0, 0, 0],
-          "scale": [1000, 1000, 1000]
+          "id": "direct-left",
+          "url": "/models/motors/motor.glb",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1, 1, 1]
         }
       ],
-      "motor": [
+      "right": [
         {
-          "id": "motor",
+          "id": "direct-right",
           "url": "/models/motors/motor.glb",
           "rotationDeg": [90, 90, 0],
           "scale": [1, 1, 1]
