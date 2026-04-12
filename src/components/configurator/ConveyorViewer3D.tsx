@@ -697,12 +697,6 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
   return (
     <group position={[0, groupY, 0]}>
-      {resolvedAssets.completeConveyor && (
-        <ExternalAsset asset={resolvedAssets.completeConveyor} fallback={null} />
-      )}
-
-      {!resolvedAssets.completeConveyor && (
-      <>
       {/* Belt + frame — tilts with incline */}
       <group rotation={[0, 0, inclineRadians]}>
         <ExternalAssetInstances
@@ -864,8 +858,6 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
             color={C.crossbar}
           />
         </>
-      )}
-      </>
       )}
     </group>
   );
