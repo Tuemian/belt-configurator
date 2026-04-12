@@ -462,7 +462,8 @@ export function resolveConveyor3DAssets(
     const baseY = 0;
     const baseZ = side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12);
 
-    const mountRot = rotateAroundConveyorAxis(mountVariant.rotation ?? [0, 0, 0], indirectAngleRad);
+    // Indirect side component stays fixed; motor angle control rotates only the motor.
+    const mountRot = mountVariant.rotation ?? [0, 0, 0];
     const motorRot = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
     const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2] * mirrorScaleZ];
 
@@ -486,7 +487,7 @@ export function resolveConveyor3DAssets(
       url: motorVariant.url,
       position: [
         baseX,
-        baseY - measurements.motorHeight * 0.95,
+        -(measurements.frameHeight / 2 + measurements.motorHeight * 0.85),
         baseZ,
       ],
       rotation: motorRot,
