@@ -10,21 +10,6 @@ type ToolIconProps = {
   className?: string;
 };
 
-const LogoIconSvg = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <mask id="nm-ring-mask">
-        <circle cx="50" cy="50" r="44" fill="white" />
-        <circle cx="50" cy="50" r="26" fill="black" />
-        <rect x="-6" y="43" width="112" height="14" transform="rotate(-44 50 50)" fill="black" />
-        <rect x="-6" y="43" width="112" height="14" transform="rotate(44 50 50)" fill="black" />
-      </mask>
-    </defs>
-    <circle cx="50" cy="50" r="50" fill="#0273ac" mask="url(#nm-ring-mask)" />
-    <circle cx="50" cy="50" r="8" fill="#0273ac" />
-  </svg>
-);
-
 const BeltConveyorIcon = ({ className }: ToolIconProps) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
     <rect x="2" y="9" width="20" height="6" rx="3" stroke="currentColor" strokeWidth="1.7" />
@@ -124,57 +109,60 @@ const Index = () => {
               <div className="space-y-4">
                 <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
                   {t('hubTitle', lang)}
-            </div>
+                  </h1>
+                  <p className="max-w-xl text-lg text-muted-foreground leading-relaxed">
+                    {t('hubSubtitle', lang)}
+                  </p>
+                </div>
+              </div>
 
             <div className="relative">
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-sky-200/10 to-transparent blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 p-6 sm:p-8 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
-                <div className="absolute -top-16 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
-                <div className="absolute -bottom-14 right-8 h-36 w-36 rounded-full bg-cyan-200/30 blur-2xl" />
-
-                {/* Full logo centered */}
-                <div className="relative mb-5 flex justify-center">
-                  <img src={logo} alt="NOVAMOTIS" className="h-10 w-auto" />
-                </div>
-
-                {/* Animated tool tiles */}
-                <div className="relative grid grid-cols-2 gap-3">
-                  {tools.map((tool, idx) => {
-                    const HeroIcon = tool.icon;
-                    const isActive = activeToolIndex === idx;
-                    const tileClass = `rounded-2xl border p-3.5 transition-all duration-500 block ${
-                      isActive
-                        ? 'border-primary/30 bg-primary/5 shadow-md ring-1 ring-primary/20 scale-[1.03]'
-                        : 'border-slate-200/80 bg-white/90 shadow-sm scale-100'
-                    } ${
-                      tool.available ? 'cursor-pointer hover:border-primary/40 hover:shadow-lg' : 'cursor-default'
-                    }`;
-                    const inner = (
-                      <>
-                        <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-500 ${
-                          isActive ? 'bg-primary text-white' : 'bg-secondary text-primary'
-                        }`}>
-                          <HeroIcon className="h-5 w-5" />
-                        </div>
-                        <p className={`mt-2.5 text-xs font-semibold leading-tight transition-colors duration-500 ${
-                          isActive ? 'text-primary' : 'text-foreground/70'
-                        }`}>
-                          {t(tool.titleKey, lang)}
-                        </p>
-                      </>
-                    );
-
-                    return tool.available ? (
-                      <Link key={`hero-${tool.slug}`} to={`/${tool.slug}`} className={tileClass}>
-                        {inner}
-                      </Link>
-                    ) : (
-                      <div key={`hero-${tool.slug}`} className={tileClass}>
-                        {inner}
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
+                <svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="bg-grad" cx="30%" cy="30%" r="75%">
+                      <stop offset="0%" stopColor="#e8f4fb" />
+                      <stop offset="100%" stopColor="#f0f8ff" />
+                    </radialGradient>
+                    <radialGradient id="circle-grad" cx="40%" cy="35%" r="65%">
+                      <stop offset="0%" stopColor="#0273ac" stopOpacity="0.18" />
+                      <stop offset="100%" stopColor="#0273ac" stopOpacity="0.04" />
+                    </radialGradient>
+                  </defs>
+                  <rect width="420" height="320" fill="url(#bg-grad)" />
+                  <circle cx="340" cy="60" r="110" fill="url(#circle-grad)" />
+                  <circle cx="60" cy="280" r="90" fill="#0273ac" fillOpacity="0.06" />
+                  <circle cx="210" cy="160" r="55" fill="#0273ac" fillOpacity="0.05" />
+                  <line x1="60" y1="0" x2="60" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="120" y1="0" x2="120" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="180" y1="0" x2="180" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="240" y1="0" x2="240" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="300" y1="0" x2="300" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="360" y1="0" x2="360" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="0" y1="60" x2="420" y2="60" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="0" y1="120" x2="420" y2="120" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="0" y1="180" x2="420" y2="180" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <line x1="0" y1="240" x2="420" y2="240" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
+                  <rect x="38" y="40" width="60" height="60" rx="14" fill="#0273ac" fillOpacity="0.10" />
+                  <rect x="44" y="46" width="48" height="48" rx="10" fill="#0273ac" fillOpacity="0.10" />
+                  <rect x="290" y="190" width="80" height="80" rx="18" fill="#0273ac" fillOpacity="0.08" />
+                  <rect x="298" y="198" width="64" height="64" rx="13" fill="#0273ac" fillOpacity="0.08" />
+                  <circle cx="350" cy="80" r="26" fill="none" stroke="#0273ac" strokeOpacity="0.20" strokeWidth="2.5" />
+                  <circle cx="350" cy="80" r="14" fill="#0273ac" fillOpacity="0.12" />
+                  <circle cx="90" cy="230" r="20" fill="none" stroke="#0273ac" strokeOpacity="0.18" strokeWidth="2" />
+                  <circle cx="90" cy="230" r="10" fill="#0273ac" fillOpacity="0.10" />
+                  <polygon points="210,95 248,117 248,161 210,183 172,161 172,117" fill="none" stroke="#0273ac" strokeOpacity="0.22" strokeWidth="2" />
+                  <polygon points="210,111 234,125 234,153 210,167 186,153 186,125" fill="#0273ac" fillOpacity="0.08" />
+                  <circle cx="210" cy="139" r="10" fill="#0273ac" fillOpacity="0.22" />
+                  <line x1="172" y1="139" x2="108" y2="70" stroke="#0273ac" strokeOpacity="0.12" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <line x1="248" y1="139" x2="332" y2="235" stroke="#0273ac" strokeOpacity="0.12" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <line x1="210" y1="183" x2="210" y2="260" stroke="#0273ac" strokeOpacity="0.10" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <rect x="60" y="262" width="70" height="8" rx="4" fill="#0273ac" fillOpacity="0.13" />
+                  <rect x="60" y="276" width="44" height="8" rx="4" fill="#0273ac" fillOpacity="0.08" />
+                  <rect x="200" y="262" width="50" height="8" rx="4" fill="#0273ac" fillOpacity="0.13" />
+                  <rect x="200" y="276" width="80" height="8" rx="4" fill="#0273ac" fillOpacity="0.08" />
+                </svg>
               </div>
             </div>
           </div>
