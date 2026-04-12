@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Language, t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Globe, Package2, PanelsTopLeft, Settings2, Warehouse } from 'lucide-react';
+import { ArrowRight, Circle, DoorOpen, Globe, MoveRight, Ruler } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
@@ -14,7 +14,7 @@ const tools = [
     descKey: 'hubToolBeltDesc',
     statusKey: 'hubAvailableNow',
     available: true,
-    icon: Package2,
+    icon: MoveRight,
   },
   {
     slug: 'deflection',
@@ -22,7 +22,7 @@ const tools = [
     descKey: 'hubToolDeflectionDesc',
     statusKey: 'hubPlanned',
     available: false,
-    icon: Settings2,
+    icon: Ruler,
   },
   {
     slug: 'high-speed-door',
@@ -30,7 +30,7 @@ const tools = [
     descKey: 'hubToolDoorDesc',
     statusKey: 'hubPlanned',
     available: false,
-    icon: PanelsTopLeft,
+    icon: DoorOpen,
   },
   {
     slug: 'roller-conveyor',
@@ -38,7 +38,7 @@ const tools = [
     descKey: 'hubToolRollerDesc',
     statusKey: 'hubPlanned',
     available: false,
-    icon: Warehouse,
+    icon: Circle,
   },
 ] as const;
 
