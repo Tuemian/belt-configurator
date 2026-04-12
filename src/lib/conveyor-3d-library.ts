@@ -46,8 +46,8 @@ interface FloorElementDefinition {
 export interface Conveyor3DLibrary {
   motors: {
     direct: {
-      driveUnit: ModelVariant[];
-      motor: ModelVariant[];
+      left: ModelVariant[];
+      right: ModelVariant[];
     };
     indirect: {
       left: ModelVariant[];
@@ -77,7 +77,6 @@ export interface ModelInstances extends ModelAssetDefinition {
 }
 
 export interface Conveyor3DResolvedAssets {
-  driveUnit?: ModelPlacement;
   motor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
@@ -87,11 +86,11 @@ export interface Conveyor3DResolvedAssets {
 const defaultLibrary: Conveyor3DLibrary = {
   motors: {
     direct: {
-      driveUnit: [
-        { id: 'drive-unit', url: '/models/motors/direct-right.glb', rotationDeg: [0, 0, 0], scale: [1000, 1000, 1000] },
+      left: [
+        { id: 'direct-left', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
       ],
-      motor: [
-        { id: 'motor', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
+      right: [
+        { id: 'direct-right', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
       ],
     },
     indirect: {
@@ -224,9 +223,8 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
     return null;
   }
 
-  const directDriveUnit = parseVariantArray(value.motors.direct.driveUnit)
-    ?? parseVariantArray(value.motors.direct.left);  // backward compat
-  const directMotor = parseVariantArray(value.motors.direct.motor);
+  const directLeft = parseVariantArray(value.motors.direct.left);
+  const directRight = parseVariantArray(value.motors.direct.right);
   const indirectLegacy = parseVariantArray(value.motors.indirect);
   const indirect = isObject(value.motors.indirect)
     ? {
@@ -254,15 +252,15 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         ? { left: indirectLegacy, right: indirectLegacy }
         : null;
 
-  if (!directDriveUnit || !resolvedIndirect || !center || !feet || !castors) {
+  if (!directLeft || !directRight || !resolvedIndirect || !center || !feet || !castors) {
     return null;
   }
 
   return {
     motors: {
       direct: {
-        driveUnit: directDriveUnit,
-        motor: directMotor ?? [{ id: 'motor-fallback', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0] as Vec3 }],
+        left: directLeft,
+        right: directRight,
       },
       indirect: resolvedIndirect,
       center,
@@ -358,16 +356,7 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   const urls: string[] = [];
 
   if (config.driveType === 'direct') {
-    urls.push(selectVariant(config.frameWidth, library.motors.direct.driveUnit).url);
-    urls.push(selectVariant(config.frameWidth, library.motors.direct.motor).url);
-  }
-
-  if (config.driveType === 'indirect') {
-    urls.push(selectVariant(config.frameWidth, library.motors.indirect[config.motorPosition]).url);
-  }
-
-  if (config.driveType === 'center') {
-    urls.push(selectVariant(config.frameWidth, library.motors.center).url);
+    urls.push(selectVariant(config.frameWidth, library.motors.direct[config.motorPosition]).url);
   }
 
   if (config.withStand) {
@@ -421,67 +410,23 @@ export function resolveConveyor3DAssets(
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
+    const variant = selectVariant(measurements.frameWidth, library.motors.direct[config.motorPosition]);
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
-
-    // Drive unit — replaces the parametric drum at the drive end.
-    // Reference frame width of the CAD model is 500 mm; scale Z proportionally.
-    const driveUnitVariant = selectVariant(measurements.frameWidth, library.motors.direct.driveUnit);
-    const duScale = driveUnitVariant.scale ?? [1000, 1000, 1000];
-    const widthFactor = measurements.frameWidth / 500;
-    resolved.driveUnit = {
-      url: driveUnitVariant.url,
-      position: [measurements.beltLength / 2, 0, 0],
-      rotation: driveUnitVariant.rotation ?? [0, 0, 0],
-      scale: [duScale[0], duScale[1], duScale[2] * widthFactor * mirrorScaleZ],
-    };
-
-    // Motor body — mounted on the drive unit, outside the frame.
-    const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct.motor);
-    const mScale = motorVariant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
       ? (90 - config.motorAngle + 360) % 360
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
-    const baseRot = motorVariant.rotation ?? [0, 0, 0];
+    const baseRot = variant.rotation ?? [0, 0, 0];
     const finalRot = rotateAroundConveyorAxis(baseRot, directAngleRad);
     resolved.motor = {
-      url: motorVariant.url,
+      url: variant.url,
       position: [
-        measurements.beltLength / 2,
+        measurements.beltLength / 2 - measurements.motorWidth * 0.3,
         0,
-        side * (measurements.frameWidth / 2 + 10),
+        side * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: finalRot,
-      scale: [mScale[0], mScale[1], mScale[2] * mirrorScaleZ],
-    };
-  }
-
-  if (config.driveType === 'indirect') {
-    const side = config.motorPosition === 'left' ? -1 : 1;
-    const variant = selectVariant(measurements.frameWidth, library.motors.indirect[config.motorPosition]);
-    const iScale = variant.scale ?? [1000, 1000, 1000];
-    resolved.motor = {
-      url: variant.url,
-      position: [
-        measurements.beltLength / 2,
-        0,
-        side * (measurements.frameWidth / 2 + 10),
-      ],
-      rotation: variant.rotation ?? [0, 0, 0],
-      scale: iScale,
-    };
-  }
-
-  if (config.driveType === 'center') {
-    const variant = selectVariant(measurements.frameWidth, library.motors.center);
-    // Dynamic offset limit: keep at least 300 mm clearance from each belt end.
-    const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
-    const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
-    resolved.motor = {
-      url: variant.url,
-      position: [clampedOffset, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
-      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
-      scale: variant.scale ?? [1, 1, 1],
+      scale: variant.scale ?? [1, 1, mirrorScaleZ],
     };
   }
 
