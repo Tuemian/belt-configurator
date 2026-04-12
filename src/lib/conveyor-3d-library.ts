@@ -77,6 +77,7 @@ export interface ModelInstances extends ModelAssetDefinition {
 }
 
 export interface Conveyor3DResolvedAssets {
+  completeConveyor?: ModelPlacement;
   motor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
@@ -357,6 +358,12 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   const library = getConveyor3DLibrary();
   const urls: string[] = [];
 
+  // Full conveyor model currently available for direct-right at 0°.
+  if (config.driveType === 'direct' && config.motorPosition === 'right' && config.motorAngle === 0) {
+    urls.push('/models/complete-conveyor.glb');
+    return Array.from(new Set(urls));
+  }
+
   if (config.driveType === 'direct') {
     urls.push(selectVariant(config.frameWidth, library.motors.direct[config.motorPosition]).url);
   }
@@ -407,6 +414,17 @@ export function resolveConveyor3DAssets(
 ): Conveyor3DResolvedAssets {
   const library = getConveyor3DLibrary();
   const resolved: Conveyor3DResolvedAssets = {};
+
+  // Full conveyor model currently available for direct-right at 0°.
+  if (config.driveType === 'direct' && config.motorPosition === 'right' && config.motorAngle === 0) {
+    resolved.completeConveyor = {
+      url: '/models/complete-conveyor.glb',
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+    };
+    return resolved;
+  }
 
   // Motor angle convention:
   //   0°  = shaft pointing down (toward floor)
