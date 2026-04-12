@@ -695,6 +695,15 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
   const resolvedAssets = resolveConveyor3DAssets(config, measurements);
 
+  if (resolvedAssets.completeConveyor) {
+    return (
+      <ExternalAsset
+        asset={resolvedAssets.completeConveyor}
+        fallback={null}
+      />
+    );
+  }
+
   return (
     <group position={[0, groupY, 0]}>
       {/* Belt + frame — tilts with incline */}
