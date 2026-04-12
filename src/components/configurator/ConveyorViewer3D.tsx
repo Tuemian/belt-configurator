@@ -776,26 +776,32 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         )}
 
         {driveType === 'indirect' && (
-          <ExternalAsset
-            asset={resolvedAssets.motor}
-            fallback={
-              <ParametricIndirectMotor
-                length={beltLength}
-                width={frameWidth}
-                frameHeight={frameHeight}
-                drumRadius={drumRadius}
-                motorWidth={motorWidth}
-                motorHeight={motorHeight}
-                motorDepth={motorDepth}
-                motorCylinderHeight={motorCylinderHeight}
-                motorCylinderRadius={motorCylinderRadius}
-                motorPosition={motorPosition}
-                motorAngle={config.motorAngle}
-                centerMounted={false}
-                centerOffset={0}
-              />
-            }
-          />
+          <>
+            <ExternalAsset
+              asset={resolvedAssets.indirectMount}
+              fallback={null}
+            />
+            <ExternalAsset
+              asset={resolvedAssets.motor}
+              fallback={
+                <ParametricIndirectMotor
+                  length={beltLength}
+                  width={frameWidth}
+                  frameHeight={frameHeight}
+                  drumRadius={drumRadius}
+                  motorWidth={motorWidth}
+                  motorHeight={motorHeight}
+                  motorDepth={motorDepth}
+                  motorCylinderHeight={motorCylinderHeight}
+                  motorCylinderRadius={motorCylinderRadius}
+                  motorPosition={motorPosition}
+                  motorAngle={config.motorAngle}
+                  centerMounted={false}
+                  centerOffset={0}
+                />
+              }
+            />
+          </>
         )}
 
         {driveType === 'center' && (
