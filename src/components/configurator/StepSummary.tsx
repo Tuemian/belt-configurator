@@ -2,12 +2,11 @@ import { Language, t } from '@/lib/i18n';
 import { ConveyorConfig } from '@/lib/configurator-types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileDown, Send, RotateCcw, Wrench } from 'lucide-react';
+import { FileDown, Send, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
@@ -503,22 +502,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
             <FileDown className="w-4 h-4 mr-2" />
             {t('downloadPdf', lang)}
           </Button>
-          <div className="flex-1 rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Wrench className="h-4 w-4" />
-                <span>{t('downloadStep', lang)}</span>
-              </div>
-              <Badge variant="secondary" className="bg-amber-200 text-amber-900">
-                {lang === 'de' ? 'In Arbeit' : 'Work in Progress'}
-              </Badge>
-            </div>
-            <p className="mt-1 text-xs opacity-80">
-              {lang === 'de'
-                ? 'STEP-Export folgt mit Version 2.0.'
-                : 'STEP export will return in version 2.0.'}
-            </p>
-          </div>
           <Button onClick={onReset} variant="ghost" className="flex-1">
             <RotateCcw className="w-4 h-4 mr-2" />
             {t('newConfig', lang)}
