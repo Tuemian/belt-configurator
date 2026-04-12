@@ -5,14 +5,16 @@
         {
           "id": "drive-unit",
           "url": "/models/motors/direct-right.glb",
-          "rotationDeg": [0, 0, 0]
+          "rotationDeg": [0, 0, 0],
+          "scale": [1000, 1000, 1000]
         }
       ],
       "motor": [
         {
           "id": "motor",
           "url": "/models/motors/motor.glb",
-          "rotationDeg": [90, 90, 0]
+          "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000]
         }
       ]
     },
@@ -22,6 +24,7 @@
           "id": "indirect-left-compact",
           "url": "/models/motors/indirect-left.glb",
           "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
           "rules": {
             "maxFrameWidth": 500
           }
@@ -30,6 +33,7 @@
           "id": "indirect-left-large",
           "url": "/models/motors/indirect-left.glb",
           "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
           "rules": {
             "minFrameWidth": 501
           }
@@ -40,6 +44,7 @@
           "id": "indirect-right-compact",
           "url": "/models/motors/indirect-right.glb",
           "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
           "rules": {
             "maxFrameWidth": 500
           }
@@ -48,6 +53,7 @@
           "id": "indirect-right-large",
           "url": "/models/motors/indirect-right.glb",
           "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
           "rules": {
             "minFrameWidth": 501
           }
