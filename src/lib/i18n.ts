@@ -13,7 +13,7 @@ const translations = {
 
     hubEyebrow: 'NOVAMOTIS Tools',
     hubTitle: 'Alle Konfiguratoren und Planungstools an einem Ort',
-    hubSubtitle: 'Diese Übersicht wird Schritt für Schritt erweitert. Verfügbare Tools können direkt gestartet werden, geplante Module werden hier nach und nach freigeschaltet.',
+    hubSubtitle: 'Planen und konfigurieren Sie Ihre technischen Lösungen zentral an einem Ort - schnell, klar und praxisnah.',
     hubSectionTitle: 'Tool-Übersicht',
     hubSectionSubtitle: 'Heute verfügbare und geplante Konfiguratoren im schnellen Zugriff.',
     hubAvailableNow: 'Verfügbar',
@@ -139,11 +139,11 @@ const translations = {
 
     hubEyebrow: 'NOVAMOTIS Tools',
     hubTitle: 'All configurators and planning tools in one place',
-    hubSubtitle: 'This overview will grow step by step. Available tools can be launched directly, and upcoming modules will be unlocked here over time.',
+    hubSubtitle: 'Plan and configure your technical solutions in one central place - fast, clear, and practical.',
     hubSectionTitle: 'Tool Overview',
     hubSectionSubtitle: 'Quick access to currently available and planned configurators.',
-    hubAvailableNow: 'Available now',
-    hubGrowingLibrary: 'Growing continuously',
+    hubAvailableNow: 'Available',
+    hubGrowingLibrary: 'In progress',
     hubOpenTool: 'Open tool',
     hubPlanned: 'In progress',
     hubPlannedHint: 'This module is being prepared next.',
