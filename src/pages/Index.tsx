@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Language, t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,21 @@ import { Link } from 'react-router-dom';
 type ToolIconProps = {
   className?: string;
 };
+
+const LogoIconSvg = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <mask id="nm-ring-mask">
+        <circle cx="50" cy="50" r="44" fill="white" />
+        <circle cx="50" cy="50" r="26" fill="black" />
+        <rect x="-6" y="43" width="112" height="14" transform="rotate(-44 50 50)" fill="black" />
+        <rect x="-6" y="43" width="112" height="14" transform="rotate(44 50 50)" fill="black" />
+      </mask>
+    </defs>
+    <circle cx="50" cy="50" r="50" fill="#0273ac" mask="url(#nm-ring-mask)" />
+    <circle cx="50" cy="50" r="8" fill="#0273ac" />
+  </svg>
+);
 
 const BeltConveyorIcon = ({ className }: ToolIconProps) => (
   <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
@@ -83,6 +98,14 @@ const tools = [
 
 const Index = () => {
   const [lang, setLang] = useState<Language>('de');
+  const [activeToolIndex, setActiveToolIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveToolIndex(i => (i + 1) % tools.length);
+    }, 1800);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,148,204,0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)]">
@@ -133,20 +156,36 @@ const Index = () => {
                 <div className="absolute -top-16 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
                 <div className="absolute -bottom-14 right-8 h-36 w-36 rounded-full bg-cyan-200/30 blur-2xl" />
 
-                <div className="relative grid grid-cols-2 gap-4">
-                  {tools.map((tool) => {
+                {/* Logo centered */}
+                <div className="relative mb-5 flex justify-center">
+                  <LogoIconSvg className="h-14 w-14 drop-shadow-sm" />
+                </div>
+
+                {/* Animated tool tiles */}
+                <div className="relative grid grid-cols-2 gap-3">
+                  {tools.map((tool, idx) => {
                     const HeroIcon = tool.icon;
+                    const isActive = activeToolIndex === idx;
 
                     return (
                       <div
                         key={`hero-${tool.slug}`}
-                        className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm"
+                        className={`rounded-2xl border p-3.5 transition-all duration-500 ${
+                          isActive
+                            ? 'border-primary/30 bg-primary/5 shadow-md ring-1 ring-primary/20 scale-[1.03]'
+                            : 'border-slate-200/80 bg-white/90 shadow-sm scale-100'
+                        }`}
                       >
-                        <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-primary">
-                          <HeroIcon className="h-7 w-7" />
+                        <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors duration-500 ${
+                          isActive ? 'bg-primary text-white' : 'bg-secondary text-primary'
+                        }`}>
+                          <HeroIcon className="h-5 w-5" />
                         </div>
-                        <div className="mt-3 h-2.5 w-3/4 rounded-full bg-slate-200/90" />
-                        <div className="mt-2 h-2.5 w-1/2 rounded-full bg-slate-100" />
+                        <p className={`mt-2.5 text-xs font-semibold leading-tight transition-colors duration-500 ${
+                          isActive ? 'text-primary' : 'text-foreground/70'
+                        }`}>
+                          {t(tool.titleKey, lang)}
+                        </p>
                       </div>
                     );
                   })}
