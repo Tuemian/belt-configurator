@@ -694,6 +694,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   };
 
   const resolvedAssets = resolveConveyor3DAssets(config, measurements);
+  const { driveUnit: resolvedDriveUnit } = resolvedAssets;
 
   return (
     <group position={[0, groupY, 0]}>
@@ -721,7 +722,12 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           );
         })}
 
-        <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        {!resolvedDriveUnit && driveType === 'direct' && (
+          <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        )}
+        {driveType !== 'direct' && (
+          <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        )}
         <Cyl pos={[-beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
 
         <Box
@@ -757,22 +763,28 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         )}
 
         {driveType === 'direct' && (
-          <ExternalAsset
-            asset={resolvedAssets.motor}
-            fallback={
-              <ParametricDirectMotor
-                length={beltLength}
-                width={frameWidth}
-                motorWidth={motorWidth}
-                motorHeight={motorHeight}
-                motorDepth={motorDepth}
-                motorCylinderHeight={motorCylinderHeight}
-                motorCylinderRadius={motorCylinderRadius}
-                motorPosition={motorPosition}
-                motorAngle={config.motorAngle}
-              />
-            }
-          />
+          <>
+            <ExternalAsset
+              asset={resolvedAssets.driveUnit}
+              fallback={null}
+            />
+            <ExternalAsset
+              asset={resolvedAssets.motor}
+              fallback={
+                <ParametricDirectMotor
+                  length={beltLength}
+                  width={frameWidth}
+                  motorWidth={motorWidth}
+                  motorHeight={motorHeight}
+                  motorDepth={motorDepth}
+                  motorCylinderHeight={motorCylinderHeight}
+                  motorCylinderRadius={motorCylinderRadius}
+                  motorPosition={motorPosition}
+                  motorAngle={config.motorAngle}
+                />
+              }
+            />
+          </>
         )}
 
         {driveType === 'indirect' && (
