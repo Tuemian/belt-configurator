@@ -121,47 +121,71 @@ const Index = () => {
               <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
                 <svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto" aria-hidden="true">
                   <defs>
-                    <radialGradient id="bg-grad" cx="30%" cy="30%" r="75%">
-                      <stop offset="0%" stopColor="#e8f4fb" />
-                      <stop offset="100%" stopColor="#f0f8ff" />
-                    </radialGradient>
-                    <radialGradient id="circle-grad" cx="40%" cy="35%" r="65%">
-                      <stop offset="0%" stopColor="#0273ac" stopOpacity="0.18" />
-                      <stop offset="100%" stopColor="#0273ac" stopOpacity="0.04" />
-                    </radialGradient>
+                    <pattern id="bp-grid-small" width="12" height="12" patternUnits="userSpaceOnUse">
+                      <path d="M 12 0 L 0 0 0 12" fill="none" stroke="#7ec4e8" strokeOpacity="0.18" strokeWidth="0.5" />
+                    </pattern>
+                    <pattern id="bp-grid-large" width="48" height="48" patternUnits="userSpaceOnUse">
+                      <rect width="48" height="48" fill="url(#bp-grid-small)" />
+                      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#b9e1f5" strokeOpacity="0.28" strokeWidth="0.8" />
+                    </pattern>
+                    <marker id="bp-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d5eefb" />
+                    </marker>
                   </defs>
-                  <rect width="420" height="320" fill="url(#bg-grad)" />
-                  <circle cx="340" cy="60" r="110" fill="url(#circle-grad)" />
-                  <circle cx="60" cy="280" r="90" fill="#0273ac" fillOpacity="0.06" />
-                  <circle cx="210" cy="160" r="55" fill="#0273ac" fillOpacity="0.05" />
-                  <line x1="60" y1="0" x2="60" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="120" y1="0" x2="120" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="180" y1="0" x2="180" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="240" y1="0" x2="240" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="300" y1="0" x2="300" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="360" y1="0" x2="360" y2="320" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="0" y1="60" x2="420" y2="60" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="0" y1="120" x2="420" y2="120" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="0" y1="180" x2="420" y2="180" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <line x1="0" y1="240" x2="420" y2="240" stroke="#0273ac" strokeOpacity="0.05" strokeWidth="1" />
-                  <rect x="38" y="40" width="60" height="60" rx="14" fill="#0273ac" fillOpacity="0.10" />
-                  <rect x="44" y="46" width="48" height="48" rx="10" fill="#0273ac" fillOpacity="0.10" />
-                  <rect x="290" y="190" width="80" height="80" rx="18" fill="#0273ac" fillOpacity="0.08" />
-                  <rect x="298" y="198" width="64" height="64" rx="13" fill="#0273ac" fillOpacity="0.08" />
-                  <circle cx="350" cy="80" r="26" fill="none" stroke="#0273ac" strokeOpacity="0.20" strokeWidth="2.5" />
-                  <circle cx="350" cy="80" r="14" fill="#0273ac" fillOpacity="0.12" />
-                  <circle cx="90" cy="230" r="20" fill="none" stroke="#0273ac" strokeOpacity="0.18" strokeWidth="2" />
-                  <circle cx="90" cy="230" r="10" fill="#0273ac" fillOpacity="0.10" />
-                  <polygon points="210,95 248,117 248,161 210,183 172,161 172,117" fill="none" stroke="#0273ac" strokeOpacity="0.22" strokeWidth="2" />
-                  <polygon points="210,111 234,125 234,153 210,167 186,153 186,125" fill="#0273ac" fillOpacity="0.08" />
-                  <circle cx="210" cy="139" r="10" fill="#0273ac" fillOpacity="0.22" />
-                  <line x1="172" y1="139" x2="108" y2="70" stroke="#0273ac" strokeOpacity="0.12" strokeWidth="1.5" strokeDasharray="4 4" />
-                  <line x1="248" y1="139" x2="332" y2="235" stroke="#0273ac" strokeOpacity="0.12" strokeWidth="1.5" strokeDasharray="4 4" />
-                  <line x1="210" y1="183" x2="210" y2="260" stroke="#0273ac" strokeOpacity="0.10" strokeWidth="1.5" strokeDasharray="4 4" />
-                  <rect x="60" y="262" width="70" height="8" rx="4" fill="#0273ac" fillOpacity="0.13" />
-                  <rect x="60" y="276" width="44" height="8" rx="4" fill="#0273ac" fillOpacity="0.08" />
-                  <rect x="200" y="262" width="50" height="8" rx="4" fill="#0273ac" fillOpacity="0.13" />
-                  <rect x="200" y="276" width="80" height="8" rx="4" fill="#0273ac" fillOpacity="0.08" />
+
+                  <rect width="420" height="320" fill="#0b3a63" />
+                  <rect width="420" height="320" fill="url(#bp-grid-large)" />
+
+                  <g stroke="#dff3ff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="52" y="120" width="312" height="56" rx="10" />
+                    <line x1="70" y1="134" x2="346" y2="134" strokeDasharray="6 5" strokeOpacity="0.75" />
+                    <line x1="70" y1="162" x2="346" y2="162" strokeDasharray="6 5" strokeOpacity="0.75" />
+
+                    <circle cx="78" cy="148" r="14" />
+                    <circle cx="338" cy="148" r="14" />
+                    <circle cx="118" cy="148" r="8" strokeOpacity="0.85" />
+                    <circle cx="156" cy="148" r="8" strokeOpacity="0.85" />
+                    <circle cx="194" cy="148" r="8" strokeOpacity="0.85" />
+                    <circle cx="232" cy="148" r="8" strokeOpacity="0.85" />
+                    <circle cx="270" cy="148" r="8" strokeOpacity="0.85" />
+                    <circle cx="308" cy="148" r="8" strokeOpacity="0.85" />
+
+                    <line x1="64" y1="176" x2="64" y2="246" />
+                    <line x1="352" y1="176" x2="352" y2="246" />
+                    <line x1="64" y1="246" x2="352" y2="246" strokeOpacity="0.65" />
+
+                    <rect x="28" y="132" width="20" height="32" rx="3" />
+                    <line x1="48" y1="148" x2="64" y2="148" />
+                    <rect x="20" y="126" width="14" height="12" rx="2" strokeOpacity="0.85" />
+                  </g>
+
+                  <g stroke="#d5eefb" strokeWidth="1.3" fill="none" markerStart="url(#bp-arrow)" markerEnd="url(#bp-arrow)">
+                    <line x1="52" y1="96" x2="364" y2="96" />
+                    <line x1="30" y1="120" x2="30" y2="176" />
+                    <line x1="388" y1="120" x2="388" y2="246" />
+                  </g>
+
+                  <g stroke="#9bd5ef" strokeWidth="1" strokeDasharray="4 4" fill="none">
+                    <line x1="52" y1="96" x2="52" y2="120" />
+                    <line x1="364" y1="96" x2="364" y2="120" />
+                    <line x1="30" y1="120" x2="52" y2="120" />
+                    <line x1="30" y1="176" x2="52" y2="176" />
+                    <line x1="388" y1="120" x2="364" y2="120" />
+                    <line x1="388" y1="246" x2="352" y2="246" />
+                  </g>
+
+                  <g fill="#dff3ff" fontSize="11" fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" letterSpacing="0.5">
+                    <text x="198" y="88">L = 3000 mm</text>
+                    <text x="10" y="153" transform="rotate(-90 10 153)">B = 600 mm</text>
+                    <text x="402" y="188" transform="rotate(-90 402 188)">H = 900 mm</text>
+                    <text x="268" y="265" fillOpacity="0.85">Antriebseinheit</text>
+                    <text x="146" y="114" fillOpacity="0.85">Gurtfoerderer - Seitenansicht</text>
+                  </g>
+
+                  <circle cx="52" cy="120" r="2.2" fill="#dff3ff" />
+                  <circle cx="364" cy="120" r="2.2" fill="#dff3ff" />
+                  <circle cx="352" cy="246" r="2.2" fill="#dff3ff" />
+                  <circle cx="52" cy="176" r="2.2" fill="#dff3ff" />
                 </svg>
               </div>
             </div>
