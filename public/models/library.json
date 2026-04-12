@@ -1,40 +1,18 @@
 {
   "motors": {
     "direct": {
-      "left": [
+      "driveUnit": [
         {
-          "id": "direct-left-compact",
-          "url": "/models/motors/direct-left.glb",
-          "rotationDeg": [90, 90, 0],
-          "rules": {
-            "maxFrameWidth": 500
-          }
-        },
-        {
-          "id": "direct-left-large",
-          "url": "/models/motors/direct-left.glb",
-          "rotationDeg": [90, 90, 0],
-          "rules": {
-            "minFrameWidth": 501
-          }
+          "id": "drive-unit",
+          "url": "/models/motors/direct-right.glb",
+          "rotationDeg": [0, 0, 0]
         }
       ],
-      "right": [
+      "motor": [
         {
-          "id": "direct-right-compact",
-          "url": "/models/motors/direct-left.glb",
-          "rotationDeg": [90, 90, 0],
-          "rules": {
-            "maxFrameWidth": 500
-          }
-        },
-        {
-          "id": "direct-right-large",
-          "url": "/models/motors/direct-left.glb",
-          "rotationDeg": [90, 90, 0],
-          "rules": {
-            "minFrameWidth": 501
-          }
+          "id": "motor",
+          "url": "/models/motors/motor.glb",
+          "rotationDeg": [90, 90, 0]
         }
       ]
     },
@@ -79,7 +57,7 @@
     "center": [
       {
         "id": "center-compact",
-        "url": "/models/motors/direct-left.glb",
+        "url": "/models/motors/motor.glb",
         "rotationDeg": [90, 90, 0],
         "rules": {
           "maxFrameWidth": 500
@@ -87,7 +65,7 @@
       },
       {
         "id": "center-large",
-        "url": "/models/motors/direct-left.glb",
+        "url": "/models/motors/motor.glb",
         "rotationDeg": [90, 90, 0],
         "rules": {
           "minFrameWidth": 501
