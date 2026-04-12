@@ -3,6 +3,7 @@ import { Language, t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Globe } from 'lucide-react';
+import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
@@ -119,74 +120,13 @@ const Index = () => {
             <div className="relative">
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-sky-200/10 to-transparent blur-2xl" />
               <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
-                <svg viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto" aria-hidden="true">
-                  <defs>
-                    <pattern id="bp-grid-small" width="12" height="12" patternUnits="userSpaceOnUse">
-                      <path d="M 12 0 L 0 0 0 12" fill="none" stroke="#7ec4e8" strokeOpacity="0.18" strokeWidth="0.5" />
-                    </pattern>
-                    <pattern id="bp-grid-large" width="48" height="48" patternUnits="userSpaceOnUse">
-                      <rect width="48" height="48" fill="url(#bp-grid-small)" />
-                      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#b9e1f5" strokeOpacity="0.28" strokeWidth="0.8" />
-                    </pattern>
-                    <marker id="bp-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d5eefb" />
-                    </marker>
-                  </defs>
-
-                  <rect width="420" height="320" fill="#0b3a63" />
-                  <rect width="420" height="320" fill="url(#bp-grid-large)" />
-
-                  <g stroke="#dff3ff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="52" y="120" width="312" height="56" rx="10" />
-                    <line x1="70" y1="134" x2="346" y2="134" strokeDasharray="6 5" strokeOpacity="0.75" />
-                    <line x1="70" y1="162" x2="346" y2="162" strokeDasharray="6 5" strokeOpacity="0.75" />
-
-                    <circle cx="78" cy="148" r="14" />
-                    <circle cx="338" cy="148" r="14" />
-                    <circle cx="118" cy="148" r="8" strokeOpacity="0.85" />
-                    <circle cx="156" cy="148" r="8" strokeOpacity="0.85" />
-                    <circle cx="194" cy="148" r="8" strokeOpacity="0.85" />
-                    <circle cx="232" cy="148" r="8" strokeOpacity="0.85" />
-                    <circle cx="270" cy="148" r="8" strokeOpacity="0.85" />
-                    <circle cx="308" cy="148" r="8" strokeOpacity="0.85" />
-
-                    <line x1="64" y1="176" x2="64" y2="246" />
-                    <line x1="352" y1="176" x2="352" y2="246" />
-                    <line x1="64" y1="246" x2="352" y2="246" strokeOpacity="0.65" />
-
-                    <rect x="28" y="132" width="20" height="32" rx="3" />
-                    <line x1="48" y1="148" x2="64" y2="148" />
-                    <rect x="20" y="126" width="14" height="12" rx="2" strokeOpacity="0.85" />
-                  </g>
-
-                  <g stroke="#d5eefb" strokeWidth="1.3" fill="none" markerStart="url(#bp-arrow)" markerEnd="url(#bp-arrow)">
-                    <line x1="52" y1="96" x2="364" y2="96" />
-                    <line x1="30" y1="120" x2="30" y2="176" />
-                    <line x1="388" y1="120" x2="388" y2="246" />
-                  </g>
-
-                  <g stroke="#9bd5ef" strokeWidth="1" strokeDasharray="4 4" fill="none">
-                    <line x1="52" y1="96" x2="52" y2="120" />
-                    <line x1="364" y1="96" x2="364" y2="120" />
-                    <line x1="30" y1="120" x2="52" y2="120" />
-                    <line x1="30" y1="176" x2="52" y2="176" />
-                    <line x1="388" y1="120" x2="364" y2="120" />
-                    <line x1="388" y1="246" x2="352" y2="246" />
-                  </g>
-
-                  <g fill="#dff3ff" fontSize="11" fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" letterSpacing="0.5">
-                    <text x="198" y="88">L = 3000 mm</text>
-                    <text x="10" y="153" transform="rotate(-90 10 153)">B = 600 mm</text>
-                    <text x="402" y="188" transform="rotate(-90 402 188)">H = 900 mm</text>
-                    <text x="268" y="265" fillOpacity="0.85">Antriebseinheit</text>
-                    <text x="146" y="114" fillOpacity="0.85">Gurtfoerderer - Seitenansicht</text>
-                  </g>
-
-                  <circle cx="52" cy="120" r="2.2" fill="#dff3ff" />
-                  <circle cx="364" cy="120" r="2.2" fill="#dff3ff" />
-                  <circle cx="352" cy="246" r="2.2" fill="#dff3ff" />
-                  <circle cx="52" cy="176" r="2.2" fill="#dff3ff" />
-                </svg>
+                <img
+                  src={conveyorHero}
+                  alt="Fördertechnik"
+                  className="w-full h-auto"
+                  width={1200}
+                  height={600}
+                />
               </div>
             </div>
           </div>
