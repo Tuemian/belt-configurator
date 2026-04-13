@@ -395,10 +395,6 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
     }
   }
 
-  if ((config.sideGuideHeight ?? 0) > 0 && library.accessories?.sideGuide?.length) {
-    urls.push(selectVariant(config.frameWidth, library.accessories.sideGuide).url);
-  }
-
   if (library.profiles?.sideRails?.length) {
     urls.push(selectVariant(config.frameWidth, library.profiles.sideRails).url);
   }
