@@ -927,10 +927,18 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           ))}
 
           {floorElement === 'feet' && (
-            <ExternalAssetInstances
-              asset={resolvedAssets.feet}
-              fallback={<ParametricFeet positions={footPositions} />}
-            />
+            <>
+              <ExternalAssetInstances
+                asset={resolvedAssets.feet}
+                fallback={<ParametricFeet positions={footPositions} />}
+              />
+              {config.floorBolts && (
+                <ExternalAssetInstances
+                  asset={resolvedAssets.floorBolts}
+                  fallback={null}
+                />
+              )}
+            </>
           )}
 
           {floorElement === 'castors' && (
