@@ -513,12 +513,16 @@ export function resolveConveyor3DAssets(
     const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
     const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
     const centerSide = config.motorPosition === 'left' ? -1 : 1;
-    const normalizedCenterAngle = config.motorAngle === 90
-      ? 270
-      : config.motorAngle === 270
-        ? 90
-        : config.motorAngle;
-    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [0, Math.PI * 1.5, Math.PI / 2]);
+    const normalizedCenterAngle = config.motorAngle === 0
+      ? 180
+      : config.motorAngle === 180
+        ? 0
+        : config.motorAngle === 90
+          ? 270
+          : config.motorAngle === 270
+            ? 90
+            : config.motorAngle;
+    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [0, Math.PI * 1.5, Math.PI * 1.5]);
     const centerMotorRotBase = rotateAroundConveyorAxis(
       motorVariant.rotation ?? [0, 0, 0],
       ((normalizedCenterAngle + 90) * Math.PI) / 180,
