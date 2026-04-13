@@ -25,7 +25,7 @@ const C = {
   motorBody: '#8f1018',
   leg: '#8d99a8',
   castor: '#6f7b8a',
-  crossbar: '#c7d2df',
+  crossbar: '#8d99a8',
   floorPlane: '#e6eefc',
   arrow: '#ef4444',
 } as const;
@@ -886,16 +886,19 @@ function UnderframeBracing({
 
   return (
     <>
-      <Box pos={[0, y, -sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
-      <Box pos={[0, y, sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
-
       {frameWidth > 500 ? (
         <>
+          <Box pos={[0, y, -sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
+          <Box pos={[0, y, sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
           <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
           <Box pos={[endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
         </>
       ) : (
-        <Box pos={[0, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+        <>
+          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+          <Box pos={[0, y, 0]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
+        </>
       )}
     </>
   );
