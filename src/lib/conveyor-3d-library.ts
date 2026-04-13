@@ -58,6 +58,7 @@ export interface Conveyor3DLibrary {
   floorElements: {
     feet: FloorElementDefinition;
     castors: FloorElementDefinition;
+    floorBolts?: FloorElementDefinition;
   };
   accessories?: {
     sideGuide?: ModelVariant[];
@@ -83,6 +84,7 @@ export interface Conveyor3DResolvedAssets {
   motor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
+  floorBolts?: ModelInstances;
   sideRails?: ModelInstances;
 }
 
@@ -123,6 +125,12 @@ const defaultLibrary: Conveyor3DLibrary = {
         { id: 'castor', url: '/models/floor-elements/castor.glb?v=2', rotationDeg: [0, 180, 0], scale: [1000, 1000, 1000], rules: {} },
       ],
       positionOffset: [0, 0, 0],
+    },
+    floorBolts: {
+      variants: [
+        { id: 'floor-bolt', url: '/models/floor-elements/floor-bolt.glb?v=1', rotationDeg: [-90, 0, 0], rules: {} },
+      ],
+      positionOffset: [0, -12, 0],
     },
   },
   accessories: {
@@ -238,6 +246,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
   const center = parseVariantArray(value.motors.center);
   const feet = toFloorElement(value.floorElements.feet);
   const castors = toFloorElement(value.floorElements.castors);
+  const floorBolts = toFloorElement(value.floorElements.floorBolts);
   const accessories = isObject(value.accessories) ? {
     sideGuide: parseVariantArray(value.accessories.sideGuide) ?? undefined,
     sensors: parseVariantArray(value.accessories.sensors) ?? undefined,
@@ -271,6 +280,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
     floorElements: {
       feet,
       castors,
+      floorBolts: floorBolts ?? defaultLibrary.floorElements.floorBolts,
     },
     accessories,
     profiles,
@@ -388,6 +398,13 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   if (config.withStand) {
     if (config.floorElement === 'feet') {
       urls.push(selectVariant(config.frameWidth, library.floorElements.feet.variants).url);
+
+      if (config.floorBolts) {
+        const boltDef = library.floorElements.floorBolts ?? defaultLibrary.floorElements.floorBolts;
+        if (boltDef) {
+          urls.push(selectVariant(config.frameWidth, boltDef.variants).url);
+        }
+      }
     }
 
     if (config.floorElement === 'castors') {
@@ -574,12 +591,27 @@ export function resolveConveyor3DAssets(
   if (config.floorElement === 'feet') {
     const def = library.floorElements.feet;
     const variant = selectVariant(measurements.frameWidth, def.variants);
+    const footPositions = legPositions.map(([x, y, z]) => [x, y + def.positionOffset[1], z] as Vec3);
     resolved.feet = {
       url: variant.url,
       rotation: variant.rotation ?? [0, 0, 0],
       scale: variant.scale ?? [1, 1, 1],
-      positions: legPositions.map(([x, y, z]) => [x, y + def.positionOffset[1], z]),
+      positions: footPositions,
     };
+
+    if (config.floorBolts) {
+      const boltDef = library.floorElements.floorBolts ?? defaultLibrary.floorElements.floorBolts;
+      if (boltDef) {
+        const boltVariant = selectVariant(measurements.frameWidth, boltDef.variants);
+        resolved.floorBolts = {
+          url: boltVariant.url,
+          rotation: boltVariant.rotation ?? [0, 0, 0],
+          scale: boltVariant.scale ?? [1, 1, 1],
+          // Clamp plates are centered on the existing foot element positions.
+          positions: footPositions.map(([x, y, z]) => [x, y + boltDef.positionOffset[1] - def.positionOffset[1], z]),
+        };
+      }
+    }
   }
 
   if (config.floorElement === 'castors') {
