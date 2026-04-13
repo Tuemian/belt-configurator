@@ -1,4 +1,4 @@
-import { ConveyorConfig } from '@/lib/configurator-types';
+﻿import { ConveyorConfig } from '@/lib/configurator-types';
 import * as THREE from 'three';
 
 export type Vec3 = [number, number, number];
@@ -423,10 +423,10 @@ export function resolveConveyor3DAssets(
   const resolved: Conveyor3DResolvedAssets = {};
 
   // Motor angle convention:
-  //   0°  = shaft pointing down (toward floor)
-  //   90° = shaft pointing toward belt (inward)
-  //  180° = shaft pointing up
-  //  270° = shaft pointing away from belt (outward)
+  //   0Â°  = shaft pointing down (toward floor)
+  //   90Â° = shaft pointing toward belt (inward)
+  //  180Â° = shaft pointing up
+  //  270Â° = shaft pointing away from belt (outward)
   // The asset's natural pose has the shaft pointing outward (+Z for right side).
   // We rotate around the X-axis (conveyor longitudinal axis) by the mount angle.
   // For left side the motor is mirrored in Z so the same angle convention holds.
@@ -480,9 +480,9 @@ export function resolveConveyor3DAssets(
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
-        baseX - side * 50,
+        baseX - side * 50 - 500,
         baseY,
-        baseZ - side * 800,
+        baseZ - side * 800 + 500,
       ],
       rotation: mountRot,
       scale: mountFinalScale,
