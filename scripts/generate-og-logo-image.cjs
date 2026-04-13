@@ -42,15 +42,7 @@ async function main() {
         height: auto;
       }
       .sub {
-        position: absolute;
-        bottom: 64px;
-        left: 0;
-        right: 0;
-        text-align: center;
-        color: #35556e;
-        font-size: 28px;
-        font-weight: 600;
-        letter-spacing: 0.2px;
+        display: none;
       }
     </style>
   </head>
@@ -59,7 +51,7 @@ async function main() {
       <div class="card">
         <img class="logo" src="${logoData}" alt="NOVAMOTIS Logo" />
       </div>
-      <div class="sub">Foerdertechnik Konfigurator</div>
+      <div class="sub"></div>
     </div>
   </body>
 </html>`;
