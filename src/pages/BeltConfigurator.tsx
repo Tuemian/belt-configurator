@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
+import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,16 @@ const BeltConfigurator = () => {
   const [config, setConfig] = useState<ConveyorConfig>(defaultConfig);
 
   const handleChange = useCallback((updates: Partial<ConveyorConfig>) => {
-    setConfig((prev) => ({ ...prev, ...updates }));
+    setConfig((prev) => {
+      const next = { ...prev, ...updates };
+      const safeIncline = clampInclineAngleForConfig(next);
+
+      if (safeIncline !== next.inclineAngle) {
+        next.inclineAngle = safeIncline;
+      }
+
+      return next;
+    });
   }, []);
 
   const handleReset = useCallback(() => {
@@ -38,6 +47,8 @@ const BeltConfigurator = () => {
     t('step4Title', lang),
     t('step5Title', lang),
   ];
+
+  const stepNavTitles = stepTitles.slice(1);
 
   const stepDescs = [
     '',
@@ -132,7 +143,38 @@ const BeltConfigurator = () => {
 
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6">
         <Progress value={(step / TOTAL_STEPS) * 100} className="h-2" />
-        <div className="flex justify-between mt-2">
+        <div className="sm:hidden mt-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+            <span>{t('stepOf', lang, { current: step, total: TOTAL_STEPS })}</span>
+            <span className="max-w-[62%] truncate text-right font-semibold text-foreground">
+              {stepNavTitles[step - 1]}
+            </span>
+          </div>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => {
+              const isActive = i + 1 === step;
+              const isCompleted = i + 1 < step;
+
+              return (
+                <button
+                  key={`mobile-step-${i}`}
+                  onClick={() => setStep(i + 1)}
+                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : isCompleted
+                        ? 'border-primary/40 text-primary'
+                        : 'border-slate-200 text-muted-foreground'
+                  }`}
+                >
+                  {i + 1}. {stepNavTitles[i]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-2 hidden justify-between sm:flex">
           {Array.from({ length: TOTAL_STEPS }, (_, i) => (
             <button
               key={i}
@@ -141,7 +183,7 @@ const BeltConfigurator = () => {
                 i + 1 <= step ? 'text-primary' : 'text-muted-foreground'
               } ${i + 1 === step ? 'font-bold' : ''}`}
             >
-              {i + 1}. {[t('step1Title', lang), t('step2Title', lang), t('step3Title', lang), t('step4Title', lang), t('step5Title', lang)][i]}
+              {i + 1}. {stepNavTitles[i]}
             </button>
           ))}
         </div>
