@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
-import { t } from '@/lib/i18n';
+import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StepDimensions } from '@/components/configurator/StepDimensions';
 import { StepBeltSpeed } from '@/components/configurator/StepBeltSpeed';
 import { StepDrive } from '@/components/configurator/StepDrive';
@@ -15,6 +16,12 @@ import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
 const TOTAL_STEPS = 5;
+
+const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
+  { value: 'de', label: 'DE' },
+  { value: 'en', label: 'EN' },
+  { value: 'it', label: 'IT' },
+];
 
 const BeltConfigurator = () => {
   const [lang, setLang] = useLanguage();
@@ -73,14 +80,19 @@ const BeltConfigurator = () => {
               <Button asChild variant="outline" size="sm">
                 <Link to="/">{t('toolOverviewBack', lang)}</Link>
               </Button>
-              <Button
-                variant="ghost" size="sm"
-                onClick={() => setLang(lang === 'de' ? 'en' : 'de')}
-                className="gap-1.5"
-              >
-                <Globe className="w-4 h-4" />
-                {t('langSwitch', lang)}
-              </Button>
+              <Select value={lang} onValueChange={(value) => setLang(value as Language)}>
+                <SelectTrigger className="h-9 w-[90px] gap-2">
+                  <Globe className="h-4 w-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </header>
@@ -129,14 +141,19 @@ const BeltConfigurator = () => {
             <span className="text-sm text-muted-foreground hidden sm:block">
               {t('stepOf', lang, { current: step, total: TOTAL_STEPS })}
             </span>
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => setLang(lang === 'de' ? 'en' : 'de')}
-              className="gap-1.5"
-            >
-              <Globe className="w-4 h-4" />
-              {t('langSwitch', lang)}
-            </Button>
+            <Select value={lang} onValueChange={(value) => setLang(value as Language)}>
+              <SelectTrigger className="h-9 w-[90px] gap-2">
+                <Globe className="h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </header>
