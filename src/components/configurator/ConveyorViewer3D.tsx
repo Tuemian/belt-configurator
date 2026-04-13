@@ -21,12 +21,12 @@ const C = {
   belt: '#1b3b2c',
   beltSurface: '#244b37',
   guide: '#cbd5df',
-  motor: '#0057b8',
-  motorBody: '#00418e',
-  leg: '#3f4752',
-  castor: '#7f8894',
-  crossbar: '#d7dee6',
-  floorPlane: '#e5e7eb',
+  motor: '#c1121f',
+  motorBody: '#8f1018',
+  leg: '#8d99a8',
+  castor: '#6f7b8a',
+  crossbar: '#c7d2df',
+  floorPlane: '#e6eefc',
   arrow: '#ef4444',
 } as const;
 
@@ -854,18 +854,50 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
             />
           )}
 
-          <Box
-            pos={[0, legBottomY + shortestLegLength * 0.28, 0]}
-            size={[
-              beltLength - 2 * Math.min(150, beltLength * 0.08) - 38,
-              28,
-              frameWidth - 2 * Math.max(frameSectionWidth, 15) - 38,
-            ]}
-            color={C.crossbar}
+          <UnderframeBracing
+            beltLength={beltLength}
+            frameWidth={frameWidth}
+            frameSectionWidth={frameSectionWidth}
+            y={legBottomY + shortestLegLength * 0.28}
           />
         </>
       )}
     </group>
+  );
+}
+
+function UnderframeBracing({
+  beltLength,
+  frameWidth,
+  frameSectionWidth,
+  y,
+}: {
+  beltLength: number;
+  frameWidth: number;
+  frameSectionWidth: number;
+  y: number;
+}) {
+  const braceLength = beltLength - 2 * Math.min(150, beltLength * 0.08) - 38;
+  const braceWidth = Math.max(frameWidth - 2 * Math.max(frameSectionWidth, 15) - 38, 80);
+  const barHeight = 22;
+  const barThickness = 24;
+  const sideZ = braceWidth / 2 - barThickness / 2;
+  const endX = braceLength / 2 - barThickness / 2;
+
+  return (
+    <>
+      <Box pos={[0, y, -sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
+      <Box pos={[0, y, sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
+
+      {frameWidth > 500 ? (
+        <>
+          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+        </>
+      ) : (
+        <Box pos={[0, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+      )}
+    </>
   );
 }
 
@@ -902,7 +934,7 @@ export function ConveyorViewer3D({
       gl={{ antialias: true, alpha: false, preserveDrawingBuffer: Boolean(onSnapshotReady) }}
       camera={{ fov: 45, position: [3000, 2000, 3000], near: 1, far: 100000 }}
     >
-      <color attach="background" args={['#f1f5f9']} />
+      <color attach="background" args={['#eaf3ff']} />
       <ambientLight intensity={0.55} />
       <directionalLight position={[5000, 9000, 4000]} intensity={1.6} />
       <directionalLight position={[-4000, 3000, -3000]} intensity={0.4} />
