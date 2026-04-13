@@ -127,6 +127,8 @@ const translations = {
     submitSuccess: 'Vielen Dank! Ihre Anfrage wurde gesendet.',
     submitError: 'Fehler beim Senden. Bitte versuchen Sie es erneut.',
     required: 'Pflichtfeld',
+    imprintLink: 'Impressum',
+    privacyPolicyLink: 'Datenschutz',
   },
   en: {
     onlineConfigurator: 'Online Configurator',
@@ -246,6 +248,8 @@ const translations = {
     submitSuccess: 'Thank you! Your inquiry has been sent.',
     submitError: 'Error sending. Please try again.',
     required: 'Required',
+    imprintLink: 'Legal notice',
+    privacyPolicyLink: 'Privacy policy',
   },
 } as const;
 
