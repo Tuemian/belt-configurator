@@ -536,7 +536,9 @@ export function resolveConveyor3DAssets(
       url: mountVariant.url,
       position: [clampedOffset, -100 - 45, 0],
       rotation: centerMountRot,
-      scale: mountVariant.scale ?? [1, 1, 1],
+      scale: mountVariant.scale
+        ? [mountVariant.scale[0] || 1, mountVariant.scale[1] || 1, (mountVariant.scale[2] || 1) * widthScaleFactor]
+        : [1, 1, widthScaleFactor],
     };
     resolved.motor = {
       url: motorVariant.url,
@@ -546,9 +548,7 @@ export function resolveConveyor3DAssets(
         centerSide * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: centerMotorRot,
-      scale: motorVariant.scale
-        ? [motorVariant.scale[0] || 1, motorVariant.scale[1] || 1, (motorVariant.scale[2] || 1) * widthScaleFactor]
-        : [1, 1, widthScaleFactor],
+      scale: motorVariant.scale ?? [1, 1, 1],
     };
   }
 
