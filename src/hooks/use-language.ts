@@ -7,13 +7,22 @@ function isLanguage(value: string | null): value is Language {
   return value === 'de' || value === 'en';
 }
 
+function detectBrowserLanguage(): Language {
+  if (typeof navigator === 'undefined') {
+    return 'de';
+  }
+
+  const browserLanguages = [...(navigator.languages ?? []), navigator.language].filter(Boolean);
+  return browserLanguages.some((language) => language.toLowerCase().startsWith('de')) ? 'de' : 'en';
+}
+
 function readStoredLanguage(): Language {
   if (typeof window === 'undefined') {
     return 'de';
   }
 
   const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return isLanguage(storedLanguage) ? storedLanguage : 'de';
+  return isLanguage(storedLanguage) ? storedLanguage : detectBrowserLanguage();
 }
 
 export function useLanguage() {
