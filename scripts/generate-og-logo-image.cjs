@@ -4,7 +4,16 @@ const { chromium } = require('playwright');
 
 async function main() {
   const logoPath = path.resolve('src/assets/logo.svg');
-  const logoSvg = fs.readFileSync(logoPath, 'utf8');
+  let logoSvg = fs.readFileSync(logoPath, 'utf8');
+  // Crop SVG viewBox tightly to the actual logo content (icon + text) to avoid
+  // large whitespace padding. The logo lives at approx (44, 241) with size 1316×314
+  // within the original 1440×810 canvas.
+  logoSvg = logoSvg.replace(
+    /viewBox="[^"]*"/,
+    'viewBox="44 241 1316 314"'
+  );
+  // Remove fixed width/height so the element uses the viewBox aspect ratio.
+  logoSvg = logoSvg.replace(/\swidth="[^"]*"/, '').replace(/\sheight="[^"]*"/, '');
   const logoData = `data:image/svg+xml;base64,${Buffer.from(logoSvg, 'utf8').toString('base64')}`;
 
   const html = `<!doctype html>
@@ -37,8 +46,8 @@ async function main() {
         justify-content: center;
       }
       .logo {
-        width: 760px;
-        max-width: 90%;
+        width: 580px;
+        max-width: 85%;
         height: auto;
       }
       .sub {
