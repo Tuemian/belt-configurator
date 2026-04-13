@@ -54,3 +54,26 @@ Optional:
 
 - `INQUIRY_TO_EMAIL` (default: `office@novamotis.com`)
 - `INQUIRY_FROM_EMAIL` (default: `SMTP_USER`)
+
+## Monitoring Setup (Optional)
+
+The project supports optional Sentry-based error monitoring.
+
+- Frontend DSN: `VITE_SENTRY_DSN`
+- API DSN: `SENTRY_DSN`
+
+If these variables are not set, monitoring remains disabled.
+
+### Uptime Endpoint
+
+Use `GET /api/health` for uptime checks.
+
+Expected response:
+
+```json
+{
+	"ok": true,
+	"service": "ft-configurator",
+	"timestamp": "2026-01-01T00:00:00.000Z"
+}
+```
