@@ -208,7 +208,7 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
     }
 
     const nextScene = scene.clone(true);
-    if (asset.url.includes('/models/motors/motor.glb')) {
+    if (asset.url.includes('/models/motors/motor.glb') || asset.url.includes('/models/motors/center_motor.glb')) {
       applyMotorAppearance(nextScene);
     }
     return nextScene;
@@ -690,11 +690,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const inclineRadians = -(inclineAngle * Math.PI) / 180;
   const castorLegTrim = withStand && floorElement === 'castors' ? frameHeight / 2 + 53 : 0;
   const legLength = withStand ? Math.max(standHeight - castorLegTrim, 0) : 0;
-  const noStandLift = driveType === 'indirect'
-    ? frameHeight / 2 + motorHeight * 1.35 + 60
-    : driveType === 'center'
-      ? frameHeight / 2 + motorHeight / 2 + 55
-      : frameHeight / 2 + motorHeight / 2 + 28;
+  const noStandLift = 400;
   const groupY = withStand ? standHeight : noStandLift;
   const legInsetX = beltLength / 2 - Math.min(150, beltLength * 0.08);
   const legInsetZ = frameWidth / 2 - Math.max(frameSectionWidth, 15);
