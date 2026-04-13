@@ -482,7 +482,7 @@ export function resolveConveyor3DAssets(
       position: [
         baseX - side * 50 - 200,
         baseY,
-        baseZ - side * 800 + 500,
+        baseZ - side * 300,
       ],
       rotation: mountRot,
       scale: mountFinalScale,
