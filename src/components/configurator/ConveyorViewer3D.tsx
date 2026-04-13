@@ -15,17 +15,17 @@ import {
 } from '@/lib/conveyor-3d-library';
 
 const C = {
-  frame: '#2563eb',
-  frameDark: '#1e40af',
+  frame: '#3f4752',
+  frameDark: '#2f3640',
   drum: '#64748b',
-  belt: '#1a1a1a',
-  beltSurface: '#292929',
-  guide: '#0ea5e9',
-  motor: '#f59e0b',
-  motorBody: '#d97706',
-  leg: '#7c3aed',
-  castor: '#a855f7',
-  crossbar: '#60a5fa',
+  belt: '#1b3b2c',
+  beltSurface: '#244b37',
+  guide: '#cbd5df',
+  motor: '#0057b8',
+  motorBody: '#00418e',
+  leg: '#3f4752',
+  castor: '#7f8894',
+  crossbar: '#d7dee6',
   floorPlane: '#e5e7eb',
   arrow: '#ef4444',
 } as const;
