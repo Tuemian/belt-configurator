@@ -21,8 +21,8 @@ const C = {
   belt: '#1b3b2c',
   beltSurface: '#244b37',
   guide: '#cbd5df',
-  motor: '#c1121f',
-  motorBody: '#8f1018',
+  motor: '#7a0f18',
+  motorBody: '#5b0b12',
   leg: '#8d99a8',
   castor: '#6f7b8a',
   crossbar: '#8d99a8',
@@ -382,13 +382,15 @@ function ParametricDirectMotor({
   return (
     <group position={[motorX, 0, motorZ]}>
       <group rotation={[0, 0, directAngleRad]}>
-        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
+        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.15} roughness={0.88} />
         <Cyl
           pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
           rot={[Math.PI / 2, 0, 0]}
           r={motorCylinderRadius}
           h={motorCylinderHeight}
           color={C.motorBody}
+          metalness={0.15}
+          roughness={0.9}
         />
         {[-20, 0, 20].map((offsetX) => (
           <Box
@@ -396,6 +398,8 @@ function ParametricDirectMotor({
             pos={[offsetX, -motorHeight * 0.35, side * (motorDepth / 2 + 10)]}
             size={[8, motorHeight * 0.2, 6]}
             color={C.motorBody}
+            metalness={0.15}
+            roughness={0.9}
           />
         ))}
       </group>
@@ -464,8 +468,8 @@ function ParametricIndirectMotor({
             pos={[0, 0, effectiveSide * (motorT / 2 + 6)]}
             size={[motorW, motorH, motorT]}
             color={C.motor}
-            metalness={0.55}
-            roughness={0.4}
+            metalness={0.15}
+            roughness={0.88}
           />
 
           <Cyl
@@ -474,6 +478,8 @@ function ParametricIndirectMotor({
             r={Math.max(14, motorCylinderRadius * 0.55)}
             h={Math.max(22, motorCylinderHeight * 0.45)}
             color={C.motor}
+            metalness={0.15}
+            roughness={0.9}
           />
         </group>
       </group>
@@ -483,13 +489,15 @@ function ParametricIndirectMotor({
   return (
     <group position={[xPos, yPos, zPos]}>
       <group rotation={[0, 0, effectiveAngleRad]}>
-        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.55} roughness={0.4} />
+        <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.15} roughness={0.88} />
         <Cyl
           pos={[0, 0, effectiveSide * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}
           rot={[Math.PI / 2, 0, 0]}
           r={motorCylinderRadius}
           h={motorCylinderHeight}
           color={C.motorBody}
+          metalness={0.15}
+          roughness={0.9}
         />
       </group>
     </group>
@@ -855,9 +863,9 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           )}
 
           <UnderframeBracing
-            beltLength={beltLength}
             frameWidth={frameWidth}
-            frameSectionWidth={frameSectionWidth}
+            legInsetX={legInsetX}
+            legInsetZ={legInsetZ}
             y={legBottomY + shortestLegLength * 0.28}
           />
         </>
@@ -867,37 +875,37 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 }
 
 function UnderframeBracing({
-  beltLength,
   frameWidth,
-  frameSectionWidth,
+  legInsetX,
+  legInsetZ,
   y,
 }: {
-  beltLength: number;
   frameWidth: number;
-  frameSectionWidth: number;
+  legInsetX: number;
+  legInsetZ: number;
   y: number;
 }) {
-  const braceLength = beltLength - 2 * Math.min(150, beltLength * 0.08) - 38;
-  const braceWidth = Math.max(frameWidth - 2 * Math.max(frameSectionWidth, 15) - 38, 80);
   const barHeight = 22;
   const barThickness = 24;
-  const sideZ = braceWidth / 2 - barThickness / 2;
-  const endX = braceLength / 2 - barThickness / 2;
+  const spanX = legInsetX * 2;
+  const spanZ = legInsetZ * 2;
+  const sideZ = legInsetZ;
+  const endX = legInsetX;
 
   return (
     <>
       {frameWidth > 500 ? (
         <>
-          <Box pos={[0, y, -sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
-          <Box pos={[0, y, sideZ]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
-          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
-          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
+          <Box pos={[0, y, -sideZ]} size={[spanX, barHeight, barThickness]} color={C.crossbar} />
+          <Box pos={[0, y, sideZ]} size={[spanX, barHeight, barThickness]} color={C.crossbar} />
+          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
         </>
       ) : (
         <>
-          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
-          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, braceWidth]} color={C.crossbar} />
-          <Box pos={[0, y, 0]} size={[braceLength, barHeight, barThickness]} color={C.crossbar} />
+          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          <Box pos={[0, y, 0]} size={[spanX, barHeight, barThickness]} color={C.crossbar} />
         </>
       )}
     </>
