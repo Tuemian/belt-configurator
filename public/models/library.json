@@ -104,6 +104,17 @@
           "rules": {}
         }
       ]
+    },
+    "floorBolts": {
+      "positionOffset": [0, -12, 0],
+      "variants": [
+        {
+          "id": "floor-bolt",
+          "url": "/models/floor-elements/floor-bolt.glb?v=1",
+          "rotationDeg": [-90, 0, 0],
+          "rules": {}
+        }
+      ]
     }
   },
   "accessories": {
