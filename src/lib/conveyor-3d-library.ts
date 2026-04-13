@@ -483,7 +483,9 @@ export function resolveConveyor3DAssets(
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
-        baseX - side * 50 - 140,
+        config.motorPosition === 'left'
+          ? baseX - side * 50 + 160
+          : baseX - side * 50 - 740,
         baseY,
         baseZ - side * 300 - 15,
       ],
