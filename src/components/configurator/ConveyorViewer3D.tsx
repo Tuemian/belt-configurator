@@ -208,7 +208,7 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
     }
 
     const nextScene = scene.clone(true);
-    if (asset.url.includes('/models/motors/motor.glb') || asset.url.includes('/models/motors/center_motor.glb')) {
+    if (asset.url.includes('/models/motors/motor.glb')) {
       applyMotorAppearance(nextScene);
     }
     return nextScene;
@@ -850,26 +850,32 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         )}
 
         {driveType === 'center' && (
-          <ExternalAsset
-            asset={resolvedAssets.motor}
-            fallback={
-              <ParametricIndirectMotor
-                length={beltLength}
-                width={frameWidth}
-                frameHeight={frameHeight}
-                drumRadius={drumRadius}
-                motorWidth={motorWidth}
-                motorHeight={motorHeight}
-                motorDepth={motorDepth}
-                motorCylinderHeight={motorCylinderHeight}
-                motorCylinderRadius={motorCylinderRadius}
-                motorPosition={motorPosition}
-                motorAngle={config.motorAngle}
-                centerMounted
-                centerOffset={config.centerDriveOffset}
-              />
-            }
-          />
+          <>
+            <ExternalAsset
+              asset={resolvedAssets.centerMount}
+              fallback={null}
+            />
+            <ExternalAsset
+              asset={resolvedAssets.motor}
+              fallback={
+                <ParametricIndirectMotor
+                  length={beltLength}
+                  width={frameWidth}
+                  frameHeight={frameHeight}
+                  drumRadius={drumRadius}
+                  motorWidth={motorWidth}
+                  motorHeight={motorHeight}
+                  motorDepth={motorDepth}
+                  motorCylinderHeight={motorCylinderHeight}
+                  motorCylinderRadius={motorCylinderRadius}
+                  motorPosition={motorPosition}
+                  motorAngle={config.motorAngle}
+                  centerMounted
+                  centerOffset={config.centerDriveOffset}
+                />
+              }
+            />
+          </>
         )}
 
         <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} frameWidth={frameWidth} />
