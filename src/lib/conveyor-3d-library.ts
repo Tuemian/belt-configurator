@@ -480,9 +480,9 @@ export function resolveConveyor3DAssets(
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
-        baseX - 25,
+        baseX - side * 50 - 700,
         baseY,
-        baseZ,
+        baseZ - side * 300,
       ],
       rotation: mountRot,
       scale: mountFinalScale,
