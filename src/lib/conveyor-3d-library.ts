@@ -477,17 +477,12 @@ export function resolveConveyor3DAssets(
     const motorRot = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
     const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2] * mirrorScaleZ];
 
-    // CAD export of indirect_side.glb uses an offset scene origin; compensate so the component
-    // is mounted at the conveyor side instead of floating away from the frame.
-    const mountLocalCenter: Vec3 = [0.75, -0.08, 0.275];
-    const mountCenterWorld = transformLocalPoint(mountLocalCenter, mountRot, mountFinalScale);
-
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
-        baseX - mountCenterWorld[0],
-        baseY - mountCenterWorld[1],
-        baseZ - mountCenterWorld[2],
+        baseX,
+        baseY,
+        baseZ,
       ],
       rotation: mountRot,
       scale: mountFinalScale,
