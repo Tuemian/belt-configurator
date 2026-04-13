@@ -512,15 +512,20 @@ export function resolveConveyor3DAssets(
     const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct.right);
     const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
     const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
+    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [Math.PI / 2, 0, Math.PI / 2]);
     resolved.centerMount = {
       url: mountVariant.url,
       position: [clampedOffset, 0, 0],
-      rotation: mountVariant.rotation ?? [0, 0, 0],
+      rotation: centerMountRot,
       scale: mountVariant.scale ?? [1, 1, 1],
     };
     resolved.motor = {
       url: motorVariant.url,
-      position: [clampedOffset, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
+      position: [
+        clampedOffset,
+        -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
+        measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12,
+      ],
       rotation: rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], motorAngleRad),
       scale: motorVariant.scale ?? [1, 1, 1],
     };
