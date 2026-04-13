@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Language, t } from '@/lib/i18n';
+import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Globe } from 'lucide-react';
@@ -83,7 +83,7 @@ const tools = [
 ] as const;
 
 const Index = () => {
-  const [lang, setLang] = useState<Language>('de');
+  const [lang, setLang] = useLanguage();
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,148,204,0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)]">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
