@@ -74,7 +74,9 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
               (() => {
                 const isDisabled = config.driveType === 'indirect'
                   ? (config.motorPosition === 'left' ? (angle === 180 || angle === 270) : (angle === 90 || angle === 180))
-                  : false;
+                  : config.driveType === 'center'
+                    ? angle === 180
+                    : false;
                 return (
               <button
                 key={angle}
