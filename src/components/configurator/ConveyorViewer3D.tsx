@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -915,6 +915,9 @@ export function ConveyorViewer3D({
 
       <CameraRig config={config} resetCameraTick={resetCameraTick} />
       <ControlsRig config={config} resetCameraTick={resetCameraTick} />
+      <GizmoHelper alignment="bottom-left" margin={[70, 70]} renderPriority={2}>
+        <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="#0f172a" />
+      </GizmoHelper>
       <SnapshotRig requestId={snapshotRequest} onSnapshotReady={onSnapshotReady} />
     </Canvas>
   );
