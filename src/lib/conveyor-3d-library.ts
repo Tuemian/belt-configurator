@@ -477,14 +477,15 @@ export function resolveConveyor3DAssets(
     const mountRot = config.motorPosition === 'left'
       ? combineRotations(mountRotBase, [0, Math.PI, 0])
       : mountRotBase;
-    const motorRot = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
+    const motorRotBase = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
+    const motorRot = combineRotations(motorRotBase, [Math.PI, 0, 0]);
     const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2]];
 
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
         config.motorPosition === 'left'
-          ? baseX - side * 50 + 760
+          ? baseX - side * 50 + 600
           : baseX - side * 50 - 740,
         baseY,
         baseZ - side * 300 - 15,
