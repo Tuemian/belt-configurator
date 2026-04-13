@@ -63,7 +63,7 @@
     "center": [
       {
         "id": "center-compact",
-        "url": "/models/motors/motor.glb",
+        "url": "/models/motors/center_motor.glb",
         "rotationDeg": [90, 90, 0],
         "rules": {
           "maxFrameWidth": 500
@@ -71,7 +71,7 @@
       },
       {
         "id": "center-large",
-        "url": "/models/motors/motor.glb",
+        "url": "/models/motors/center_motor.glb",
         "rotationDeg": [90, 90, 0],
         "rules": {
           "minFrameWidth": 501
