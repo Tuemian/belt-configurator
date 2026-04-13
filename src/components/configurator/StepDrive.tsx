@@ -72,7 +72,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
           <div className="grid grid-cols-4 gap-2">
             {motorAngles.map((angle) => (
               (() => {
-                const isDisabled = config.driveType === 'indirect' && angle === 180;
+                const isDisabled = config.driveType === 'indirect' && (angle === 90 || angle === 180);
                 return (
               <button
                 key={angle}
