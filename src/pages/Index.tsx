@@ -89,7 +89,14 @@ const Index = () => {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
+            <a
+              href="https://www.novamotis.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:opacity-80 transition-opacity"
+            >
+              <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
+            </a>
           </div>
           <Button
             variant="ghost"
@@ -136,7 +143,6 @@ const Index = () => {
           <div className="mb-8 flex items-end justify-between gap-6">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{t('hubSectionTitle', lang)}</h2>
-              <p className="mt-2 text-muted-foreground">{t('hubSectionSubtitle', lang)}</p>
             </div>
           </div>
 
