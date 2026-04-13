@@ -78,13 +78,6 @@ export const StepStand = ({ config, onChange, lang }: Props) => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 rounded-lg border">
-                <Label className="text-sm font-semibold text-foreground">{t('heightAdjust', lang)}</Label>
-                <Switch
-                  checked={config.heightAdjust}
-                  onCheckedChange={(v) => onChange({ heightAdjust: v })}
-                />
-              </div>
               {config.floorElement === 'feet' && (
                 <div className="flex items-center justify-between p-4 rounded-lg border">
                   <Label className="text-sm font-semibold text-foreground">{t('floorBolts', lang)}</Label>
