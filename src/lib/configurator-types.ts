@@ -24,6 +24,31 @@ export interface ConveyorConfig {
   floorBolts: boolean;
 }
 
+export const MIN_INFEED_OUTFEED_CLEARANCE_MM = 400;
+export const MAX_INCLINE_ABS_DEG = 10;
+
+export function getInclineLimitDegrees(beltLength: number, referenceHeight: number): number {
+  const safeLength = Number.isFinite(beltLength) && beltLength > 0 ? beltLength : 1;
+  const safeReferenceHeight = Number.isFinite(referenceHeight) ? referenceHeight : MIN_INFEED_OUTFEED_CLEARANCE_MM;
+  const availableRiseHalf = Math.max(0, safeReferenceHeight - MIN_INFEED_OUTFEED_CLEARANCE_MM);
+
+  if (availableRiseHalf <= 0) {
+    return 0;
+  }
+
+  const maxRadians = Math.atan((2 * availableRiseHalf) / safeLength);
+  const maxDegrees = (maxRadians * 180) / Math.PI;
+  return Math.min(MAX_INCLINE_ABS_DEG, maxDegrees);
+}
+
+export function clampInclineAngleForConfig(config: Pick<ConveyorConfig, 'beltLength' | 'inclineAngle' | 'standHeight' | 'withStand'>): number {
+  const referenceHeight = config.withStand
+    ? config.standHeight
+    : MIN_INFEED_OUTFEED_CLEARANCE_MM;
+  const limit = getInclineLimitDegrees(config.beltLength, referenceHeight);
+  return Math.max(-limit, Math.min(limit, config.inclineAngle));
+}
+
 export const defaultConfig: ConveyorConfig = {
   frameWidth: 400,
   beltLength: 2000,
