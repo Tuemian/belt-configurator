@@ -91,6 +91,10 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     },
   ];
 
+  const technicalDisclaimer = lang === 'de'
+    ? 'Hinweis: Diese Konfiguration ist unverbindlich und dient als technischer Vorentwurf. Finale Auslegung, Preis und Lieferzeit erfolgen nach technischer Prüfung durch NOVAMOTIS.'
+    : 'Note: This configuration is non-binding and serves as a technical pre-design. Final engineering, pricing, and lead time are provided after technical review by NOVAMOTIS.';
+
   const generatePdfContent = () => {
     let text = `NOVAMOTIS - ${t('configuratorTitle', lang)}\n${'='.repeat(50)}\n\n`;
     summaryRows.forEach(({ section, items }) => {
@@ -100,6 +104,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       });
       text += '\n';
     });
+
+    text += `${technicalDisclaimer}\n`;
+
     return text;
   };
 
@@ -507,6 +514,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
             {t('newConfig', lang)}
           </Button>
         </div>
+        <p className="text-xs leading-relaxed text-muted-foreground pt-1">
+          {technicalDisclaimer}
+        </p>
       </div>
 
       {/* Contact Form */}
