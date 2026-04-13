@@ -33,6 +33,37 @@ const C = {
 const sceneCache = new Map<string, THREE.Object3D>();
 const unavailableAssets = new Set<string>();
 
+function applyMotorAppearance(object: THREE.Object3D) {
+  object.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) {
+      return;
+    }
+
+    const applyMaterial = (material: THREE.Material) => {
+      if (!(material instanceof THREE.MeshStandardMaterial) && !(material instanceof THREE.MeshPhysicalMaterial)) {
+        return material;
+      }
+
+      const nextMaterial = material.clone();
+      nextMaterial.color = new THREE.Color(C.motor);
+      nextMaterial.emissive = new THREE.Color('#000000');
+      nextMaterial.map = null;
+      nextMaterial.metalness = 0.12;
+      nextMaterial.roughness = 0.9;
+      nextMaterial.envMapIntensity = 0.2;
+      nextMaterial.needsUpdate = true;
+      return nextMaterial;
+    };
+
+    if (Array.isArray(child.material)) {
+      child.material = child.material.map(applyMaterial);
+      return;
+    }
+
+    child.material = applyMaterial(child.material);
+  });
+}
+
 function Box({
   pos,
   size,
@@ -175,7 +206,12 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
     if (!scene || !asset) {
       return null;
     }
-    return scene.clone(true);
+
+    const nextScene = scene.clone(true);
+    if (asset.url.includes('/models/motors/motor.glb')) {
+      applyMotorAppearance(nextScene);
+    }
+    return nextScene;
   }, [asset, scene]);
 
   if (!asset || !clonedScene) {
@@ -654,7 +690,12 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const inclineRadians = -(inclineAngle * Math.PI) / 180;
   const castorLegTrim = withStand && floorElement === 'castors' ? frameHeight / 2 + 53 : 0;
   const legLength = withStand ? Math.max(standHeight - castorLegTrim, 0) : 0;
-  const groupY = withStand ? standHeight : 0;
+  const noStandLift = driveType === 'indirect'
+    ? frameHeight / 2 + motorHeight * 1.35 + 60
+    : driveType === 'center'
+      ? frameHeight / 2 + motorHeight / 2 + 55
+      : frameHeight / 2 + motorHeight / 2 + 28;
+  const groupY = withStand ? standHeight : noStandLift;
   const legInsetX = beltLength / 2 - Math.min(150, beltLength * 0.08);
   const legInsetZ = frameWidth / 2 - Math.max(frameSectionWidth, 15);
   const legBottomY = -(frameHeight / 2 + legLength);
