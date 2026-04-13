@@ -65,6 +65,7 @@
         "id": "center-compact",
         "url": "/models/motors/center_motor.glb",
         "rotationDeg": [90, 90, 0],
+        "scale": [1000, 1000, 1000],
         "rules": {
           "maxFrameWidth": 500
         }
@@ -73,6 +74,7 @@
         "id": "center-large",
         "url": "/models/motors/center_motor.glb",
         "rotationDeg": [90, 90, 0],
+        "scale": [1000, 1000, 1000],
         "rules": {
           "minFrameWidth": 501
         }
