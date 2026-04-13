@@ -512,10 +512,18 @@ export function resolveConveyor3DAssets(
     const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct.right);
     const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
     const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
-    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [Math.PI / 2, 0, Math.PI / 2]);
+    const centerSide = config.motorPosition === 'left' ? -1 : 1;
+    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [0, Math.PI / 2, Math.PI / 2]);
+    const centerMotorRotBase = rotateAroundConveyorAxis(
+      motorVariant.rotation ?? [0, 0, 0],
+      ((config.motorAngle + 90) * Math.PI) / 180,
+    );
+    const centerMotorRot = config.motorPosition === 'left'
+      ? combineRotations(centerMotorRotBase, [0, Math.PI, 0])
+      : centerMotorRotBase;
     resolved.centerMount = {
       url: mountVariant.url,
-      position: [clampedOffset, 0, 0],
+      position: [clampedOffset, -100, 0],
       rotation: centerMountRot,
       scale: mountVariant.scale ?? [1, 1, 1],
     };
@@ -524,9 +532,9 @@ export function resolveConveyor3DAssets(
       position: [
         clampedOffset,
         -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
-        measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12,
+        centerSide * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
-      rotation: rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], motorAngleRad),
+      rotation: centerMotorRot,
       scale: motorVariant.scale ?? [1, 1, 1],
     };
   }
