@@ -696,6 +696,19 @@ function ParametricCastors({ positions }: { positions: Vec3[] }) {
   );
 }
 
+function ParametricFloorBolts({ positions }: { positions: Vec3[] }) {
+  return (
+    <>
+      {positions.map((position, index) => (
+        <group key={`floor-bolt-${index}`} position={position}>
+          <Box pos={[0, -4, 0]} size={[80, 8, 54]} color="#9ca3af" />
+          <Box pos={[0, 7, 0]} size={[22, 14, 22]} color="#6b7280" />
+        </group>
+      ))}
+    </>
+  );
+}
+
 function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const {
     beltLength,
@@ -935,7 +948,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
               {config.floorBolts && (
                 <ExternalAssetInstances
                   asset={resolvedAssets.floorBolts}
-                  fallback={null}
+                  fallback={<ParametricFloorBolts positions={footPositions} />}
                 />
               )}
             </>
