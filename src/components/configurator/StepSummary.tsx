@@ -495,8 +495,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
               <div className="space-y-1">
                 {items.map(([label, value], i) => (
                   <div key={i} className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-medium text-foreground">{value}</span>
+                    <span className="text-muted-foreground shrink-0 pr-3">{label}</span>
+                    <span className="font-medium text-foreground text-right w-[55%] break-words">{value}</span>
                   </div>
                 ))}
               </div>
