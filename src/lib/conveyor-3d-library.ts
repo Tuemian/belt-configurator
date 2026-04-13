@@ -70,6 +70,7 @@ export interface Conveyor3DLibrary {
 
 export interface ModelPlacement extends ModelAssetDefinition {
   position: Vec3;
+  frameWidthMm?: number;
 }
 
 export interface ModelInstances extends ModelAssetDefinition {
@@ -536,9 +537,8 @@ export function resolveConveyor3DAssets(
       url: mountVariant.url,
       position: [clampedOffset, -100 - 45, 0],
       rotation: centerMountRot,
-      scale: mountVariant.scale
-         ? [mountVariant.scale[0] || 1, mountVariant.scale[1] || 1, (mountVariant.scale[2] || 1) * widthScaleFactor]
-         : [1, 1, widthScaleFactor],
+      scale: mountVariant.scale ?? [1, 1, 1],
+      frameWidthMm: measurements.frameWidth,
     };
     resolved.motor = {
       url: motorVariant.url,
