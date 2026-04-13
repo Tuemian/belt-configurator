@@ -915,7 +915,7 @@ export function ConveyorViewer3D({
 
       <CameraRig config={config} resetCameraTick={resetCameraTick} />
       <ControlsRig config={config} resetCameraTick={resetCameraTick} />
-      <GizmoHelper alignment="bottom-left" margin={[70, 70]} renderPriority={2}>
+      <GizmoHelper alignment="bottom-left" margin={[70, 70]}>
         <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="#0f172a" />
       </GizmoHelper>
       <SnapshotRig requestId={snapshotRequest} onSnapshotReady={onSnapshotReady} />
