@@ -2,6 +2,7 @@ import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, Globe } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
@@ -82,6 +83,12 @@ const tools = [
   },
 ] as const;
 
+const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
+  { value: 'de', label: 'DE' },
+  { value: 'en', label: 'EN' },
+  { value: 'it', label: 'IT' },
+];
+
 const Index = () => {
   const [lang, setLang] = useLanguage();
   return (
@@ -98,15 +105,19 @@ const Index = () => {
               <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
             </a>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLang(lang === 'de' ? 'en' : 'de')}
-            className="gap-1.5"
-          >
-            <Globe className="w-4 h-4" />
-            {t('langSwitch', lang)}
-          </Button>
+          <Select value={lang} onValueChange={(value) => setLang(value as Language)}>
+            <SelectTrigger className="h-9 w-[90px] gap-2">
+              <Globe className="h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </header>
 
