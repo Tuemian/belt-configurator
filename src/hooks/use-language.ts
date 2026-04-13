@@ -5,7 +5,7 @@ const LANGUAGE_STORAGE_KEY = 'novamotis-language';
 const LANGUAGE_CHANGED_EVENT = 'novamotis-language-changed';
 
 function isLanguage(value: string | null): value is Language {
-  return value === 'de' || value === 'en';
+  return value === 'de' || value === 'en' || value === 'it';
 }
 
 function detectBrowserLanguage(): Language {
@@ -14,7 +14,15 @@ function detectBrowserLanguage(): Language {
   }
 
   const browserLanguages = [...(navigator.languages ?? []), navigator.language].filter(Boolean);
-  return browserLanguages.some((language) => language.toLowerCase().startsWith('de')) ? 'de' : 'en';
+  if (browserLanguages.some((language) => language.toLowerCase().startsWith('de'))) {
+    return 'de';
+  }
+
+  if (browserLanguages.some((language) => language.toLowerCase().startsWith('it'))) {
+    return 'it';
+  }
+
+  return 'en';
 }
 
 function readStoredLanguage(): Language {
