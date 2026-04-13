@@ -722,7 +722,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const motorCylinderRadius = motorHeight * 0.32;
   const motorCylinderHeight = motorHeight * 1.3;
 
-  const inclineRadians = -(inclineAngle * Math.PI) / 180;
+  const inclineRadians = (inclineAngle * Math.PI) / 180;
   const castorLegTrim = withStand && floorElement === 'castors' ? frameHeight / 2 + 53 : 0;
   const legLength = withStand ? Math.max(standHeight - castorLegTrim, 0) : 0;
   const noStandLift = 400;
