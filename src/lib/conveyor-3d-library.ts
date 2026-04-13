@@ -463,8 +463,8 @@ export function resolveConveyor3DAssets(
     const mountScale = mountVariant.scale ?? [1, 1, 1];
     const motorScale = motorVariant.scale ?? [1, 1, 1];
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + 360) % 360
-      : (config.motorAngle + 90) % 360;
+      ? (270 - config.motorAngle + 360) % 360
+      : (config.motorAngle + 270) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
     const baseY = 0;
@@ -480,7 +480,7 @@ export function resolveConveyor3DAssets(
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
-        baseX - side * 50 - 700,
+        baseX - side * 50 - 515,
         baseY,
         baseZ - side * 300,
       ],
@@ -492,8 +492,8 @@ export function resolveConveyor3DAssets(
       url: motorVariant.url,
       position: [
         baseX,
-        -(measurements.frameHeight / 2 + measurements.motorHeight * 0.85 + 30),
-        baseZ - side * 120,
+        -(measurements.frameHeight / 2 + measurements.motorHeight * 0.85 + 30) - 40,
+        baseZ - side * 120 + 20,
       ],
       rotation: motorRot,
       scale: [motorScale[0], motorScale[1], motorScale[2] * mirrorScaleZ],
