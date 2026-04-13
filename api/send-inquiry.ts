@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/node';
+
 type InquiryPayload = {
   lang?: 'de' | 'en';
   form?: {
@@ -29,6 +31,27 @@ type ApiResponse = {
   status: (code: number) => ApiResponse;
   json: (body: unknown) => void;
 };
+
+let monitoringInitialized = false;
+
+function initServerMonitoring() {
+  if (monitoringInitialized) {
+    return;
+  }
+
+  const dsn = process.env.SENTRY_DSN;
+  if (!dsn) {
+    return;
+  }
+
+  Sentry.init({
+    dsn,
+    environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'production',
+    tracesSampleRate: 0.1,
+  });
+
+  monitoringInitialized = true;
+}
 
 function asNonEmptyString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -130,6 +153,8 @@ function buildCustomerText(params: {
 }
 
 export default async function handler(request: ApiRequest, response: ApiResponse): Promise<void> {
+  initServerMonitoring();
+
   if (request.method !== 'POST') {
     response.status(405).json({ error: 'Method not allowed' });
     return;
@@ -218,6 +243,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     accessToken = tokenData.access_token;
   } catch (err) {
     const errMessage = err instanceof Error ? err.message : String(err);
+    Sentry.captureException(err);
     console.error('Graph token error:', errMessage);
     response.status(502).json({ error: 'Mail delivery failed', detail: errMessage });
     return;
@@ -280,6 +306,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     );
   } catch (err) {
     const errMessage = err instanceof Error ? err.message : String(err);
+    Sentry.captureException(err);
     console.error('Graph mail error:', errMessage);
     response.status(502).json({ error: 'Mail delivery failed', detail: errMessage });
     return;
