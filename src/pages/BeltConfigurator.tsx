@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
-import { Language, t } from '@/lib/i18n';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { StepDimensions } from '@/components/configurator/StepDimensions';
@@ -16,7 +17,7 @@ import { Link } from 'react-router-dom';
 const TOTAL_STEPS = 5;
 
 const BeltConfigurator = () => {
-  const [lang, setLang] = useState<Language>('de');
+  const [lang, setLang] = useLanguage();
   const [step, setStep] = useState(0);
   const [config, setConfig] = useState<ConveyorConfig>(defaultConfig);
 
