@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Language, t } from '@/lib/i18n';
-import { ConveyorConfig } from '@/lib/configurator-types';
+import { ConveyorConfig, getInclineLimitDegrees, MAX_INCLINE_ABS_DEG, MIN_INFEED_OUTFEED_CLEARANCE_MM } from '@/lib/configurator-types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   config: ConveyorConfig;
@@ -19,6 +20,8 @@ const MAX_BELT_LENGTH = 12000;
 const SIDE_GUIDE_MIN = 0;
 const SIDE_GUIDE_MAX = 50;
 const SIDE_GUIDE_ACTIVE_MIN = 8; // When side guides are on, minimum meaningful height
+const STANDARD_HINT_THRESHOLD_MM = 25;
+const STANDARD_FRAME_WIDTHS = ALLOWED_FRAME_WIDTHS.filter((v) => v <= 120 || v % 50 === 0);
 
 // Snap helper: 0 = off; 1-7 snaps up to 8; above 8 is kept as-is
 function snapSideGuide(v: number): number {
@@ -26,13 +29,24 @@ function snapSideGuide(v: number): number {
   if (v < SIDE_GUIDE_ACTIVE_MIN) return SIDE_GUIDE_ACTIVE_MIN;
   return Math.min(SIDE_GUIDE_MAX, v);
 }
-const INCLINE_MIN = -10;
-const INCLINE_MAX = 10;
+const INCLINE_MIN = -MAX_INCLINE_ABS_DEG;
+const INCLINE_MAX = MAX_INCLINE_ABS_DEG;
 
 const nearestFrameWidth = (value: number): number => {
   return ALLOWED_FRAME_WIDTHS.reduce((prev, curr) => {
     return Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev;
   }, ALLOWED_FRAME_WIDTHS[0]);
+};
+
+const nearbyStandardWidths = (value: number): number[] => {
+  const lower = [...STANDARD_FRAME_WIDTHS].reverse().find((candidate) => candidate < value);
+  const higher = STANDARD_FRAME_WIDTHS.find((candidate) => candidate > value);
+
+  const suggestions = [lower, higher]
+    .filter((candidate): candidate is number => typeof candidate === 'number')
+    .filter((candidate) => Math.abs(candidate - value) <= STANDARD_HINT_THRESHOLD_MM);
+
+  return Array.from(new Set(suggestions));
 };
 
 function FrameWidthInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -118,9 +132,19 @@ function BeltLengthInput({
 }
 
 export const StepDimensions = ({ config, onChange, lang }: Props) => {
+  const [dismissedStandardHintFor, setDismissedStandardHintFor] = useState<number | null>(null);
   const frameWidthIndex = ALLOWED_FRAME_WIDTHS.findIndex((v) => v === config.frameWidth);
   const selectedFrameWidthIndex = frameWidthIndex === -1 ? 0 : frameWidthIndex;
   const minLengthFromWidth = Math.max(MIN_BELT_LENGTH, Math.ceil(config.frameWidth * 1.5));
+  const inclineReferenceHeight = config.withStand ? config.standHeight : MIN_INFEED_OUTFEED_CLEARANCE_MM;
+  const dynamicInclineLimit = getInclineLimitDegrees(config.beltLength, inclineReferenceHeight);
+  const dynamicInclineMin = -dynamicInclineLimit;
+  const dynamicInclineMax = dynamicInclineLimit;
+  const standardSuggestions = useMemo(() => nearbyStandardWidths(config.frameWidth), [config.frameWidth]);
+  const isCurrentWidthStandard = STANDARD_FRAME_WIDTHS.includes(config.frameWidth);
+  const showStandardHint = !isCurrentWidthStandard
+    && standardSuggestions.length > 0
+    && dismissedStandardHintFor !== config.frameWidth;
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
@@ -173,6 +197,45 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               <span className="text-sm text-muted-foreground">mm</span>
             </div>
           </div>
+
+          {showStandardHint && (
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+              <p className="text-sm font-semibold text-foreground">{t('frameWidthStandardHintTitle', lang)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('frameWidthStandardHintBody', lang, { width: config.frameWidth })}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {standardSuggestions.map((candidate) => (
+                  <Button
+                    key={candidate}
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      onChange({
+                        frameWidth: candidate,
+                        beltLength: Math.max(config.beltLength, Math.round(candidate * 1.5)),
+                      });
+                      setDismissedStandardHintFor(null);
+                    }}
+                  >
+                    {t('frameWidthStandardHintOption', lang, {
+                      width: candidate,
+                      delta: Math.abs(candidate - config.frameWidth),
+                    })}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDismissedStandardHintFor(config.frameWidth)}
+                >
+                  {t('frameWidthStandardHintKeep', lang)}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -253,9 +316,9 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
           <div className="flex items-center gap-4">
             <Slider
               value={[config.inclineAngle]}
-              onValueChange={([v]) => onChange({ inclineAngle: v })}
-              min={INCLINE_MIN}
-              max={INCLINE_MAX}
+              onValueChange={([v]) => onChange({ inclineAngle: Math.max(dynamicInclineMin, Math.min(dynamicInclineMax, v)) })}
+              min={dynamicInclineMin}
+              max={dynamicInclineMax}
               step={1}
               className="flex-1"
             />
@@ -263,9 +326,9 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               <Input
                 type="number"
                 value={config.inclineAngle}
-                min={INCLINE_MIN}
-                max={INCLINE_MAX}
-                onChange={(e) => onChange({ inclineAngle: Math.min(INCLINE_MAX, Math.max(INCLINE_MIN, Number(e.target.value))) })}
+                min={dynamicInclineMin}
+                max={dynamicInclineMax}
+                onChange={(e) => onChange({ inclineAngle: Math.min(dynamicInclineMax, Math.max(dynamicInclineMin, Number(e.target.value))) })}
                 className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">°</span>
