@@ -480,9 +480,9 @@ export function resolveConveyor3DAssets(
     resolved.indirectMount = {
       url: mountVariant.url,
       position: [
-        baseX,
+        baseX - side * 50,
         baseY,
-        baseZ,
+        baseZ - side * 50,
       ],
       rotation: mountRot,
       scale: mountFinalScale,
@@ -493,7 +493,7 @@ export function resolveConveyor3DAssets(
       position: [
         baseX,
         -(measurements.frameHeight / 2 + measurements.motorHeight * 0.85 + 30),
-        baseZ - side * 70,
+        baseZ - side * 120,
       ],
       rotation: motorRot,
       scale: [motorScale[0], motorScale[1], motorScale[2] * mirrorScaleZ],
