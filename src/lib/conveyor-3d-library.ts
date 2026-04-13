@@ -473,7 +473,7 @@ export function resolveConveyor3DAssets(
     // Indirect side component stays fixed; motor angle control rotates only the motor.
     // Keep component vertical and oriented away from the belt (CAD-like reference view).
     const mountBaseRot = mountVariant.rotation ?? [0, 0, 0];
-    const mountRot = combineRotations(mountBaseRot, [0, Math.PI, 0]);
+    const mountRot = combineRotations(mountBaseRot, [Math.PI / 2, Math.PI, Math.PI / 2]);
     const motorRot = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
     const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2] * mirrorScaleZ];
 
@@ -482,7 +482,7 @@ export function resolveConveyor3DAssets(
       position: [
         baseX - side * 50,
         baseY,
-        baseZ - side * 200,
+        baseZ - side * 800,
       ],
       rotation: mountRot,
       scale: mountFinalScale,
