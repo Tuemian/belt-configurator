@@ -32,6 +32,38 @@ const C = {
 
 const sceneCache = new Map<string, THREE.Object3D>();
 const unavailableAssets = new Set<string>();
+const CENTER_DRIVE_BASE_WIDTH_MM = 500;
+const CENTER_DRIVE_SPAN_PARTS = new Set(['10-00-0021-2', '10-00-0030-1', '10-00-0021-3']);
+const CENTER_DRIVE_SIDE_PART_PATTERNS = [
+  /seitenpl_mittena_80/i,
+  /einstellplatte_mittenantrieb/i,
+  /pendelkugellgaer/i,
+];
+
+function applyCenterDriveWidth(object: THREE.Object3D, frameWidthMm: number) {
+  const widthScaleFactor = frameWidthMm / CENTER_DRIVE_BASE_WIDTH_MM;
+  const halfDeltaMeters = (frameWidthMm - CENTER_DRIVE_BASE_WIDTH_MM) / 2000;
+
+  if (Math.abs(widthScaleFactor - 1) < 0.0001) {
+    return;
+  }
+
+  object.traverse((child) => {
+    if (CENTER_DRIVE_SPAN_PARTS.has(child.name)) {
+      child.scale.x = widthScaleFactor;
+    }
+
+    if (!CENTER_DRIVE_SIDE_PART_PATTERNS.some((pattern) => pattern.test(child.name))) {
+      return;
+    }
+
+    if (child.position.x > 0) {
+      child.position.x += halfDeltaMeters;
+    } else if (child.position.x < 0) {
+      child.position.x -= halfDeltaMeters;
+    }
+  });
+}
 
 function applyMotorAppearance(object: THREE.Object3D) {
   object.traverse((child) => {
@@ -210,6 +242,9 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
     const nextScene = scene.clone(true);
     if (asset.url.includes('/models/motors/motor.glb')) {
       applyMotorAppearance(nextScene);
+    }
+    if (asset.url.includes('/models/motors/center_motor.glb') && asset.frameWidthMm) {
+      applyCenterDriveWidth(nextScene, asset.frameWidthMm);
     }
     return nextScene;
   }, [asset, scene]);
