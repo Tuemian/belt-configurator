@@ -78,6 +78,7 @@ export interface ModelInstances extends ModelAssetDefinition {
 
 export interface Conveyor3DResolvedAssets {
   indirectMount?: ModelPlacement;
+  centerMount?: ModelPlacement;
   motor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
@@ -105,8 +106,8 @@ const defaultLibrary: Conveyor3DLibrary = {
       ],
     },
     center: [
-      { id: 'center-compact', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], rules: { maxFrameWidth: 500 } },
-      { id: 'center-large', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], rules: { minFrameWidth: 501 } },
+      { id: 'center-compact', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
+      { id: 'center-large', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
     ],
   },
   floorElements: {
@@ -507,14 +508,21 @@ export function resolveConveyor3DAssets(
   }
 
   if (config.driveType === 'center') {
-    const variant = selectVariant(measurements.frameWidth, library.motors.center);
+    const mountVariant = selectVariant(measurements.frameWidth, library.motors.center);
+    const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct.right);
     const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
     const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
+    resolved.centerMount = {
+      url: mountVariant.url,
+      position: [clampedOffset, 0, 0],
+      rotation: mountVariant.rotation ?? [0, 0, 0],
+      scale: mountVariant.scale ?? [1, 1, 1],
+    };
     resolved.motor = {
-      url: variant.url,
+      url: motorVariant.url,
       position: [clampedOffset, -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15), 0],
-      rotation: rotateAroundConveyorAxis(variant.rotation ?? [0, 0, 0], motorAngleRad),
-      scale: variant.scale ?? [1, 1, 1],
+      rotation: rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], motorAngleRad),
+      scale: motorVariant.scale ?? [1, 1, 1],
     };
   }
 
