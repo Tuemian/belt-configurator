@@ -22,6 +22,7 @@ declare const process: {
 type ApiRequest = {
   method?: string;
   body?: unknown;
+  headers?: Record<string, string | string[] | undefined>;
 };
 
 type ApiResponse = {
@@ -35,6 +36,41 @@ function asNonEmptyString(value: unknown): string {
 
 function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const MAX_NAME_LEN = 120;
+const MAX_COMPANY_LEN = 160;
+const MAX_EMAIL_LEN = 254;
+const MAX_PHONE_LEN = 60;
+const MAX_MESSAGE_LEN = 4000;
+const MAX_SUMMARY_LEN = 25000;
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+const rateLimitStore = new Map<string, number[]>();
+
+function getClientIp(request: ApiRequest): string {
+  const forwarded = request.headers?.['x-forwarded-for'];
+  const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  return value?.split(',')[0]?.trim() || 'unknown';
+}
+
+function isRateLimited(clientKey: string, now: number): boolean {
+  const previous = rateLimitStore.get(clientKey) ?? [];
+  const recent = previous.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    rateLimitStore.set(clientKey, recent);
+    return true;
+  }
+
+  recent.push(now);
+  rateLimitStore.set(clientKey, recent);
+  return false;
+}
+
+function exceedsLength(value: string, max: number): boolean {
+  return value.length > max;
 }
 
 function buildOfficeText(params: {
@@ -111,9 +147,41 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const attachmentContentType = asNonEmptyString(body.attachment?.contentType);
   const attachmentContentBase64 = asNonEmptyString(body.attachment?.contentBase64);
 
+  const now = Date.now();
+  const clientKey = `${getClientIp(request)}:${email || 'no-email'}`;
+  if (isRateLimited(clientKey, now)) {
+    response.status(429).json({ error: 'Too many requests' });
+    return;
+  }
+
   if (!name || !email || !looksLikeEmail(email)) {
     response.status(400).json({ error: 'Invalid payload' });
     return;
+  }
+
+  if (
+    exceedsLength(name, MAX_NAME_LEN)
+    || exceedsLength(company, MAX_COMPANY_LEN)
+    || exceedsLength(email, MAX_EMAIL_LEN)
+    || exceedsLength(phone, MAX_PHONE_LEN)
+    || exceedsLength(message, MAX_MESSAGE_LEN)
+    || exceedsLength(summary, MAX_SUMMARY_LEN)
+  ) {
+    response.status(400).json({ error: 'Input too long' });
+    return;
+  }
+
+  if (attachmentContentBase64) {
+    if (attachmentContentType && attachmentContentType !== 'application/pdf') {
+      response.status(400).json({ error: 'Unsupported attachment type' });
+      return;
+    }
+
+    const estimatedBytes = Math.floor((attachmentContentBase64.length * 3) / 4);
+    if (estimatedBytes > MAX_ATTACHMENT_BYTES) {
+      response.status(400).json({ error: 'Attachment too large' });
+      return;
+    }
   }
 
   const tenantId = process.env.GRAPH_TENANT_ID;
