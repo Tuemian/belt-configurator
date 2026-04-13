@@ -513,14 +513,20 @@ export function resolveConveyor3DAssets(
     const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
     const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
     const centerSide = config.motorPosition === 'left' ? -1 : 1;
-    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [0, Math.PI / 2, Math.PI / 2]);
+    const normalizedCenterAngle = config.motorAngle === 90
+      ? 270
+      : config.motorAngle === 270
+        ? 90
+        : config.motorAngle;
+    const centerMountRot = combineRotations(mountVariant.rotation ?? [0, 0, 0], [0, Math.PI * 1.5, Math.PI / 2]);
     const centerMotorRotBase = rotateAroundConveyorAxis(
       motorVariant.rotation ?? [0, 0, 0],
-      ((config.motorAngle + 90) * Math.PI) / 180,
+      ((normalizedCenterAngle + 90) * Math.PI) / 180,
     );
-    const centerMotorRot = config.motorPosition === 'left'
+    const centerMotorRotY = config.motorPosition === 'left'
       ? combineRotations(centerMotorRotBase, [0, Math.PI, 0])
       : centerMotorRotBase;
+    const centerMotorRot = combineRotations(centerMotorRotY, [Math.PI, 0, 0]);
     resolved.centerMount = {
       url: mountVariant.url,
       position: [clampedOffset, -100, 0],
@@ -531,7 +537,7 @@ export function resolveConveyor3DAssets(
       url: motorVariant.url,
       position: [
         clampedOffset,
-        -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15),
+        -(measurements.frameHeight / 2 + measurements.motorHeight / 2 + 15) - 40,
         centerSide * (measurements.frameWidth / 2 + measurements.motorDepth / 2 + 12),
       ],
       rotation: centerMotorRot,
