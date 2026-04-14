@@ -979,7 +979,7 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
           <UnderframeBracing
             frameWidth={frameWidth}
-            legInsetX={legInsetX}
+            legAxisXs={legAxisXs}
             legInsetZ={legInsetZ}
             y={legBottomY + shortestLegLength * 0.28}
           />
@@ -991,21 +991,21 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
 function UnderframeBracing({
   frameWidth,
-  legInsetX,
+  legAxisXs,
   legInsetZ,
   y,
 }: {
   frameWidth: number;
-  legInsetX: number;
+  legAxisXs: number[];
   legInsetZ: number;
   y: number;
 }) {
   const barHeight = 22;
   const barThickness = 24;
-  const spanX = legInsetX * 2;
+  const spanX = Math.max(0, legAxisXs[legAxisXs.length - 1] - legAxisXs[0]);
   const spanZ = legInsetZ * 2;
   const sideZ = legInsetZ;
-  const endX = legInsetX;
+  const transverseBraceXs = legAxisXs;
 
   return (
     <>
@@ -1013,13 +1013,15 @@ function UnderframeBracing({
         <>
           <Box pos={[0, y, -sideZ]} size={[spanX, barHeight, barThickness]} color={C.crossbar} />
           <Box pos={[0, y, sideZ]} size={[spanX, barHeight, barThickness]} color={C.crossbar} />
-          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
-          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          {transverseBraceXs.map((x, index) => (
+            <Box key={`wide-transverse-brace-${index}`} pos={[x, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          ))}
         </>
       ) : (
         <>
-          <Box pos={[-endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
-          <Box pos={[endX, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          {transverseBraceXs.map((x, index) => (
+            <Box key={`compact-transverse-brace-${index}`} pos={[x, y, 0]} size={[barThickness, barHeight, spanZ]} color={C.crossbar} />
+          ))}
           <Box pos={[0, y, 0]} size={[spanX, barHeight, barThickness]} color={C.crossbar} />
         </>
       )}
