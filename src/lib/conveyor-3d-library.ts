@@ -128,7 +128,7 @@ const defaultLibrary: Conveyor3DLibrary = {
     },
     floorBolts: {
       variants: [
-        { id: 'floor-bolt', url: '/models/floor-elements/floor-bolt.glb?v=1', rotationDeg: [-90, 0, 0], scale: [1000, 1000, 1000], rules: {} },
+        { id: 'floor-bolt', url: '/models/floor-elements/floor-bolt.glb?v=1', rotationDeg: [-90, 0, 0], scale: [1, 1, 1], rules: {} },
       ],
       positionOffset: [0, -12, 0],
     },
