@@ -4,9 +4,11 @@ import { ConveyorConfig, getInclineLimitDegrees, MAX_INCLINE_ABS_DEG, MIN_INFEED
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Props {
   config: ConveyorConfig;
@@ -131,6 +133,44 @@ function BeltLengthInput({
   );
 }
 
+function FieldInfoHint({ text }: { text: string }) {
+  const isMobile = useIsMobile();
+
+  const trigger = (
+    <button
+      type="button"
+      className="ml-1 rounded-full border border-muted-foreground px-2 py-0.5 text-xs text-muted-foreground transition-colors duration-200 hover:bg-primary/10"
+      aria-label="Info"
+    >
+      i
+    </button>
+  );
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          {trigger}
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-3 text-sm">
+          <span>{text}</span>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {trigger}
+      </TooltipTrigger>
+      <TooltipContent>
+        <span>{text}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export const StepDimensions = ({ config, onChange, lang }: Props) => {
   const [dismissedStandardHintFor, setDismissedStandardHintFor] = useState<number | null>(null);
   const frameWidthIndex = ALLOWED_FRAME_WIDTHS.findIndex((v) => v === config.frameWidth);
@@ -155,18 +195,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               {t('frameWidth', lang)}
               <span className="ml-2 text-xs font-normal text-muted-foreground">({t('frameWidthRange', lang)})</span>
             </Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="ml-1 cursor-pointer rounded-full border border-muted-foreground px-2 py-0.5 text-xs text-muted-foreground transition-colors duration-200 hover:bg-primary/10">
-                    i
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>{t('frameWidthInfo', lang)}</span>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <FieldInfoHint text={t('frameWidthInfo', lang)} />
           </div>
 
           <div className="flex items-center gap-4">
@@ -244,18 +273,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
               {t('beltLength', lang)}
               <span className="ml-2 text-xs font-normal text-muted-foreground">({t('beltLengthRange', lang)})</span>
             </Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="ml-1 cursor-pointer rounded-full border border-muted-foreground px-2 py-0.5 text-xs text-muted-foreground transition-colors duration-200 hover:bg-primary/10">
-                    i
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>{t('beltLengthInfo', lang)}</span>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <FieldInfoHint text={t('beltLengthInfo', lang)} />
           </div>
 
           <div className="flex items-center gap-4">
