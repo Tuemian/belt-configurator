@@ -478,7 +478,7 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + 360) % 360
+      ? (90 - config.motorAngle + 180 + 360) % 360
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
@@ -505,7 +505,7 @@ export function resolveConveyor3DAssets(
     const mountScale = mountVariant.scale ?? [1, 1, 1];
     const motorScale = motorVariant.scale ?? [1, 1, 1];
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + (config.motorAngle === 270 ? 180 : 0) + 360) % 360
+      ? (90 - config.motorAngle + 180 + (config.motorAngle === 270 ? 180 : 0) + 360) % 360
       : (config.motorAngle + 270 + (config.motorAngle === 90 ? 180 : 0)) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
