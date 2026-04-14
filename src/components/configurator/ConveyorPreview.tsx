@@ -47,6 +47,13 @@ async function fileExists(url: string): Promise<boolean> {
 export function ConveyorPreview({ config, lang }: { config: ConveyorConfig; lang: Language }) {
   const [missingFiles, setMissingFiles] = useState<string[]>([]);
   const [resetCameraTick, setResetCameraTick] = useState(0);
+  const [viewAxis, setViewAxis] = useState<'x' | 'y' | 'z' | null>(null);
+  const [viewAxisTick, setViewAxisTick] = useState(0);
+
+  const handleViewAxis = (axis: 'x' | 'y' | 'z') => {
+    setViewAxis(axis);
+    setViewAxisTick((v) => v + 1);
+  };
 
   useEffect(() => {
     let active = true;
@@ -106,7 +113,12 @@ export function ConveyorPreview({ config, lang }: { config: ConveyorConfig; lang
           </div>
         }
       >
-        <ConveyorViewer3D config={config} resetCameraTick={resetCameraTick} />
+        <ConveyorViewer3D
+          config={config}
+          resetCameraTick={resetCameraTick}
+          viewAxis={viewAxis}
+          viewAxisTick={viewAxisTick}
+        />
       </Suspense>
 
       <button
@@ -116,6 +128,20 @@ export function ConveyorPreview({ config, lang }: { config: ConveyorConfig; lang
       >
         {t('cameraCenter', lang)}
       </button>
+
+      <div className="absolute right-3 top-14 flex gap-1 rounded-md border border-border bg-background/90 p-1 shadow-sm backdrop-blur">
+        {(['x', 'y', 'z'] as const).map((axis) => (
+          <button
+            key={axis}
+            type="button"
+            onClick={() => handleViewAxis(axis)}
+            className="h-7 w-7 rounded text-xs font-semibold uppercase text-foreground transition-colors hover:bg-muted"
+            aria-label={`View ${axis.toUpperCase()} axis`}
+          >
+            {axis}
+          </button>
+        ))}
+      </div>
 
       {missingFiles.length > 0 && (
         <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
