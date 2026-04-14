@@ -96,6 +96,18 @@ function applyMotorAppearance(object: THREE.Object3D) {
   });
 }
 
+function normalizeFloorBoltScene(object: THREE.Object3D) {
+  const box = new THREE.Box3().setFromObject(object);
+
+  if (box.isEmpty()) {
+    return;
+  }
+
+  const center = box.getCenter(new THREE.Vector3());
+  object.position.x -= center.x;
+  object.position.z -= center.z;
+}
+
 function Box({
   pos,
   size,
@@ -246,6 +258,9 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
     if (asset.url.includes('/models/motors/center_motor.glb') && asset.frameWidthMm) {
       applyCenterDriveWidth(nextScene, asset.frameWidthMm);
     }
+    if (asset.url.includes('/models/floor-elements/floor-bolt.glb')) {
+      normalizeFloorBoltScene(nextScene);
+    }
     return nextScene;
   }, [asset, scene]);
 
@@ -276,7 +291,13 @@ function ExternalAssetInstances({
     if (!scene || !asset) {
       return [];
     }
-    return asset.positions.map(() => scene.clone(true));
+    return asset.positions.map(() => {
+      const nextScene = scene.clone(true);
+      if (asset.url.includes('/models/floor-elements/floor-bolt.glb')) {
+        normalizeFloorBoltScene(nextScene);
+      }
+      return nextScene;
+    });
   }, [asset, scene]);
 
   if (!asset || clonedScenes.length === 0) {
