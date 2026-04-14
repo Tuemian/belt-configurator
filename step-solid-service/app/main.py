@@ -76,9 +76,9 @@ def _try_profile_outer_dims(profile_file: Path) -> tuple[float, float] | None:
 
 def _frame_profile_dims(frame_width: float) -> tuple[float, float]:
     # Mirrors requested profile mapping: 40x40 for narrower belts, 80x40 (high) for wider.
-    use_gf80 = frame_width > 500
+    use_motis80 = frame_width > 500
 
-    if use_gf80:
+    if use_motis80:
         dims = _try_profile_outer_dims(PROFILE_80_FILE)
         if dims:
             low, high = min(dims), max(dims)
@@ -94,8 +94,8 @@ def _frame_profile_dims(frame_width: float) -> tuple[float, float]:
 
 def _get_profile_step_file(frame_width: float) -> Path | None:
     """Select appropriate profile STEP file based on frame width."""
-    use_gf80 = frame_width > 500
-    profile_file = PROFILE_80_FILE if use_gf80 else PROFILE_40_FILE
+    use_motis80 = frame_width > 500
+    profile_file = PROFILE_80_FILE if use_motis80 else PROFILE_40_FILE
     return profile_file if profile_file.exists() else None
 
 
@@ -373,7 +373,7 @@ def _build_motor_solid(
 
 def build_conveyor_solid(config: ConveyorConfig) -> cq.Shape:
     length = _clamp(config.beltLength, 500, 12000)
-    width = _clamp(config.frameWidth, 40, 1250)
+    width = _clamp(config.frameWidth, 40, 1000)
     incline_deg = _clamp(config.inclineAngle, -10, 10)
 
     profile_w, profile_h = _frame_profile_dims(width)
