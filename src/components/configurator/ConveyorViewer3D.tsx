@@ -97,15 +97,24 @@ function applyMotorAppearance(object: THREE.Object3D) {
 }
 
 function normalizeFloorBoltScene(object: THREE.Object3D) {
+  // Center all meshes in the object so geometry aligns properly
   const box = new THREE.Box3().setFromObject(object);
 
   if (box.isEmpty()) {
+    console.warn('normalizeFloorBoltScene: Box is empty - no geometry found');
     return;
   }
 
   const center = box.getCenter(new THREE.Vector3());
-  object.position.x -= center.x;
-  object.position.z -= center.z;
+  console.log('normalizeFloorBoltScene: Centering at', center, 'with box:', box);
+  
+  // Move all geometries to center around the computed center
+  object.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.position.x -= center.x;
+      child.position.z -= center.z;
+    }
+  });
 }
 
 function Box({
@@ -248,6 +257,9 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
 
   const clonedScene = useMemo(() => {
     if (!scene || !asset) {
+      if (asset?.url?.includes('floor-bolt')) {
+        console.log('ExternalAsset (floor-bolt single): No scene loaded, using fallback', { url: asset?.url, sceneExists: !!scene });
+      }
       return null;
     }
 
@@ -259,6 +271,7 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
       applyCenterDriveWidth(nextScene, asset.frameWidthMm);
     }
     if (asset.url.includes('/models/floor-elements/floor-bolt.glb')) {
+      console.log('ExternalAsset (floor-bolt single): Normalizing floor-bolt scene from URL:', asset.url);
       normalizeFloorBoltScene(nextScene);
     }
     return nextScene;
@@ -289,11 +302,16 @@ function ExternalAssetInstances({
 
   const clonedScenes = useMemo(() => {
     if (!scene || !asset) {
+      if (asset?.url?.includes('floor-bolt')) {
+        console.log('ExternalAssetInstances (floor-bolt): No scene loaded, using fallback', { url: asset?.url, sceneExists: !!scene, positionCount: asset?.positions.length });
+      }
       return [];
     }
-    return asset.positions.map(() => {
+    console.log('ExternalAssetInstances (floor-bolt): Loading', asset.positions.length, 'instances from URL:', asset.url);
+    return asset.positions.map((pos, idx) => {
       const nextScene = scene.clone(true);
       if (asset.url.includes('/models/floor-elements/floor-bolt.glb')) {
+        console.log('ExternalAssetInstances (floor-bolt): Normalizing instance', idx, 'at position', pos);
         normalizeFloorBoltScene(nextScene);
       }
       return nextScene;
