@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -352,7 +352,18 @@ function CameraRig({ config, resetCameraTick }: { config: ConveyorConfig; resetC
   return null;
 }
 
-function ControlsRig({ config, resetCameraTick }: { config: ConveyorConfig; resetCameraTick: number }) {
+function ControlsRig({
+  config,
+  resetCameraTick,
+  viewAxis,
+  viewAxisTick,
+}: {
+  config: ConveyorConfig;
+  resetCameraTick: number;
+  viewAxis?: 'x' | 'y' | 'z' | null;
+  viewAxisTick?: number;
+}) {
+  const { camera, invalidate } = useThree();
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
   useEffect(() => {
@@ -364,6 +375,36 @@ function ControlsRig({ config, resetCameraTick }: { config: ConveyorConfig; rese
     controlsRef.current.target.set(0, standHeight * 0.5, 0);
     controlsRef.current.update();
   }, [config.standHeight, config.withStand, resetCameraTick]);
+
+  useEffect(() => {
+    if (!controlsRef.current || !viewAxis || !viewAxisTick) {
+      return;
+    }
+
+    const targetY = config.withStand ? config.standHeight * 0.5 : 0;
+    const target = new THREE.Vector3(0, targetY, 0);
+    const currentDistance = camera.position.distanceTo(target);
+    const viewDistance = Math.max(currentDistance, 1200);
+
+    if (viewAxis === 'x') {
+      camera.position.set(viewDistance, targetY, 0);
+      camera.up.set(0, 1, 0);
+    }
+
+    if (viewAxis === 'y') {
+      camera.position.set(0, targetY + viewDistance, Math.max(viewDistance * 0.001, 1));
+      camera.up.set(0, 0, 1);
+    }
+
+    if (viewAxis === 'z') {
+      camera.position.set(0, targetY, viewDistance);
+      camera.up.set(0, 1, 0);
+    }
+
+    controlsRef.current.target.copy(target);
+    controlsRef.current.update();
+    invalidate();
+  }, [camera, config.standHeight, config.withStand, invalidate, viewAxis, viewAxisTick]);
 
   return (
     <OrbitControls
@@ -1026,11 +1067,15 @@ function FloorPlane({ config }: { config: ConveyorConfig }) {
 export function ConveyorViewer3D({
   config,
   resetCameraTick = 0,
+  viewAxis = null,
+  viewAxisTick = 0,
   snapshotRequest = 0,
   onSnapshotReady,
 }: {
   config: ConveyorConfig;
   resetCameraTick?: number;
+  viewAxis?: 'x' | 'y' | 'z' | null;
+  viewAxisTick?: number;
   snapshotRequest?: number;
   onSnapshotReady?: (dataUrl: string) => void;
 }) {
@@ -1056,10 +1101,12 @@ export function ConveyorViewer3D({
       </Suspense>
 
       <CameraRig config={config} resetCameraTick={resetCameraTick} />
-      <ControlsRig config={config} resetCameraTick={resetCameraTick} />
-      <GizmoHelper alignment="bottom-left" margin={[70, 70]}>
-        <GizmoViewport axisColors={['#ef4444', '#22c55e', '#3b82f6']} labelColor="#0f172a" />
-      </GizmoHelper>
+      <ControlsRig
+        config={config}
+        resetCameraTick={resetCameraTick}
+        viewAxis={viewAxis}
+        viewAxisTick={viewAxisTick}
+      />
       <SnapshotRig requestId={snapshotRequest} onSnapshotReady={onSnapshotReady} />
     </Canvas>
   );
