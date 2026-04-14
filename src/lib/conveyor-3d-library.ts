@@ -478,17 +478,13 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + 360) % 360
+      ? (270 - config.motorAngle) % 360
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    let finalRot = config.motorPosition === 'right'
+    const finalRot = config.motorPosition === 'right'
       ? rotateAroundLocalYAxis(baseRot, directAngleRad)
       : rotateAroundConveyorAxis(baseRot, directAngleRad);
-    // For right side, apply additional 180° rotation around local Y-axis
-    if (config.motorPosition === 'right') {
-      finalRot = rotateAroundLocalYAxis(finalRot, Math.PI);
-    }
     resolved.motor = {
       url: variant.url,
       position: [
