@@ -116,7 +116,7 @@ const defaultLibrary: Conveyor3DLibrary = {
   floorElements: {
     feet: {
       variants: [
-        { id: 'foot', url: '/models/floor-elements/foot.glb?v=2', rotationDeg: [-90, 0, 0], rules: {} },
+        { id: 'foot', url: '/models/floor-elements/foot.glb?v=3', rotationDeg: [-90, 0, 0], scale: [1000, 1000, 1000], rules: {} },
       ],
       positionOffset: [0, -12, 0],
     },
@@ -128,7 +128,7 @@ const defaultLibrary: Conveyor3DLibrary = {
     },
     floorBolts: {
       variants: [
-        { id: 'floor-bolt', url: '/models/floor-elements/floor-bolt.glb?v=1', rotationDeg: [-90, 0, 0], scale: [1, 1, 1], rules: {} },
+        { id: 'floor-bolt', url: '/models/floor-elements/floor-bolt.glb?v=2', rotationDeg: [-90, 0, 0], scale: [1000, 1000, 1000], rules: {} },
       ],
       positionOffset: [0, -12, 0],
     },
@@ -419,15 +419,30 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   return Array.from(new Set(urls));
 }
 
-function legBasePositions(measurements: Conveyor3DMeasurements): Vec3[] {
-  const { legInsetX, legInsetZ, frameHeight, legLength } = measurements;
+function getLegAxisPositions(measurements: Conveyor3DMeasurements): number[] {
+  const { beltLength, legInsetX } = measurements;
+  const extraPairs = Math.floor(beltLength / 2000);
 
-  return [
-    [-legInsetX, -(frameHeight / 2 + legLength), -legInsetZ],
-    [-legInsetX, -(frameHeight / 2 + legLength), legInsetZ],
-    [legInsetX, -(frameHeight / 2 + legLength), -legInsetZ],
-    [legInsetX, -(frameHeight / 2 + legLength), legInsetZ],
-  ];
+  if (extraPairs <= 0) {
+    return [-legInsetX, legInsetX];
+  }
+
+  const firstExtraX = -((extraPairs - 1) * 2000) / 2;
+  const extraXs = Array.from({ length: extraPairs }, (_, idx) => firstExtraX + idx * 2000)
+    .filter((x) => x > -legInsetX + 1 && x < legInsetX - 1);
+
+  return [-legInsetX, ...extraXs, legInsetX];
+}
+
+function legBasePositions(measurements: Conveyor3DMeasurements): Vec3[] {
+  const { legInsetZ, frameHeight, legLength } = measurements;
+  const axisXs = getLegAxisPositions(measurements);
+  const baseY = -(frameHeight / 2 + legLength);
+
+  return axisXs.flatMap((x) => [
+    [x, baseY, -legInsetZ] as Vec3,
+    [x, baseY, legInsetZ] as Vec3,
+  ]);
 }
 
 export function resolveConveyor3DAssets(
