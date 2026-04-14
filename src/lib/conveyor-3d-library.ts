@@ -92,10 +92,10 @@ const defaultLibrary: Conveyor3DLibrary = {
   motors: {
     direct: {
       left: [
-        { id: 'direct-left', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
+        { id: 'direct-left', url: '/models/motors/motor.glb?v=3', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
       ],
       right: [
-        { id: 'direct-right', url: '/models/motors/motor.glb', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
+        { id: 'direct-right', url: '/models/motors/motor.glb?v=3', rotationDeg: [90, 90, 0], scale: [1, 1, 1] },
       ],
     },
     indirect: {
