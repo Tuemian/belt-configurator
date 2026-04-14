@@ -478,13 +478,17 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + 180 + 360) % 360
+      ? (90 - config.motorAngle + 360) % 360
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    const finalRot = config.motorPosition === 'right'
+    let finalRot = config.motorPosition === 'right'
       ? rotateAroundLocalYAxis(baseRot, directAngleRad)
       : rotateAroundConveyorAxis(baseRot, directAngleRad);
+    // For right side, apply additional 180° rotation around local Y-axis
+    if (config.motorPosition === 'right') {
+      finalRot = rotateAroundLocalYAxis(finalRot, Math.PI);
+    }
     resolved.motor = {
       url: variant.url,
       position: [
@@ -505,7 +509,7 @@ export function resolveConveyor3DAssets(
     const mountScale = mountVariant.scale ?? [1, 1, 1];
     const motorScale = motorVariant.scale ?? [1, 1, 1];
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + 180 + (config.motorAngle === 270 ? 180 : 0) + 360) % 360
+      ? (90 - config.motorAngle + (config.motorAngle === 270 ? 180 : 0) + 360) % 360
       : (config.motorAngle + 270 + (config.motorAngle === 90 ? 180 : 0)) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
@@ -520,7 +524,11 @@ export function resolveConveyor3DAssets(
       ? combineRotations(mountRotBase, [0, Math.PI, 0])
       : mountRotBase;
     const motorRotBase = rotateAroundConveyorAxis(motorVariant.rotation ?? [0, 0, 0], indirectAngleRad);
-    const motorRot = combineRotations(motorRotBase, [0, Math.PI, 0]);
+    let motorRot = combineRotations(motorRotBase, [0, Math.PI, 0]);
+    // For right side, apply additional 180° rotation around local Y-axis
+    if (config.motorPosition === 'right') {
+      motorRot = rotateAroundLocalYAxis(motorRot, Math.PI);
+    }
     const mountFinalScale: Vec3 = [mountScale[0], mountScale[1], mountScale[2]];
 
     resolved.indirectMount = {
