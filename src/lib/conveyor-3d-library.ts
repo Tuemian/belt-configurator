@@ -116,7 +116,7 @@ const defaultLibrary: Conveyor3DLibrary = {
   floorElements: {
     feet: {
       variants: [
-        { id: 'foot', url: '/models/floor-elements/foot.glb?v=3', rotationDeg: [-90, 0, 0], scale: [1000, 1000, 1000], rules: {} },
+        { id: 'foot', url: '/models/floor-elements/foot.glb?v=4', rotationDeg: [-90, 0, 0], scale: [1, 1, 1], rules: {} },
       ],
       positionOffset: [0, -12, 0],
     },
