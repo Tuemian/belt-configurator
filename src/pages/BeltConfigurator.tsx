@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
 import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
@@ -27,6 +27,10 @@ const BeltConfigurator = () => {
   const [lang, setLang] = useLanguage();
   const [step, setStep] = useState(0);
   const [config, setConfig] = useState<ConveyorConfig>(defaultConfig);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
 
   const handleChange = useCallback((updates: Partial<ConveyorConfig>) => {
     setConfig((prev) => {
