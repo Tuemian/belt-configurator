@@ -30,6 +30,10 @@ function getDriveLabel(type: ConveyorConfig['driveType'], lang: Language) {
   return t(map[type], lang);
 }
 
+function getProfileSeriesLabel(frameWidth: number, lang: Language) {
+  return frameWidth > 500 ? t('profileMotis80', lang) : t('profileMotis40', lang);
+}
+
 const BRAND_BLUE: [number, number, number] = [0, 51, 102];
 const BRAND_GRAY: [number, number, number] = [98, 108, 122];
 const BORDER_GRAY: [number, number, number] = [210, 214, 220];
@@ -56,6 +60,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       section: t('dimensions', lang),
       items: [
         [t('frameWidth', lang), `${config.frameWidth} mm`],
+        [t('profileSeries', lang), getProfileSeriesLabel(config.frameWidth, lang)],
         [t('beltLength', lang), `${config.beltLength} mm`],
         [t('sideGuideHeight', lang), `${config.sideGuideHeight} mm`],
         [t('inclineAngle', lang), `${config.inclineAngle}°`],
