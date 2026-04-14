@@ -358,6 +358,16 @@ function rotateAroundLocalYAxis(rotation: Vec3 | undefined, angleRad: number): V
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
+function rotateAroundLocalXAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
+  const [x, y, z] = rotation ?? [0, 0, 0];
+  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+  const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleRad);
+  const finalQuat = baseQuat.clone().multiply(localQuat);
+  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
+
+  return [finalEuler.x, finalEuler.y, finalEuler.z];
+}
+
 function combineRotations(base: Vec3, delta: Vec3): Vec3 {
   const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(base[0], base[1], base[2], 'XYZ'));
   const deltaQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(delta[0], delta[1], delta[2], 'XYZ'));
@@ -478,13 +488,17 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (config.motorAngle + 180) % 360
+      ? (config.motorAngle + 90) % 360
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    const finalRot = config.motorPosition === 'right'
+    let finalRot = config.motorPosition === 'right'
       ? rotateAroundLocalYAxis(baseRot, directAngleRad)
       : rotateAroundConveyorAxis(baseRot, directAngleRad);
+    // For right side, apply additional 180° rotation around local X-axis
+    if (config.motorPosition === 'right') {
+      finalRot = rotateAroundLocalXAxis(finalRot, Math.PI);
+    }
     resolved.motor = {
       url: variant.url,
       position: [
