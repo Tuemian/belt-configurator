@@ -184,7 +184,10 @@ const BeltConfigurator = () => {
                         : 'border-slate-200 text-muted-foreground'
                   }`}
                 >
-                  {i + 1}. {stepNavTitles[i]}
+                  <span className="inline-flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-primary-foreground' : isCompleted ? 'bg-primary' : 'bg-slate-300'}`} />
+                    <span>{i + 1}. {stepNavTitles[i]}</span>
+                  </span>
                 </button>
               );
             })}
@@ -192,17 +195,23 @@ const BeltConfigurator = () => {
         </div>
 
         <div className="mt-2 hidden justify-between sm:flex">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setStep(i + 1)}
-              className={`text-xs font-medium transition-colors ${
-                i + 1 <= step ? 'text-primary' : 'text-muted-foreground'
-              } ${i + 1 === step ? 'font-bold' : ''}`}
-            >
-              {i + 1}. {stepNavTitles[i]}
-            </button>
-          ))}
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => {
+            const isActive = i + 1 === step;
+            const isCompleted = i + 1 < step;
+
+            return (
+              <button
+                key={i}
+                onClick={() => setStep(i + 1)}
+                className={`inline-flex items-center gap-2 text-xs font-medium transition-colors ${
+                  i + 1 <= step ? 'text-primary' : 'text-muted-foreground'
+                } ${isActive ? 'font-bold' : ''}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-primary' : isCompleted ? 'bg-primary/60' : 'bg-slate-300'}`} />
+                <span>{i + 1}. {stepNavTitles[i]}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
