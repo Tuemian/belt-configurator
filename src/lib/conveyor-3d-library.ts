@@ -348,6 +348,16 @@ function rotateAroundConveyorAxis(rotation: Vec3 | undefined, angleRad: number):
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
+function rotateAroundLocalYAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
+  const [x, y, z] = rotation ?? [0, 0, 0];
+  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+  const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angleRad);
+  const finalQuat = baseQuat.clone().multiply(localQuat);
+  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
+
+  return [finalEuler.x, finalEuler.y, finalEuler.z];
+}
+
 function combineRotations(base: Vec3, delta: Vec3): Vec3 {
   const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(base[0], base[1], base[2], 'XYZ'));
   const deltaQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(delta[0], delta[1], delta[2], 'XYZ'));
@@ -472,7 +482,9 @@ export function resolveConveyor3DAssets(
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    const finalRot = rotateAroundConveyorAxis(baseRot, directAngleRad);
+    const finalRot = config.motorPosition === 'right'
+      ? rotateAroundLocalYAxis(baseRot, directAngleRad)
+      : rotateAroundConveyorAxis(baseRot, directAngleRad);
     resolved.motor = {
       url: variant.url,
       position: [
