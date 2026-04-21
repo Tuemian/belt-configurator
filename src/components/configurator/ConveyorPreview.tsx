@@ -54,14 +54,27 @@ export function ConveyorPreview({ config, lang }: { config: ConveyorConfig; lang
     const validateAssets = async () => {
       await loadConveyor3DLibraryFromPublic();
       const urls = getSelectedConveyorAssetUrls(config);
-      const missing: string[] = [];
+      const preloadUrls = new Set(urls);
 
-      for (const url of urls) {
-        const exists = await fileExists(url);
-        if (!exists) {
-          missing.push(url);
+      if (config.driveType !== 'center') {
+        const centerConfig: ConveyorConfig = {
+          ...config,
+          driveType: 'center',
+        };
+        for (const url of getSelectedConveyorAssetUrls(centerConfig)) {
+          preloadUrls.add(url);
         }
       }
+
+      void import('./ConveyorViewer3D').then((m) => {
+        m.preloadConveyorAssetUrls(Array.from(preloadUrls));
+      });
+
+      const checks = await Promise.all(urls.map(async (url) => ({
+        url,
+        exists: await fileExists(url),
+      })));
+      const missing = checks.filter((entry) => !entry.exists).map((entry) => entry.url);
 
       if (active) {
         setMissingFiles(missing);
