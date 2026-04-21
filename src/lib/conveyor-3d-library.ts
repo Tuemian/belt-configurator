@@ -388,7 +388,7 @@ function snapIndirectMotorAngle(
 ): number {
   const normalized = ((angleDeg % 360) + 360) % 360;
   const allowed = motorPosition === 'right'
-    ? ([0, 270] as const)
+    ? ([0, 90] as const)
     : ([0, 270] as const);
   return allowed.reduce((best, candidate) => {
     const delta = Math.min(
@@ -574,7 +574,7 @@ export function resolveConveyor3DAssets(
     const motorScale = motorVariant.scale ?? [1, 1, 1];
     const snappedAngle = snapIndirectMotorAngle(config.motorAngle, config.motorPosition);
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (snappedAngle === 0 ? 0 : 90)
+      ? (90 - snappedAngle + 360) % 360
       : (snappedAngle + 270) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
