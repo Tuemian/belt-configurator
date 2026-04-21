@@ -172,7 +172,7 @@ function Cyl({
 }
 
 function preloadExternalScene(url?: string) {
-  if (!url || sceneCache.has(url) || unavailableAssets.has(url) || pendingAssetLoads.has(url)) {
+  if (!url || sceneCache.has(url) || pendingAssetLoads.has(url)) {
     return;
   }
 
@@ -193,7 +193,7 @@ function preloadExternalScene(url?: string) {
     () => {
       const fallbackUrl = url.includes('?') ? url.split('?')[0] : undefined;
 
-      if (fallbackUrl && fallbackUrl !== url && !sceneCache.has(fallbackUrl) && !unavailableAssets.has(fallbackUrl)) {
+      if (fallbackUrl && fallbackUrl !== url && !sceneCache.has(fallbackUrl)) {
         loader.load(
           fallbackUrl,
           (gltf) => {
@@ -203,15 +203,12 @@ function preloadExternalScene(url?: string) {
           },
           undefined,
           () => {
-            unavailableAssets.add(url);
-            unavailableAssets.add(fallbackUrl);
             release();
           },
         );
         return;
       }
 
-      unavailableAssets.add(url);
       release();
     },
   );
@@ -237,13 +234,13 @@ function useExternalScene(url?: string) {
       return;
     }
 
-    if (unavailableAssets.has(url)) {
-      setScene(null);
+    if (sceneCache.has(url)) {
+      setScene(sceneCache.get(url) ?? null);
       return;
     }
 
-    if (sceneCache.has(url)) {
-      setScene(sceneCache.get(url) ?? null);
+    if (unavailableAssets.has(url)) {
+      setScene(null);
       return;
     }
 
@@ -546,7 +543,7 @@ function ParametricDirectMotor({
   const motorX = length / 2 - motorWidth * 0.3;
   const directAngleDeg = motorPosition === 'right'
     ? (270 - motorAngle + 360) % 360
-    : (270 - motorAngle + 360) % 360;
+    : (motorAngle + 270) % 360;
   const directAngleRad = directAngleDeg * (Math.PI / 180);
 
   return (
@@ -606,7 +603,7 @@ function ParametricIndirectMotor({
   centerMounted: boolean;
   centerOffset?: number;
 }) {
-  const allowedAngles = motorPosition === 'right' ? [0, 90] : [0, 270];
+  const allowedAngles = motorPosition === 'right' ? [0, 270] : [0, 270];
   const snappedAngle = allowedAngles.reduce((best, candidate) => {
     const normalized = ((motorAngle % 360) + 360) % 360;
     const delta = Math.min(Math.abs(normalized - candidate), 360 - Math.abs(normalized - candidate));
@@ -615,7 +612,7 @@ function ParametricIndirectMotor({
   }, allowedAngles[0]);
   const side = motorPosition === 'left' ? -1 : 1;
   const indirectAngleDeg = motorPosition === 'right'
-    ? (90 - snappedAngle + (snappedAngle === 0 ? 180 : 0) + 360) % 360
+    ? (90 - snappedAngle + 360) % 360
     : (snappedAngle + 270) % 360;
   const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
