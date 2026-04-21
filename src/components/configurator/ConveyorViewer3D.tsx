@@ -603,7 +603,7 @@ function ParametricIndirectMotor({
   centerMounted: boolean;
   centerOffset?: number;
 }) {
-  const allowedAngles = motorPosition === 'right' ? [0, 270] : [0, 270];
+  const allowedAngles = motorPosition === 'right' ? [0, 90] : [0, 270];
   const snappedAngle = allowedAngles.reduce((best, candidate) => {
     const normalized = ((motorAngle % 360) + 360) % 360;
     const delta = Math.min(Math.abs(normalized - candidate), 360 - Math.abs(normalized - candidate));
@@ -612,7 +612,7 @@ function ParametricIndirectMotor({
   }, allowedAngles[0]);
   const side = motorPosition === 'left' ? -1 : 1;
   const indirectAngleDeg = motorPosition === 'right'
-    ? (snappedAngle === 0 ? 0 : 90)
+    ? (90 - snappedAngle + 360) % 360
     : (snappedAngle + 270) % 360;
   const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
