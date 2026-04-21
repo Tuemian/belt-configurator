@@ -107,7 +107,7 @@ const BeltConfigurator = () => {
               <div>
                 <p className="text-primary font-semibold text-sm uppercase tracking-wider mb-2">{t('onlineConfigurator', lang)}</p>
                 <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
-                  {t('configuratorTitle', lang)}
+                  {t('landingTitle', lang)}
                 </h1>
               </div>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
