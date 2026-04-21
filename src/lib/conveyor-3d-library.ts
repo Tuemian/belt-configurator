@@ -574,7 +574,7 @@ export function resolveConveyor3DAssets(
     const motorScale = motorVariant.scale ?? [1, 1, 1];
     const snappedAngle = snapIndirectMotorAngle(config.motorAngle, config.motorPosition);
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - snappedAngle + 360) % 360
+      ? (snappedAngle === 0 ? 180 : 90)
       : (snappedAngle + 270) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
