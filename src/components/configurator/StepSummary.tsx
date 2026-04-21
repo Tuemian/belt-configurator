@@ -98,7 +98,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
   const technicalDisclaimer = lang === 'de'
     ? 'Hinweis: Diese Konfiguration ist unverbindlich und dient als technischer Vorentwurf. Finale Auslegung, Preis und Lieferzeit erfolgen nach technischer Prüfung durch NOVAMOTIS.'
-    : 'Note: This configuration is non-binding and serves as a technical pre-design. Final engineering, pricing, and lead time are provided after technical review by NOVAMOTIS.';
+    : lang === 'it'
+      ? 'Nota: Questa configurazione non e vincolante e funge da pre-progetto tecnico. L\'ingegnerizzazione finale, il prezzo e i tempi di consegna vengono forniti dopo la verifica tecnica da parte di NOVAMOTIS.'
+      : 'Note: This configuration is non-binding and serves as a technical pre-design. Final engineering, pricing, and lead time are provided after technical review by NOVAMOTIS.';
 
   const generatePdfContent = () => {
     let text = `NOVAMOTIS - ${t('configuratorTitle', lang)}\n${'='.repeat(50)}\n\n`;
