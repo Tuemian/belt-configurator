@@ -4,6 +4,7 @@ const translations = {
   de: {
     // Header
     onlineConfigurator: 'Online-Konfigurator',
+    landingTitle: 'Gurtfoerderer',
     configuratorTitle: 'Gurtförderer-Konfigurator',
     configuratorSubtitle: 'Konfigurieren Sie Ihren individuellen Gurtförderer in nur 5 Schritten',
     stepOf: 'Schritt {current} von {total}',
@@ -22,7 +23,7 @@ const translations = {
     hubPlanned: 'In Arbeit',
     hubPlannedHint: 'Dieses Modul wird als nächstes vorbereitet.',
     hubToolBeltTitle: 'Fördertechnik',
-    hubToolBeltDesc: 'Konfigurieren Sie Masse, Antrieb, Untergestell und versenden Sie die Anfrage direkt mit Datenblatt.',
+      hubToolBeltDesc: 'Konfigurieren Sie Maße, Antrieb, Untergestell und versenden Sie die Anfrage direkt mit Datenblatt.',
     hubToolDeflectionTitle: 'Durchbiegungsrechner',
     hubToolDeflectionDesc: 'Geplantes Tool zur schnellen Vorprüfung von Profilen, Lasten und zulässiger Durchbiegung.',
     hubToolDoorTitle: 'Tortechnik',
@@ -139,6 +140,7 @@ const translations = {
   },
   en: {
     onlineConfigurator: 'Online Configurator',
+    landingTitle: 'Belt Conveyor',
     configuratorTitle: 'Belt Conveyor Configurator',
     configuratorSubtitle: 'Configure your individual belt conveyor in just a few steps',
     stepOf: 'Step {current} of {total}',
@@ -267,6 +269,7 @@ const translations = {
   },
   it: {
     onlineConfigurator: 'Configuratore online',
+    landingTitle: 'Trasportatore a nastro',
     configuratorTitle: 'Configuratore trasportatore a nastro',
     configuratorSubtitle: 'Configura il tuo trasportatore a nastro in pochi passaggi',
     stepOf: 'Passo {current} di {total}',
