@@ -382,9 +382,14 @@ function transformLocalPoint(point: Vec3, rotation: Vec3, scale: Vec3): Vec3 {
   return [vec.x, vec.y, vec.z];
 }
 
-function snapIndirectMotorAngle(angleDeg: number): number {
+function snapIndirectMotorAngle(
+  angleDeg: number,
+  motorPosition: ConveyorConfig['motorPosition'],
+): number {
   const normalized = ((angleDeg % 360) + 360) % 360;
-  const allowed = [0, 270] as const;
+  const allowed = motorPosition === 'right'
+    ? ([0, 90] as const)
+    : ([0, 270] as const);
   return allowed.reduce((best, candidate) => {
     const delta = Math.min(
       Math.abs(normalized - candidate),
@@ -537,7 +542,7 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + 360) % 360
+      ? (270 - config.motorAngle + 360) % 360
       : (270 - config.motorAngle + 360) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
@@ -567,7 +572,7 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const mountScale = mountVariant.scale ?? [1, 1, 1];
     const motorScale = motorVariant.scale ?? [1, 1, 1];
-    const snappedAngle = snapIndirectMotorAngle(config.motorAngle);
+    const snappedAngle = snapIndirectMotorAngle(config.motorAngle, config.motorPosition);
     const indirectAngleDeg = config.motorPosition === 'right'
       ? (90 - snappedAngle + (snappedAngle === 0 ? 180 : 0) + 360) % 360
       : (snappedAngle + 270) % 360;
