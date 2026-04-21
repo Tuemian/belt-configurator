@@ -384,7 +384,7 @@ function transformLocalPoint(point: Vec3, rotation: Vec3, scale: Vec3): Vec3 {
 
 function snapIndirectMotorAngle(angleDeg: number): number {
   const normalized = ((angleDeg % 360) + 360) % 360;
-  const allowed = [0, 90, 270] as const;
+  const allowed = [0, 270] as const;
   return allowed.reduce((best, candidate) => {
     const delta = Math.min(
       Math.abs(normalized - candidate),
@@ -477,9 +477,35 @@ function getLegAxisPositions(
     return axisXs;
   }
 
-  return axisXs.filter((x, index) => {
+  const innerMin = -legInsetX + 1;
+  const innerMax = legInsetX - 1;
+
+  return axisXs.map((x, index) => {
     const isEndSupport = index === 0 || index === axisXs.length - 1;
-    return isEndSupport || Math.abs(x - exclusion.centerX) > exclusion.halfWidth;
+    if (isEndSupport || Math.abs(x - exclusion.centerX) > exclusion.halfWidth) {
+      return x;
+    }
+
+    const leftCandidate = exclusion.centerX - exclusion.halfWidth;
+    const rightCandidate = exclusion.centerX + exclusion.halfWidth;
+
+    if (x < exclusion.centerX) {
+      return Math.max(innerMin, Math.min(innerMax, leftCandidate));
+    }
+
+    if (x > exclusion.centerX) {
+      return Math.max(innerMin, Math.min(innerMax, rightCandidate));
+    }
+
+    const canMoveRight = rightCandidate <= innerMax;
+    const canMoveLeft = leftCandidate >= innerMin;
+    if (canMoveRight && canMoveLeft) {
+      return rightCandidate;
+    }
+    if (canMoveRight) {
+      return rightCandidate;
+    }
+    return Math.max(innerMin, Math.min(innerMax, leftCandidate));
   });
 }
 
@@ -511,8 +537,8 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (config.motorAngle + 270) % 360
-      : (config.motorAngle + 90) % 360;
+      ? (90 - config.motorAngle + 360) % 360
+      : (270 - config.motorAngle + 360) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
     let finalRot = config.motorPosition === 'right'
