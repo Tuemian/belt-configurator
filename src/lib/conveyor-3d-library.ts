@@ -398,6 +398,24 @@ function snapIndirectMotorAngle(angleDeg: number): number {
   }, allowed[0]);
 }
 
+function clampCenterDriveOffset(beltLength: number, centerDriveOffset: number): number {
+  const maxOffset = Math.max(0, beltLength / 2 - 300);
+  return Math.max(-maxOffset, Math.min(maxOffset, centerDriveOffset));
+}
+
+function getCenterDriveSupportExclusion(
+  config: Pick<ConveyorConfig, 'driveType' | 'withStand' | 'beltLength' | 'centerDriveOffset'>,
+): { centerX: number; halfWidth: number } | null {
+  if (config.driveType !== 'center' || !config.withStand) {
+    return null;
+  }
+
+  return {
+    centerX: clampCenterDriveOffset(config.beltLength, config.centerDriveOffset),
+    halfWidth: 320,
+  };
+}
+
 export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   const library = getConveyor3DLibrary();
   const urls: string[] = [];
@@ -439,7 +457,10 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
   return Array.from(new Set(urls));
 }
 
-function getLegAxisPositions(measurements: Conveyor3DMeasurements): number[] {
+function getLegAxisPositions(
+  measurements: Conveyor3DMeasurements,
+  exclusion?: { centerX: number; halfWidth: number } | null,
+): number[] {
   const { beltLength, legInsetX } = measurements;
   const extraPairs = Math.floor(beltLength / 2000);
 
@@ -450,13 +471,24 @@ function getLegAxisPositions(measurements: Conveyor3DMeasurements): number[] {
   const firstExtraX = -((extraPairs - 1) * 2000) / 2;
   const extraXs = Array.from({ length: extraPairs }, (_, idx) => firstExtraX + idx * 2000)
     .filter((x) => x > -legInsetX + 1 && x < legInsetX - 1);
+  const axisXs = [-legInsetX, ...extraXs, legInsetX];
 
-  return [-legInsetX, ...extraXs, legInsetX];
+  if (!exclusion) {
+    return axisXs;
+  }
+
+  return axisXs.filter((x, index) => {
+    const isEndSupport = index === 0 || index === axisXs.length - 1;
+    return isEndSupport || Math.abs(x - exclusion.centerX) > exclusion.halfWidth;
+  });
 }
 
-function legBasePositions(measurements: Conveyor3DMeasurements): Vec3[] {
+function legBasePositions(
+  measurements: Conveyor3DMeasurements,
+  exclusion?: { centerX: number; halfWidth: number } | null,
+): Vec3[] {
   const { legInsetZ, frameHeight, legLength } = measurements;
-  const axisXs = getLegAxisPositions(measurements);
+  const axisXs = getLegAxisPositions(measurements, exclusion);
   const baseY = -(frameHeight / 2 + legLength);
 
   return axisXs.flatMap((x) => [
@@ -471,16 +503,7 @@ export function resolveConveyor3DAssets(
 ): Conveyor3DResolvedAssets {
   const library = getConveyor3DLibrary();
   const resolved: Conveyor3DResolvedAssets = {};
-
-  // Motor angle convention:
-  //   0Â°  = shaft pointing down (toward floor)
-  //   90Â° = shaft pointing toward belt (inward)
-  //  180Â° = shaft pointing up
-  //  270Â° = shaft pointing away from belt (outward)
-  // The asset's natural pose has the shaft pointing outward (+Z for right side).
-  // We rotate around the X-axis (conveyor longitudinal axis) by the mount angle.
-  // For left side the motor is mirrored in Z so the same angle convention holds.
-  const motorAngleRad = (config.motorAngle * Math.PI) / 180;
+  const centerDriveSupportExclusion = getCenterDriveSupportExclusion(config);
 
   if (config.driveType === 'direct') {
     const side = config.motorPosition === 'left' ? -1 : 1;
@@ -488,7 +511,7 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const dScale = variant.scale ?? [1, 1, 1];
     const directAngleDeg = config.motorPosition === 'right'
-      ? (config.motorAngle + 270) % 360
+      ? (config.motorAngle + 90) % 360
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
@@ -518,9 +541,10 @@ export function resolveConveyor3DAssets(
     const mirrorScaleZ = config.motorPosition === 'left' ? -1 : 1;
     const mountScale = mountVariant.scale ?? [1, 1, 1];
     const motorScale = motorVariant.scale ?? [1, 1, 1];
+    const snappedAngle = snapIndirectMotorAngle(config.motorAngle);
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - config.motorAngle + (config.motorAngle === 270 ? 180 : 0) + 360) % 360
-      : (config.motorAngle + 270 + (config.motorAngle === 90 ? 180 : 0)) % 360;
+      ? (90 - snappedAngle + (snappedAngle === 0 ? 180 : 0) + 360) % 360
+      : (snappedAngle + 270) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;
     const baseY = 0;
@@ -569,10 +593,8 @@ export function resolveConveyor3DAssets(
   if (config.driveType === 'center') {
     const mountVariant = selectVariant(measurements.frameWidth, library.motors.center);
     const motorVariant = selectVariant(measurements.frameWidth, library.motors.direct.right);
-    const maxOffset = Math.max(0, measurements.beltLength / 2 - 300);
-    const clampedOffset = Math.max(-maxOffset, Math.min(maxOffset, config.centerDriveOffset));
+    const clampedOffset = clampCenterDriveOffset(measurements.beltLength, config.centerDriveOffset);
     const centerSide = config.motorPosition === 'left' ? -1 : 1;
-    const widthScaleFactor = measurements.frameWidth / 500;
     const normalizedCenterAngle = config.motorAngle === 0
       ? 180
       : config.motorAngle === 180
@@ -631,7 +653,7 @@ export function resolveConveyor3DAssets(
     return resolved;
   }
 
-  const legPositions = legBasePositions(measurements);
+  const legPositions = legBasePositions(measurements, centerDriveSupportExclusion);
 
   if (config.floorElement === 'feet') {
     const def = library.floorElements.feet;
