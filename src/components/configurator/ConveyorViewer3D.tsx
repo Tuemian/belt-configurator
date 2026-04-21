@@ -33,6 +33,7 @@ const C = {
 const sceneCache = new Map<string, THREE.Object3D>();
 const unavailableAssets = new Set<string>();
 const CENTER_DRIVE_BASE_WIDTH_MM = 500;
+const CENTER_DRIVE_SUPPORT_CLEARANCE_MM = 320;
 const CENTER_DRIVE_SPAN_PARTS = new Set(['10-00-0021-2', '10-00-0030-1', '10-00-0021-3']);
 const CENTER_DRIVE_SIDE_PART_PATTERNS = [
   /seitenpl_mittena_80/i,
@@ -491,7 +492,7 @@ function ParametricDirectMotor({
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
   const directAngleDeg = motorPosition === 'right'
-    ? (90 - motorAngle + 360) % 360
+    ? (motorAngle + 90) % 360
     : (motorAngle + 270) % 360;
   const directAngleRad = directAngleDeg * (Math.PI / 180);
 
@@ -560,7 +561,7 @@ function ParametricIndirectMotor({
   }, 0);
   const side = motorPosition === 'left' ? -1 : 1;
   const indirectAngleDeg = motorPosition === 'right'
-    ? (90 - snappedAngle + 360) % 360
+    ? (90 - snappedAngle + (snappedAngle === 0 ? 180 : 0) + 360) % 360
     : (snappedAngle + 270) % 360;
   const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
@@ -754,7 +755,27 @@ function ParametricFloorBolts({ positions }: { positions: Vec3[] }) {
   );
 }
 
-function getLegAxisPositions(beltLength: number, legInsetX: number): number[] {
+function clampCenterDriveOffset(beltLength: number, centerDriveOffset: number): number {
+  const maxOffset = Math.max(0, beltLength / 2 - 300);
+  return Math.max(-maxOffset, Math.min(maxOffset, centerDriveOffset));
+}
+
+function getCenterDriveSupportExclusion(config: ConveyorConfig): { centerX: number; halfWidth: number } | null {
+  if (config.driveType !== 'center' || !config.withStand) {
+    return null;
+  }
+
+  return {
+    centerX: clampCenterDriveOffset(config.beltLength, config.centerDriveOffset),
+    halfWidth: CENTER_DRIVE_SUPPORT_CLEARANCE_MM,
+  };
+}
+
+function getLegAxisPositions(
+  beltLength: number,
+  legInsetX: number,
+  exclusion?: { centerX: number; halfWidth: number } | null,
+): number[] {
   const extraPairs = Math.floor(beltLength / 2000);
 
   if (extraPairs <= 0) {
@@ -764,8 +785,16 @@ function getLegAxisPositions(beltLength: number, legInsetX: number): number[] {
   const firstExtraX = -((extraPairs - 1) * 2000) / 2;
   const extraXs = Array.from({ length: extraPairs }, (_, idx) => firstExtraX + idx * 2000)
     .filter((x) => x > -legInsetX + 1 && x < legInsetX - 1);
+  const axisXs = [-legInsetX, ...extraXs, legInsetX];
 
-  return [-legInsetX, ...extraXs, legInsetX];
+  if (!exclusion) {
+    return axisXs;
+  }
+
+  return axisXs.filter((x, index) => {
+    const isEndSupport = index === 0 || index === axisXs.length - 1;
+    return isEndSupport || Math.abs(x - exclusion.centerX) > exclusion.halfWidth;
+  });
 }
 
 function ConveyorModel({ config }: { config: ConveyorConfig }) {
@@ -804,7 +833,8 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
   const legBottomY = -(frameHeight / 2 + legLength);
   const supportClearance = 2;
   const frameBottomYAtX = (x: number) => x * Math.sin(inclineRadians) - (frameHeight / 2) * Math.cos(inclineRadians);
-  const legAxisXs = getLegAxisPositions(beltLength, legInsetX);
+  const centerDriveSupportExclusion = getCenterDriveSupportExclusion(config);
+  const legAxisXs = getLegAxisPositions(beltLength, legInsetX, centerDriveSupportExclusion);
 
   const legSpecs = legAxisXs.flatMap((x) => [{ x, z: -legInsetZ }, { x, z: legInsetZ }]).map(({ x, z }) => {
     const topY = frameBottomYAtX(x) - supportClearance;
