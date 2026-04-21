@@ -492,8 +492,8 @@ function ParametricDirectMotor({
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
   const directAngleDeg = motorPosition === 'right'
-    ? (motorAngle + 90) % 360
-    : (motorAngle + 270) % 360;
+    ? (motorAngle + 270) % 360
+    : (motorAngle + 90) % 360;
   const directAngleRad = directAngleDeg * (Math.PI / 180);
 
   return (
