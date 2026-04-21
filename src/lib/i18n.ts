@@ -4,7 +4,7 @@ const translations = {
   de: {
     // Header
     onlineConfigurator: 'Online-Konfigurator',
-    landingTitle: 'Gurtfoerderer',
+    landingTitle: 'Gurtförderer',
     configuratorTitle: 'Gurtförderer-Konfigurator',
     configuratorSubtitle: 'Konfigurieren Sie Ihren individuellen Gurtförderer in nur 5 Schritten',
     stepOf: 'Schritt {current} von {total}',
@@ -105,6 +105,7 @@ const translations = {
     withStand: 'Mit Untergestell',
     standHeight: 'Höhe Oberkante Band',
     standHeightRange: '400 mm bis 2.000 mm',
+    standHeightWarning: 'Hinweis: Bei großer Unterbauhöhe kann das Band kippen. Die Standfestigkeit wird im Anfrageprozess geprüft.',
     floorElement: 'Bodenelement',
     adjustableFeet: 'Stellfüße',
     castorWheels: 'Lenkrollen mit Feststellbremsen',
@@ -236,6 +237,7 @@ const translations = {
     withStand: 'With Stand',
     standHeight: 'Height to Belt Top',
     standHeightRange: '400 mm to 2,000 mm',
+    standHeightWarning: 'Note: At greater stand heights, the conveyor can tip over. Stability is checked during the inquiry process.',
     floorElement: 'Floor Element',
     adjustableFeet: 'Adjustable Feet',
     castorWheels: 'Castor Wheels with Brakes',
@@ -365,6 +367,7 @@ const translations = {
     withStand: 'Con struttura',
     standHeight: 'Altezza piano nastro',
     standHeightRange: '400 mm a 2.000 mm',
+    standHeightWarning: 'Nota: con un supporto molto alto il nastro puo ribaltarsi. La stabilita viene verificata durante il processo di richiesta.',
     floorElement: 'Elemento a pavimento',
     adjustableFeet: 'Piedini regolabili',
     castorWheels: 'Ruote piroettanti con freno',
