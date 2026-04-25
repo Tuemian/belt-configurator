@@ -7,6 +7,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { t } from "@/lib/i18n";
 import Index from "./pages/Index.tsx";
 import BeltConfigurator from "./pages/BeltConfigurator.tsx";
+import ProfileConfigurator from "./pages/ProfileConfigurator.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/belt-conveyor" element={<BeltConfigurator />} />
+                <Route path="/profile-configurator" element={<ProfileConfigurator />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

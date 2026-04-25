@@ -48,6 +48,14 @@ const RollerConveyorIcon = ({ className }: ToolIconProps) => (
   </svg>
 );
 
+const ProfileIcon = ({ className }: ToolIconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <rect x="3" y="3" width="18" height="18" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
+    <rect x="7" y="7" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" />
+    <path d="M3 10h4M3 14h4M17 10h4M17 14h4M10 3v4M14 3v4M10 17v4M14 17v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+  </svg>
+);
+
 const tools = [
   {
     slug: 'belt-conveyor',
@@ -80,6 +88,14 @@ const tools = [
     statusKey: 'hubPlanned',
     available: false,
     icon: RollerConveyorIcon,
+  },
+  {
+    slug: 'profile-configurator',
+    titleKey: 'hubToolProfileTitle',
+    descKey: 'hubToolProfileDesc',
+    statusKey: 'hubAvailableNow',
+    available: true,
+    icon: ProfileIcon,
   },
 ] as const;
 
@@ -187,7 +203,7 @@ const Index = () => {
                   <CardContent>
                     {tool.available ? (
                       <Button asChild className="w-full justify-between">
-                        <Link to="/belt-conveyor">
+                        <Link to={`/${tool.slug}`}>
                           {t('hubOpenTool', lang)}
                           <ArrowRight className="h-4 w-4" />
                         </Link>

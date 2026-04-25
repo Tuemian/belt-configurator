@@ -30,6 +30,8 @@ const translations = {
     hubToolDoorDesc: 'Geplantes Modul für Schnelllauftore mit technischer Vorauswahl und Anfrageprozess.',
     hubToolRollerTitle: 'Rollenbahnen',
     hubToolRollerDesc: 'Geplante Übersicht für angetriebene und nicht angetriebene Rollenbahnen inklusive Variantenwahl.',
+    hubToolProfileTitle: 'Aluminium-Profile',
+    hubToolProfileDesc: 'Systemprofile konfigurieren: Länge, Schrägschnitte, Bohrungen und Bearbeitungen mit Live-Preiskalkulation.',
 
     // Navigation
     next: 'Weiter',
@@ -188,6 +190,8 @@ const translations = {
     hubToolDoorDesc: 'Planned module for high-speed doors with technical preselection and inquiry workflow.',
     hubToolRollerTitle: 'Roller Conveyors',
     hubToolRollerDesc: 'Planned overview for driven and non-driven roller conveyors including variant selection.',
+    hubToolProfileTitle: 'Aluminium Profiles',
+    hubToolProfileDesc: 'Configure system profiles: length, miter cuts, drilling and machining with live price calculation.',
 
     next: 'Next',
     back: 'Back',
@@ -338,6 +342,8 @@ const translations = {
     hubToolDoorDesc: 'Modulo pianificato per porte rapide con preselezione tecnica e processo richiesta.',
     hubToolRollerTitle: 'Trasportatori a rulli',
     hubToolRollerDesc: 'Panoramica pianificata per trasportatori a rulli motorizzati e non motorizzati.',
+    hubToolProfileTitle: 'Profili in alluminio',
+    hubToolProfileDesc: 'Configura profili di sistema: lunghezza, tagli angolati, forature e lavorazioni con calcolo del prezzo in tempo reale.',
 
     next: 'Avanti',
     back: 'Indietro',
