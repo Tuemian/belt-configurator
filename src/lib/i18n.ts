@@ -430,6 +430,14 @@ const translations = {
     required: 'Obbligatorio',
     imprintLink: 'Note legali',
     privacyPolicyLink: 'Privacy policy',
+
+    priceIndicative: 'Prezzo indicativo',
+    priceTotal: 'Totale (netto, IVA esclusa)',
+    priceBreakdown: 'Dettaglio',
+    priceDisclaimer: 'Prezzo indicativo non vincolante. Prezzo finale dopo verifica tecnica da parte di NOVAMOTIS.',
+    priceOnRequest: 'Prezzo su richiesta',
+    priceOnRequestHint: 'Per questa configurazione non e ancora disponibile un prezzo indicativo completo. Invia una richiesta – ti risponderemo con un\'offerta concreta.',
+    priceItemOnRequest: 'su richiesta',
   },
 } as const;
 
