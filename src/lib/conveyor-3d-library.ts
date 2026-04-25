@@ -599,7 +599,10 @@ export function resolveConveyor3DAssets(
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    const finalRot = rotateAroundConveyorAxis(baseRot, directAngleRad);
+    const rotated = rotateAroundConveyorAxis(baseRot, directAngleRad);
+    const finalRot = config.motorPosition === 'right'
+      ? rotateAroundLocalYAxis(rotated, Math.PI)
+      : rotated;
     resolved.motor = {
       url: variant.url,
       position: [
