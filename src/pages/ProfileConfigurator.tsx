@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.svg';
 import {
   PROFILE_SECTIONS,
+  PROFILE_SIZES,
   HOLE_TYPES,
   calculateProfilePrice,
   PRICE_MITER_CUT,
@@ -29,7 +30,7 @@ const ProfileViewer3D = lazy(() =>
 // ---------------------------------------------------------------------------
 
 const DEFAULT_CONFIG: ProfileConfig = {
-  sectionId: '40x40',
+  sectionId: '40x40-leicht',
   length: 500,
   angleStart: 0,
   angleEnd: 0,
@@ -188,21 +189,71 @@ export default function ProfileConfigurator() {
             {/* Profile selection */}
             <div>
               <SectionDivider label="Profil" />
-              <div className="mt-3 space-y-2">
-                <Label className="text-xs text-slate-400">Profilquerschnitt</Label>
-                <Select value={config.sectionId} onValueChange={(v) => update({ sectionId: v })}>
-                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-600 text-slate-100">
-                    {PROFILE_SECTIONS.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="focus:bg-slate-700">
-                        <span className="font-mono">{s.label}</span>
-                        <span className="ml-2 text-slate-400 text-xs">{fmt.format(s.pricePerMeter)}/m</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="mt-3 space-y-4">
+
+                {/* Step 1: Size */}
+                <div>
+                  <Label className="text-xs text-slate-400 mb-2 block">Größe</Label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {PROFILE_SIZES.map((sz) => {
+                      const isActive = section.sizeKey === sz.key;
+                      return (
+                        <button
+                          key={sz.key}
+                          onClick={() => {
+                            // keep current variant if available for new size, else fallback
+                            const next =
+                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === section.variant) ??
+                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === 'leicht') ??
+                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
+                            update({ sectionId: next.id, holes: [] });
+                          }}
+                          className={`rounded-md px-2 py-2 text-xs font-mono border transition-colors ${
+                            isActive
+                              ? 'bg-primary/20 border-primary text-primary'
+                              : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'
+                          }`}
+                        >
+                          {sz.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Step 2: Variant */}
+                <div>
+                  <Label className="text-xs text-slate-400 mb-2 block">Variante</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(['eco', 'leicht', 'schwer'] as const).map((v) => {
+                      const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
+                      const isActive = section.variant === v;
+                      return (
+                        <button
+                          key={v}
+                          disabled={!available}
+                          onClick={() => available && update({ sectionId: available.id, holes: [] })}
+                          className={`rounded-md px-2 py-2.5 text-xs font-semibold border transition-colors ${
+                            !available
+                              ? 'opacity-25 cursor-not-allowed border-slate-700 text-slate-600'
+                              : isActive
+                              ? 'bg-primary/20 border-primary text-primary'
+                              : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'
+                          }`}
+                        >
+                          {v === 'eco' ? 'ECO' : v === 'leicht' ? 'Leicht' : 'Schwer'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Price indicator */}
+                <div className="flex justify-between text-[11px] text-slate-500 px-0.5">
+                  <span>{section.label}</span>
+                  <span className="text-slate-400 font-medium">{fmt.format(section.pricePerMeter)}/m</span>
+                </div>
+
               </div>
             </div>
 
