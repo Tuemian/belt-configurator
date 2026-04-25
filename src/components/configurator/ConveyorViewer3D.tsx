@@ -1126,6 +1126,36 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           </>
         )}
 
+        {driveType === 'drum' && (
+          <ExternalAsset
+            asset={resolvedAssets.drumMotor}
+            fallback={
+              <group position={[beltLength / 2, 0, 0]}>
+                {/* Trommelmotor: dunkle, kräftigere Umlenktrommel */}
+                <Cyl
+                  pos={[0, 0, 0]}
+                  rot={[Math.PI / 2, 0, 0]}
+                  r={drumRadius * 1.25}
+                  h={frameWidth + 8}
+                  color="#2a2f38"
+                  metalness={0.5}
+                  roughness={0.45}
+                />
+                {/* Kabelausgang auf gewählter Seite */}
+                <Cyl
+                  pos={[0, -drumRadius * 0.4, motorPosition === 'left' ? -(frameWidth / 2 + 18) : frameWidth / 2 + 18]}
+                  rot={[Math.PI / 2, 0, 0]}
+                  r={4}
+                  h={36}
+                  color="#1a1d24"
+                  metalness={0.2}
+                  roughness={0.9}
+                />
+              </group>
+            }
+          />
+        )}
+
         <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} frameWidth={frameWidth} />
       </group>
 
