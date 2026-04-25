@@ -698,6 +698,8 @@ export function resolveConveyor3DAssets(
       frameWidthMm: measurements.frameWidth,
     };
   }
+
+  if (library.profiles?.sideRails?.length) {
     const profileVariant = selectVariant(measurements.frameWidth, library.profiles.sideRails);
     const frameSectionWidth = measurements.frameSectionWidth;
     const railZ = measurements.frameWidth / 2 - frameSectionWidth / 2;
