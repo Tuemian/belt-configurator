@@ -3,7 +3,10 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+type OrbitControlsImpl = {
+  target: THREE.Vector3;
+  update: () => void;
+};
 import { ConveyorConfig } from '@/lib/configurator-types';
 import {
   Conveyor3DMeasurements,
@@ -155,6 +158,8 @@ function Cyl({
   h,
   color,
   segs = 24,
+  metalness = 0.75,
+  roughness = 0.2,
 }: {
   pos: Vec3;
   rot?: Vec3;
@@ -162,11 +167,13 @@ function Cyl({
   h: number;
   color: string;
   segs?: number;
+  metalness?: number;
+  roughness?: number;
 }) {
   return (
     <mesh position={pos} rotation={rot}>
       <cylinderGeometry args={[r, r, h, segs]} />
-      <meshStandardMaterial color={color} metalness={0.75} roughness={0.2} />
+      <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
     </mesh>
   );
 }
