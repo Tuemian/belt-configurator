@@ -230,7 +230,7 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes }
     <Canvas
       shadows
       camera={{ position: [length * 0.9, length * 0.55, length * 1.3], fov: 38 }}
-      style={{ background: 'linear-gradient(135deg, #0f1923 0%, #1a2840 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #f0f4f8 0%, #e2e8f0 100%)' }}
     >
       <Suspense fallback={null}>
         <Scene

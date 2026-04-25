@@ -49,9 +49,9 @@ const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' 
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 pt-2">
-      <div className="flex-1 h-px bg-slate-700" />
-      <span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">{label}</span>
-      <div className="flex-1 h-px bg-slate-700" />
+      <div className="flex-1 h-px bg-slate-200" />
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{label}</span>
+      <div className="flex-1 h-px bg-slate-200" />
     </div>
   );
 }
@@ -147,19 +147,17 @@ export default function ProfileConfigurator() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1520] text-slate-100 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b border-slate-700 bg-[#0a1018]/90 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-slate-400 hover:text-white">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-28 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <a href="https://www.novamotis.com/" target="_blank" rel="noreferrer">
-              <img src={logo} alt="NOVAMOTIS" className="h-10 w-auto brightness-[5] contrast-50 opacity-80" />
-            </a>
-            <span className="text-slate-500 text-lg font-light">|</span>
-            <span className="text-sm font-semibold tracking-wide text-slate-300 uppercase">Profil-Konfigurator</span>
+            <img src={logo} alt="NOVAMOTIS" className="h-20 w-auto" />
+            <span className="text-slate-300 text-xl font-light hidden sm:block">|</span>
+            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden sm:block">Profil-Konfigurator</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -167,7 +165,7 @@ export default function ProfileConfigurator() {
               variant="outline"
               size="sm"
               onClick={() => setCartOpen((v) => !v)}
-              className="gap-2 border-slate-600 text-slate-300 hover:text-white hover:border-slate-400"
+              className="gap-2"
             >
               <ShoppingCart className="h-4 w-4" />
               <span>{cart.length}</span>
@@ -180,10 +178,8 @@ export default function ProfileConfigurator() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* ---------------------------------------------------------------- */}
-        {/* Sidebar                                                          */}
-        {/* ---------------------------------------------------------------- */}
-        <aside className="w-80 shrink-0 border-r border-slate-700 bg-[#0d1520] overflow-y-auto flex flex-col">
+        {/* Sidebar */}
+        <aside className="w-80 shrink-0 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
           <div className="p-4 space-y-4 flex-1">
 
             {/* Profile selection */}
@@ -193,7 +189,7 @@ export default function ProfileConfigurator() {
 
                 {/* Step 1: Size */}
                 <div>
-                  <Label className="text-xs text-slate-400 mb-2 block">Größe</Label>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Größe</Label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {PROFILE_SIZES.map((sz) => {
                       const isActive = section.sizeKey === sz.key;
@@ -201,7 +197,6 @@ export default function ProfileConfigurator() {
                         <button
                           key={sz.key}
                           onClick={() => {
-                            // keep current variant if available for new size, else fallback
                             const next =
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === section.variant) ??
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === 'leicht') ??
@@ -210,8 +205,8 @@ export default function ProfileConfigurator() {
                           }}
                           className={`rounded-md px-2 py-2 text-xs font-mono border transition-colors ${
                             isActive
-                              ? 'bg-primary/20 border-primary text-primary'
-                              : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'
+                              ? 'bg-primary/10 border-primary text-primary font-semibold'
+                              : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
                           }`}
                         >
                           {sz.label}
@@ -223,7 +218,7 @@ export default function ProfileConfigurator() {
 
                 {/* Step 2: Variant */}
                 <div>
-                  <Label className="text-xs text-slate-400 mb-2 block">Variante</Label>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Variante</Label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {(['eco', 'leicht', 'schwer'] as const).map((v) => {
                       const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
@@ -235,10 +230,10 @@ export default function ProfileConfigurator() {
                           onClick={() => available && update({ sectionId: available.id, holes: [] })}
                           className={`rounded-md px-2 py-2.5 text-xs font-semibold border transition-colors ${
                             !available
-                              ? 'opacity-25 cursor-not-allowed border-slate-700 text-slate-600'
+                              ? 'opacity-30 cursor-not-allowed border-slate-200 text-muted-foreground'
                               : isActive
-                              ? 'bg-primary/20 border-primary text-primary'
-                              : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'
+                              ? 'bg-primary/10 border-primary text-primary'
+                              : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
                           }`}
                         >
                           {v === 'eco' ? 'ECO' : v === 'leicht' ? 'Leicht' : 'Schwer'}
@@ -249,9 +244,9 @@ export default function ProfileConfigurator() {
                 </div>
 
                 {/* Price indicator */}
-                <div className="flex justify-between text-[11px] text-slate-500 px-0.5">
+                <div className="flex justify-between text-[11px] text-muted-foreground px-0.5">
                   <span>{section.label}</span>
-                  <span className="text-slate-400 font-medium">{fmt.format(section.pricePerMeter)}/m</span>
+                  <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
                 </div>
 
               </div>
@@ -262,7 +257,7 @@ export default function ProfileConfigurator() {
               <SectionDivider label="Länge" />
               <div className="mt-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-slate-400">Länge (mm)</Label>
+                  <Label className="text-xs text-muted-foreground">Länge (mm)</Label>
                   <div className="flex items-center gap-1">
                     <Input
                       type="number"
@@ -274,9 +269,9 @@ export default function ProfileConfigurator() {
                         const v = Math.max(50, Math.min(3000, Number(e.target.value)));
                         update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) });
                       }}
-                      className="h-8 w-24 text-right bg-slate-800 border-slate-600 text-slate-100 text-sm"
+                      className="h-8 w-24 text-right text-sm"
                     />
-                    <span className="text-slate-500 text-xs">mm</span>
+                    <span className="text-muted-foreground text-xs">mm</span>
                   </div>
                 </div>
                 <Slider
@@ -285,9 +280,8 @@ export default function ProfileConfigurator() {
                   step={5}
                   value={[config.length]}
                   onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
-                  className="[&_[role=slider]]:bg-primary"
                 />
-                <div className="flex justify-between text-[10px] text-slate-600">
+                <div className="flex justify-between text-[10px] text-muted-foreground">
                   <span>50 mm</span><span>3000 mm</span>
                 </div>
               </div>
@@ -297,14 +291,14 @@ export default function ProfileConfigurator() {
             <div>
               <SectionDivider label="Menge" />
               <div className="mt-3 flex items-center gap-3">
-                <Label className="text-xs text-slate-400 shrink-0">Stückzahl</Label>
+                <Label className="text-xs text-muted-foreground shrink-0">Stückzahl</Label>
                 <Input
                   type="number"
                   min={1}
                   max={9999}
                   value={config.quantity}
                   onChange={(e) => update({ quantity: Math.max(1, Number(e.target.value)) })}
-                  className="h-8 w-24 text-right bg-slate-800 border-slate-600 text-slate-100"
+                  className="h-8 w-24 text-right"
                 />
               </div>
             </div>
@@ -318,7 +312,7 @@ export default function ProfileConfigurator() {
                   const val = config[key];
                   return (
                     <div key={end} className="space-y-2">
-                      <Label className="text-xs text-slate-400">{end}</Label>
+                      <Label className="text-xs text-muted-foreground">{end}</Label>
                       <div className="flex items-center gap-1">
                         <Input
                           type="number"
@@ -327,9 +321,9 @@ export default function ProfileConfigurator() {
                           step={1}
                           value={val}
                           onChange={(e) => update({ [key]: Math.max(0, Math.min(45, Number(e.target.value))) })}
-                          className="h-8 w-16 text-right bg-slate-800 border-slate-600 text-slate-100 text-sm"
+                          className="h-8 w-16 text-right text-sm"
                         />
-                        <span className="text-slate-500 text-xs">°</span>
+                        <span className="text-muted-foreground text-xs">°</span>
                       </div>
                       <Slider
                         min={0}
@@ -337,10 +331,9 @@ export default function ProfileConfigurator() {
                         step={1}
                         value={[val]}
                         onValueChange={([v]) => update({ [key]: v })}
-                        className="[&_[role=slider]]:bg-primary"
                       />
                       {val !== 0 && (
-                        <span className="text-[10px] text-amber-400">+{fmt.format(PRICE_MITER_CUT)}</span>
+                        <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
                       )}
                     </div>
                   );
@@ -357,25 +350,23 @@ export default function ProfileConfigurator() {
                   const val = config[endKey];
                   return (
                     <div key={endKey} className="space-y-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
                       <div className="flex gap-4 pl-1">
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-foreground">
                           <Checkbox
                             checked={val.thread}
                             onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v } })}
-                            className="border-slate-600 data-[state=checked]:bg-primary"
                           />
                           Gewinde M8
-                          {val.thread && <span className="text-amber-400 text-[10px]">+{fmt.format(PRICE_HOLE)}</span>}
+                          {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-foreground">
                           <Checkbox
                             checked={val.coreHole}
                             onCheckedChange={(v) => update({ [endKey]: { ...val, coreHole: !!v } })}
-                            className="border-slate-600 data-[state=checked]:bg-primary"
                           />
                           Kernloch
-                          {val.coreHole && <span className="text-amber-400 text-[10px]">+{fmt.format(PRICE_HOLE)}</span>}
+                          {val.coreHole && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
                         </label>
                       </div>
                     </div>
@@ -390,14 +381,14 @@ export default function ProfileConfigurator() {
               <div className="mt-3 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-xs text-slate-400 mb-1 block">Typ</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Typ</Label>
                     <Select value={newHoleType} onValueChange={(v) => setNewHoleType(v as ProfileHole['type'])}>
-                      <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-100 h-8 text-xs">
+                      <SelectTrigger className="h-8 text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-600 text-slate-100">
+                      <SelectContent>
                         {HOLE_TYPES.map((t) => (
-                          <SelectItem key={t.id} value={t.id} className="text-xs focus:bg-slate-700">
+                          <SelectItem key={t.id} value={t.id} className="text-xs">
                             {t.label}
                           </SelectItem>
                         ))}
@@ -405,7 +396,7 @@ export default function ProfileConfigurator() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-400 mb-1 block">Position (mm)</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Position (mm)</Label>
                     <Input
                       type="number"
                       min={5}
@@ -413,7 +404,7 @@ export default function ProfileConfigurator() {
                       step={5}
                       value={newHoleZ}
                       onChange={(e) => setNewHoleZ(Number(e.target.value))}
-                      className="h-8 bg-slate-800 border-slate-600 text-slate-100 text-xs"
+                      className="h-8 text-xs"
                     />
                   </div>
                 </div>
@@ -421,20 +412,20 @@ export default function ProfileConfigurator() {
                   size="sm"
                   variant="outline"
                   onClick={addHole}
-                  className="w-full gap-2 border-slate-600 text-slate-300 hover:text-white hover:border-primary text-xs"
+                  className="w-full gap-2 text-xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Bohrung hinzufügen
-                  <span className="text-amber-400 ml-auto">+{fmt.format(PRICE_HOLE)}</span>
+                  <span className="text-amber-600 font-medium ml-auto">+{fmt.format(PRICE_HOLE)}</span>
                 </Button>
 
                 {config.holes.length > 0 && (
                   <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
                     {config.holes.map((hole) => (
-                      <div key={hole.id} className="flex items-center justify-between bg-slate-800/60 rounded px-2 py-1 text-xs">
-                        <span className="text-slate-300 truncate">{hole.label}</span>
-                        <span className="text-slate-500 ml-2 shrink-0">@ {hole.zPosition} mm</span>
-                        <button onClick={() => removeHole(hole.id)} className="ml-2 text-slate-600 hover:text-red-400">
+                      <div key={hole.id} className="flex items-center justify-between bg-slate-50 rounded border border-slate-100 px-2 py-1 text-xs">
+                        <span className="text-foreground truncate">{hole.label}</span>
+                        <span className="text-muted-foreground ml-2 shrink-0">@ {hole.zPosition} mm</span>
+                        <button onClick={() => removeHole(hole.id)} className="ml-2 text-muted-foreground hover:text-red-500">
                           <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
@@ -446,12 +437,12 @@ export default function ProfileConfigurator() {
           </div>
 
           {/* Reset */}
-          <div className="p-4 border-t border-slate-700">
+          <div className="p-4 border-t border-slate-200">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setConfig(DEFAULT_CONFIG)}
-              className="w-full gap-2 text-slate-500 hover:text-slate-300 text-xs"
+              className="w-full gap-2 text-muted-foreground text-xs"
             >
               <RotateCcw className="h-3 w-3" />
               Konfiguration zurücksetzen
@@ -459,14 +450,12 @@ export default function ProfileConfigurator() {
           </div>
         </aside>
 
-        {/* ---------------------------------------------------------------- */}
-        {/* 3D Viewer                                                        */}
-        {/* ---------------------------------------------------------------- */}
-        <main className="flex-1 relative flex flex-col">
+        {/* 3D Viewer */}
+        <main className="flex-1 relative flex flex-col bg-slate-50">
           <div className="flex-1">
             <Suspense
               fallback={
-                <div className="h-full flex items-center justify-center text-slate-600 text-sm">
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
                   3D-Ansicht wird geladen…
                 </div>
               }
@@ -483,37 +472,37 @@ export default function ProfileConfigurator() {
 
           {/* Profile info overlay */}
           <div className="absolute top-4 left-4 pointer-events-none">
-            <div className="bg-black/60 backdrop-blur rounded-lg px-3 py-2 text-xs space-y-0.5">
-              <div className="font-semibold text-slate-200">{section.label}</div>
-              <div className="text-slate-400">{config.length} mm Länge</div>
-              {config.angleStart !== 0 && <div className="text-amber-300">Schrägschnitt Start {config.angleStart}°</div>}
-              {config.angleEnd !== 0   && <div className="text-amber-300">Schrägschnitt Ende {config.angleEnd}°</div>}
-              {config.holes.length > 0 && <div className="text-slate-400">{config.holes.length} Bohrung{config.holes.length !== 1 ? 'en' : ''}</div>}
+            <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-3 py-2 text-xs space-y-0.5">
+              <div className="font-semibold text-foreground">{section.label}</div>
+              <div className="text-muted-foreground">{config.length} mm Länge</div>
+              {config.angleStart !== 0 && <div className="text-amber-600">Schrägschnitt Start {config.angleStart}°</div>}
+              {config.angleEnd !== 0   && <div className="text-amber-600">Schrägschnitt Ende {config.angleEnd}°</div>}
+              {config.holes.length > 0 && <div className="text-muted-foreground">{config.holes.length} Bohrung{config.holes.length !== 1 ? 'en' : ''}</div>}
             </div>
           </div>
 
           {/* Price bar */}
-          <div className="border-t border-slate-700 bg-[#0a1018]/95 backdrop-blur px-6 py-4 flex items-center justify-between gap-6">
+          <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-6">
             <div className="grid grid-cols-3 gap-6 text-xs">
               <div>
-                <div className="text-slate-500">Material</div>
-                <div className="text-slate-200 font-medium">{fmt.format(price.material)}</div>
+                <div className="text-muted-foreground">Material</div>
+                <div className="text-foreground font-medium">{fmt.format(price.material)}</div>
               </div>
               <div>
-                <div className="text-slate-500">Schrägschnitte</div>
-                <div className="text-slate-200 font-medium">{fmt.format(price.miterCuts)}</div>
+                <div className="text-muted-foreground">Schrägschnitte</div>
+                <div className="text-foreground font-medium">{fmt.format(price.miterCuts)}</div>
               </div>
               <div>
-                <div className="text-slate-500">Bohrungen / Gewinde</div>
-                <div className="text-slate-200 font-medium">{fmt.format(price.holes)}</div>
+                <div className="text-muted-foreground">Bohrungen / Gewinde</div>
+                <div className="text-foreground font-medium">{fmt.format(price.holes)}</div>
               </div>
             </div>
 
             <div className="flex items-center gap-6 shrink-0">
               <div className="text-right">
-                <div className="text-xs text-slate-500">Gesamtpreis (netto)</div>
+                <div className="text-xs text-muted-foreground">Gesamtpreis (netto)</div>
                 <div className="text-2xl font-bold text-primary">{fmt.format(price.total)}</div>
-                <div className="text-[10px] text-slate-600">Richtpreis · {config.quantity} Stk.</div>
+                <div className="text-[10px] text-muted-foreground">Richtpreis · {config.quantity} Stk.</div>
               </div>
               <Button onClick={addToCart} size="lg" className="gap-2 px-6 font-semibold">
                 <ShoppingCart className="h-4 w-4" />
@@ -524,41 +513,39 @@ export default function ProfileConfigurator() {
         </main>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Cart drawer                                                         */}
-      {/* ------------------------------------------------------------------ */}
+      {/* Cart drawer */}
       {cartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setCartOpen(false)} />
-          <div className="relative z-10 w-[420px] bg-[#0d1520] border-l border-slate-700 flex flex-col h-full shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setCartOpen(false)} />
+          <div className="relative z-10 w-[420px] bg-white border-l border-slate-200 flex flex-col h-full shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" />
-                <h2 className="font-semibold text-slate-200">Warenkorb</h2>
-                <span className="text-slate-500 text-sm">({cart.length} Position{cart.length !== 1 ? 'en' : ''})</span>
+                <h2 className="font-semibold text-foreground">Warenkorb</h2>
+                <span className="text-muted-foreground text-sm">({cart.length} Position{cart.length !== 1 ? 'en' : ''})</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setCartOpen(false)} className="text-slate-500 hover:text-white text-xs">
+              <Button variant="ghost" size="sm" onClick={() => setCartOpen(false)} className="text-muted-foreground text-xs">
                 Schließen
               </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {cart.length === 0 && (
-                <p className="text-slate-600 text-sm text-center py-8">Keine Positionen</p>
+                <p className="text-muted-foreground text-sm text-center py-8">Keine Positionen</p>
               )}
               {cart.map((item, idx) => {
                 const s = PROFILE_SECTIONS.find((p) => p.id === item.config.sectionId)!;
                 return (
-                  <Card key={item.id} className="bg-slate-800/60 border-slate-700">
+                  <Card key={item.id} className="border-slate-200">
                     <CardHeader className="py-2 px-3 flex flex-row items-start justify-between">
-                      <CardTitle className="text-sm text-slate-200 font-medium">
+                      <CardTitle className="text-sm text-foreground font-medium">
                         Pos. {idx + 1} – {s.label}
                       </CardTitle>
-                      <button onClick={() => removeCartItem(item.id)} className="text-slate-600 hover:text-red-400 mt-0.5">
+                      <button onClick={() => removeCartItem(item.id)} className="text-muted-foreground hover:text-red-500 mt-0.5">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </CardHeader>
-                    <CardContent className="py-2 px-3 text-xs space-y-0.5 text-slate-400">
+                    <CardContent className="py-2 px-3 text-xs space-y-0.5 text-muted-foreground">
                       <div>{item.config.length} mm · {item.config.quantity} Stk.</div>
                       {item.config.angleStart !== 0 && <div>Schrägschnitt Start {item.config.angleStart}°</div>}
                       {item.config.angleEnd !== 0   && <div>Schrägschnitt Ende {item.config.angleEnd}°</div>}
@@ -571,12 +558,12 @@ export default function ProfileConfigurator() {
             </div>
 
             {cart.length > 0 && (
-              <div className="border-t border-slate-700 px-5 py-4 space-y-3">
+              <div className="border-t border-slate-200 px-5 py-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-400">Gesamtbetrag (netto)</span>
+                  <span className="text-sm text-muted-foreground">Gesamtbetrag (netto)</span>
                   <span className="text-xl font-bold text-primary">{fmt.format(cartTotal)}</span>
                 </div>
-                <p className="text-[10px] text-slate-600 leading-relaxed">
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
                   Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
                 </p>
                 <Button onClick={sendInquiry} className="w-full gap-2 font-semibold" size="lg">
