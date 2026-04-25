@@ -54,6 +54,10 @@ export interface Conveyor3DLibrary {
       right: ModelVariant[];
     };
     center: ModelVariant[];
+    drum: {
+      left: ModelVariant[];
+      right: ModelVariant[];
+    };
   };
   floorElements: {
     feet: FloorElementDefinition;
@@ -67,15 +71,26 @@ export interface Conveyor3DLibrary {
   profiles?: {
     sideRails?: ModelVariant[];
   };
+  components?: {
+    deflectionUnit?: ModelVariant[];
+    drives?: {
+      direct?: ModelVariant[];
+      indirect?: ModelVariant[];
+      center?: ModelVariant[];
+      drum?: ModelVariant[];
+    };
+  };
 }
 
 export interface ModelPlacement extends ModelAssetDefinition {
   position: Vec3;
   frameWidthMm?: number;
+  targetLengthMm?: number;
 }
 
 export interface ModelInstances extends ModelAssetDefinition {
   positions: Vec3[];
+  targetLengthMm?: number;
 }
 
 export interface Conveyor3DResolvedAssets {
@@ -86,6 +101,7 @@ export interface Conveyor3DResolvedAssets {
   castors?: ModelInstances;
   floorBolts?: ModelInstances;
   sideRails?: ModelInstances;
+  deflectionUnit?: ModelPlacement;
 }
 
 const defaultLibrary: Conveyor3DLibrary = {
@@ -112,6 +128,14 @@ const defaultLibrary: Conveyor3DLibrary = {
       { id: 'center-compact', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
       { id: 'center-large', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
     ],
+    drum: {
+      left: [
+        { id: 'drum-left', url: '/models/motors/drum-motor.glb', rotationDeg: [0, 0, 0], scale: [1, 1, 1] },
+      ],
+      right: [
+        { id: 'drum-right', url: '/models/motors/drum-motor.glb', rotationDeg: [0, 0, 0], scale: [1, 1, 1] },
+      ],
+    },
   },
   floorElements: {
     feet: {
@@ -147,6 +171,15 @@ const defaultLibrary: Conveyor3DLibrary = {
       { id: 'profile-40x40-light', url: '/models/profiles/1108038_profil_a8_40x40_leicht.glb', rules: { maxFrameWidth: 500 } },
       { id: 'profile-80x40-light-high', url: '/models/profiles/1108055_profil_a8_80x40_leicht.glb', rules: { minFrameWidth: 501 } },
     ],
+  },
+  components: {
+    deflectionUnit: [],
+    drives: {
+      direct: [],
+      indirect: [],
+      center: [],
+      drum: [],
+    },
   },
 };
 
@@ -244,6 +277,12 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       }
     : null;
   const center = parseVariantArray(value.motors.center);
+  const drum = isObject(value.motors.drum)
+    ? {
+        left: parseVariantArray(value.motors.drum.left),
+        right: parseVariantArray(value.motors.drum.right),
+      }
+    : null;
   const feet = toFloorElement(value.floorElements.feet);
   const castors = toFloorElement(value.floorElements.castors);
   const floorBolts = toFloorElement(value.floorElements.floorBolts);
@@ -256,6 +295,19 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         sideRails: parseVariantArray(value.profiles.sideRails) ?? undefined,
       }
     : undefined;
+  const components = isObject(value.components)
+    ? {
+        deflectionUnit: parseVariantArray(value.components.deflectionUnit) ?? undefined,
+        drives: isObject(value.components.drives)
+          ? {
+              direct: parseVariantArray(value.components.drives.direct) ?? undefined,
+              indirect: parseVariantArray(value.components.drives.indirect) ?? undefined,
+              center: parseVariantArray(value.components.drives.center) ?? undefined,
+              drum: parseVariantArray(value.components.drives.drum) ?? undefined,
+            }
+          : undefined,
+      }
+    : undefined;
 
   const resolvedIndirect =
     indirect?.left && indirect?.right
@@ -264,7 +316,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         ? { left: indirectLegacy, right: indirectLegacy }
         : null;
 
-  if (!directLeft || !directRight || !resolvedIndirect || !center || !feet || !castors) {
+  if (!directLeft || !directRight || !resolvedIndirect || !center || !drum?.left || !drum?.right || !feet || !castors) {
     return null;
   }
 
@@ -276,6 +328,10 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       },
       indirect: resolvedIndirect,
       center,
+      drum: {
+        left: drum.left,
+        right: drum.right,
+      },
     },
     floorElements: {
       feet,
@@ -284,6 +340,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
     },
     accessories,
     profiles,
+    components,
   };
 }
 
@@ -358,16 +415,6 @@ function rotateAroundLocalYAxis(rotation: Vec3 | undefined, angleRad: number): V
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
-function rotateAroundLocalXAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
-  const [x, y, z] = rotation ?? [0, 0, 0];
-  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
-  const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleRad);
-  const finalQuat = baseQuat.clone().multiply(localQuat);
-  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
-
-  return [finalEuler.x, finalEuler.y, finalEuler.z];
-}
-
 function combineRotations(base: Vec3, delta: Vec3): Vec3 {
   const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(base[0], base[1], base[2], 'XYZ'));
   const deltaQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(delta[0], delta[1], delta[2], 'XYZ'));
@@ -436,6 +483,10 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
 
   if (config.driveType === 'center') {
     urls.push(selectVariant(config.frameWidth, library.motors.center).url);
+  }
+
+  if (config.driveType === 'drum') {
+    urls.push(selectVariant(config.frameWidth, library.motors.drum[config.motorPosition]).url);
   }
 
   if (config.withStand) {
@@ -546,13 +597,9 @@ export function resolveConveyor3DAssets(
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    let finalRot = config.motorPosition === 'right'
+    const finalRot = config.motorPosition === 'right'
       ? rotateAroundLocalYAxis(baseRot, directAngleRad)
       : rotateAroundConveyorAxis(baseRot, directAngleRad);
-    // For right side, apply additional 180° rotation around local X-axis
-    if (config.motorPosition === 'right') {
-      finalRot = rotateAroundLocalXAxis(finalRot, Math.PI);
-    }
     resolved.motor = {
       url: variant.url,
       position: [
@@ -663,16 +710,26 @@ export function resolveConveyor3DAssets(
     };
   }
 
+  if (config.driveType === 'drum') {
+    const drumVariant = selectVariant(measurements.frameWidth, library.motors.drum[config.motorPosition]);
+    resolved.motor = {
+      url: drumVariant.url,
+      position: [-(measurements.beltLength / 2), 0, 0],
+      rotation: drumVariant.rotation ?? [0, 0, 0],
+      scale: drumVariant.scale ?? [1, 1, 1],
+    };
+  }
+
   if (library.profiles?.sideRails?.length) {
     const profileVariant = selectVariant(measurements.frameWidth, library.profiles.sideRails);
     const frameSectionWidth = measurements.frameSectionWidth;
     const railZ = measurements.frameWidth / 2 - frameSectionWidth / 2;
-    const lengthScale = Math.max(measurements.beltLength / 100, 0.1);
 
     resolved.sideRails = {
       url: profileVariant.url,
       rotation: profileVariant.rotation ?? [0, 0, 0],
-      scale: profileVariant.scale ?? [lengthScale, 1, 1],
+      scale: profileVariant.scale ?? [1, 1, 1],
+      targetLengthMm: measurements.beltLength,
       positions: [
         [0, 0, -railZ],
         [0, 0, railZ],

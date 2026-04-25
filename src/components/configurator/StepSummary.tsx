@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
 import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
 import { ConveyorViewer3D } from '@/components/configurator/ConveyorViewer3D';
+import { calculatePrice, type PriceCalculationResult, type PriceItem } from '@/lib/pricing';
 
 interface Props {
   config: ConveyorConfig;
@@ -26,7 +27,7 @@ function getBeltLabel(type: ConveyorConfig['beltType'], lang: Language) {
 }
 
 function getDriveLabel(type: ConveyorConfig['driveType'], lang: Language) {
-  const map = { direct: 'driveDirect', indirect: 'driveIndirect', center: 'driveCenter' } as const;
+  const map = { direct: 'driveDirect', indirect: 'driveIndirect', center: 'driveCenter', drum: 'driveDrum' } as const;
   return t(map[type], lang);
 }
 
@@ -50,6 +51,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
   const [sending, setSending] = useState(false);
   const [snapshotRequest, setSnapshotRequest] = useState(0);
+  const [pricing, setPricing] = useState<PriceCalculationResult>({ status: 'unavailable', breakdown: [], missingKeys: [] });
   const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
   const modelSnapshotRef = useRef<string | null>(null);
   const headerImageRef = useRef<CachedImageAsset | null>(null);
@@ -78,8 +80,13 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       section: t('drive', lang),
       items: [
         [t('driveType', lang), getDriveLabel(config.driveType, lang)],
-        [t('motorPosition', lang), config.motorPosition === 'left' ? t('motorLeft', lang) : t('motorRight', lang)],
-        [t('motorAngle', lang), `${config.motorAngle}°`],
+        [
+          config.driveType === 'drum' ? t('cableExit', lang) : t('motorPosition', lang),
+          config.motorPosition === 'left'
+            ? (config.driveType === 'drum' ? t('cableLeft', lang) : t('motorLeft', lang))
+            : (config.driveType === 'drum' ? t('cableRight', lang) : t('motorRight', lang)),
+        ],
+        ...(config.driveType === 'drum' ? [] : [[t('motorAngle', lang), `${config.motorAngle}°`] as [string, string]]),
       ],
     },
     {
@@ -173,6 +180,58 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   useEffect(() => {
     modelSnapshotRef.current = null;
   }, [config]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void calculatePrice(config).then((result) => {
+      if (!cancelled) {
+        setPricing(result);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
+
+  const currencyFormatter = new Intl.NumberFormat(
+    lang === 'de' ? 'de-DE' : lang === 'it' ? 'it-IT' : 'en-US',
+    {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  );
+
+  const numberFormatter = new Intl.NumberFormat(
+    lang === 'de' ? 'de-DE' : lang === 'it' ? 'it-IT' : 'en-US',
+    { minimumFractionDigits: 0, maximumFractionDigits: 2 },
+  );
+
+  const getUnitLabel = (unit: string) => {
+    if (unit === 'per_meter') {
+      return 'm';
+    }
+    if (unit === 'per_m2') {
+      return 'm2';
+    }
+    if (unit === 'per_mm_width') {
+      return 'mm';
+    }
+    return 'x';
+  };
+
+  const getPriceItemLabel = (item: PriceItem) => {
+    if (lang === 'de') {
+      return item.labelDe;
+    }
+    if (lang === 'it') {
+      return item.labelIt;
+    }
+    return item.labelEn;
+  };
 
   const captureModelSnapshot = async () => {
     if (modelSnapshotRef.current) {
@@ -510,6 +569,51 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
             </CardContent>
           </Card>
         ))}
+
+        <Card className="border">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-sm font-semibold text-primary">{t('priceIndicative', lang)}</CardTitle>
+          </CardHeader>
+          <CardContent className="py-2 px-4 space-y-3">
+            {pricing.status === 'complete' && (
+              <>
+                <div className="text-2xl font-bold text-foreground">
+                  {currencyFormatter.format(pricing.total ?? 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">{t('priceDisclaimer', lang)}</p>
+              </>
+            )}
+
+            {pricing.status !== 'complete' && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <div className="font-semibold">{t('priceOnRequest', lang)}</div>
+                <div className="text-xs mt-1">{t('priceOnRequestHint', lang)}</div>
+              </div>
+            )}
+
+            {pricing.breakdown.length > 0 && (
+              <details className="rounded-md border border-border/70 p-2">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">
+                  {t('priceBreakdown', lang)}
+                </summary>
+                <div className="mt-2 space-y-1">
+                  {pricing.breakdown.map((item) => (
+                    <div key={item.key} className="flex justify-between gap-3 text-sm py-1 border-b border-border/40 last:border-0">
+                      <span className="text-muted-foreground">
+                        {getPriceItemLabel(item)} ({numberFormatter.format(item.quantity)} {getUnitLabel(item.unit)})
+                      </span>
+                      <span className="font-medium text-right text-foreground">
+                        {item.available && item.total !== undefined
+                          ? currencyFormatter.format(item.total)
+                          : t('priceItemOnRequest', lang)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="flex gap-3 pt-2">
           <Button onClick={handleDownloadPdf} variant="outline" className="flex-1">

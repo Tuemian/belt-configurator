@@ -21,6 +21,41 @@ The endpoint is expected to return JSON:
 }
 ```
 
+## Component STEP Drop Workflow
+
+Use `public/models/components/` to add own STEP components:
+
+- `deflection-unit/`
+- `direct-drive/`
+- `indirect-drive/`
+- `center-drive/`
+- `drum-motor/`
+
+Convert dropped files (`.step` / `.stp`) to GLB:
+
+`npm run convert:step public/models/components`
+
+Then reference generated GLB paths in `public/models/library.json`.
+Fallback geometry remains active for missing models.
+
+See full instructions in `public/models/components/README.md`.
+
+## Indicative Pricing (Excel)
+
+The summary step reads prices from:
+
+- `public/pricing/price-list.xlsx`
+
+Rules:
+
+- Sheet name must be `Components`.
+- If all required keys for a configuration have valid prices, total estimate is shown.
+- If at least one key is missing, UI switches to `Price on request` and marks missing items.
+- If Excel file is unavailable/invalid, UI shows `Price on request`.
+
+Replacing `public/pricing/price-list.xlsx` updates prices without code changes.
+Schema details are documented in `public/pricing/README.md`.
+
 ## Solid STEP Setup (Local)
 
 1. Start the solid service from `step-solid-service/`.

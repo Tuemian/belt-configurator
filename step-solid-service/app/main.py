@@ -199,6 +199,9 @@ def _find_motor_step_asset(config: ConveyorConfig, width: float) -> Path | None:
             f"center-{variant}.stp",
             "center.stp",
         ]
+    elif config.driveType == "drum":
+        # Drum drive has no external side motor in STEP export.
+        return None
     else:
         return None
 

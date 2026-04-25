@@ -15,9 +15,10 @@ import {
 } from '@/lib/conveyor-3d-library';
 
 const C = {
-  frame: '#3f4752',
-  frameDark: '#2f3640',
+  frame: '#c5cdd6',
+  frameDark: '#9faab7',
   drum: '#64748b',
+  drumDark: '#3c4654',
   belt: '#1b3b2c',
   beltSurface: '#244b37',
   guide: '#cbd5df',
@@ -96,6 +97,72 @@ function applyMotorAppearance(object: THREE.Object3D) {
 
     child.material = applyMaterial(child.material);
   });
+}
+
+function applyAluminumAppearance(object: THREE.Object3D) {
+  object.traverse((child) => {
+    if (!(child instanceof THREE.Mesh)) {
+      return;
+    }
+
+    const applyMaterial = (material: THREE.Material) => {
+      if (!(material instanceof THREE.MeshStandardMaterial) && !(material instanceof THREE.MeshPhysicalMaterial)) {
+        return material;
+      }
+
+      const nextMaterial = material.clone();
+      nextMaterial.color = new THREE.Color(C.frame);
+      nextMaterial.emissive = new THREE.Color('#000000');
+      nextMaterial.map = null;
+      nextMaterial.metalness = 0.7;
+      nextMaterial.roughness = 0.35;
+      nextMaterial.envMapIntensity = 0.45;
+      nextMaterial.needsUpdate = true;
+      return nextMaterial;
+    };
+
+    if (Array.isArray(child.material)) {
+      child.material = child.material.map(applyMaterial);
+      return;
+    }
+
+    child.material = applyMaterial(child.material);
+  });
+}
+
+function fitSceneToTargetLength(object: THREE.Object3D, targetLengthMm?: number) {
+  if (!targetLengthMm || targetLengthMm <= 0) {
+    return;
+  }
+
+  const box = new THREE.Box3().setFromObject(object);
+  if (box.isEmpty()) {
+    return;
+  }
+
+  const size = box.getSize(new THREE.Vector3());
+  const lengths = [size.x, size.y, size.z];
+  const axisIndex = lengths.reduce((best, current, index, arr) => (current > arr[best] ? index : best), 0);
+  const baseLength = lengths[axisIndex];
+
+  if (!Number.isFinite(baseLength) || baseLength <= 0) {
+    return;
+  }
+
+  const targetLength = baseLength < 20 ? targetLengthMm / 1000 : targetLengthMm;
+  const ratio = targetLength / baseLength;
+
+  if (!Number.isFinite(ratio) || ratio <= 0) {
+    return;
+  }
+
+  if (axisIndex === 0) {
+    object.scale.x *= ratio;
+  } else if (axisIndex === 1) {
+    object.scale.y *= ratio;
+  } else {
+    object.scale.z *= ratio;
+  }
 }
 
 function normalizeFloorBoltScene(object: THREE.Object3D) {
@@ -361,6 +428,10 @@ function ExternalAssetInstances({
     console.log('ExternalAssetInstances (floor-bolt): Loading', asset.positions.length, 'instances from URL:', asset.url);
     return asset.positions.map((pos, idx) => {
       const nextScene = scene.clone(true);
+      if (asset.url.includes('/models/profiles/')) {
+        applyAluminumAppearance(nextScene);
+        fitSceneToTargetLength(nextScene, asset.targetLengthMm);
+      }
       if (asset.url.includes('/models/floor-elements/floor-bolt.glb')) {
         console.log('ExternalAssetInstances (floor-bolt): Normalizing instance', idx, 'at position', pos);
         normalizeFloorBoltScene(nextScene);
@@ -672,6 +743,37 @@ function ParametricIndirectMotor({
   );
 }
 
+function ParametricDrumMotor({
+  length,
+  width,
+  drumRadius,
+  cableSide,
+}: {
+  length: number;
+  width: number;
+  drumRadius: number;
+  cableSide: ConveyorConfig['motorPosition'];
+}) {
+  const side = cableSide === 'left' ? -1 : 1;
+  const x = -(length / 2);
+  const r = Math.max(drumRadius * 1.28, 34);
+  const h = width + 30;
+
+  return (
+    <group position={[x, 0, 0]}>
+      <Cyl pos={[0, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={r} h={h} color={C.drumDark} segs={36} />
+      <Cyl
+        pos={[0, r * 0.08, side * (h / 2 + 22)]}
+        rot={[Math.PI / 2, 0, 0]}
+        r={Math.max(5, r * 0.14)}
+        h={26}
+        color="#111827"
+        segs={16}
+      />
+    </group>
+  );
+}
+
 function DirectionArrow({
   beltLength,
   beltTopY,
@@ -958,8 +1060,20 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           asset={resolvedAssets.sideRails}
           fallback={(
             <>
-              <Box pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
-              <Box pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+              <Box
+                pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]}
+                size={[beltLength, frameHeight, frameSectionWidth]}
+                color={C.frame}
+                metalness={0.7}
+                roughness={0.35}
+              />
+              <Box
+                pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]}
+                size={[beltLength, frameHeight, frameSectionWidth]}
+                color={C.frame}
+                metalness={0.7}
+                roughness={0.35}
+              />
             </>
           )}
         />
@@ -977,7 +1091,13 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
         })}
 
         <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
-        <Cyl pos={[-beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        <Cyl
+          pos={[-beltLength / 2, 0, 0]}
+          rot={[Math.PI / 2, 0, 0]}
+          r={driveType === 'drum' ? drumRadius * 1.28 : drumRadius}
+          h={driveType === 'drum' ? frameWidth + 30 : frameWidth + 24}
+          color={driveType === 'drum' ? C.drumDark : C.drum}
+        />
 
         <Box
           pos={[0, beltTopY - beltThickness / 2, 0]}
@@ -1086,6 +1206,20 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
               }
             />
           </>
+        )}
+
+        {driveType === 'drum' && (
+          <ExternalAsset
+            asset={resolvedAssets.motor}
+            fallback={
+              <ParametricDrumMotor
+                length={beltLength}
+                width={frameWidth}
+                drumRadius={drumRadius}
+                cableSide={motorPosition}
+              />
+            }
+          />
         )}
 
         <DirectionArrow beltLength={beltLength} beltTopY={beltTopY} frameWidth={frameWidth} />

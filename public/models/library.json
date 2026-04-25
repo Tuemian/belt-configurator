@@ -79,7 +79,59 @@
           "minFrameWidth": 501
         }
       }
-    ]
+    ],
+    "drum": {
+      "left": [
+        {
+          "id": "drum-left",
+          "url": "/models/motors/drum-motor.glb",
+          "rotationDeg": [0, 0, 0],
+          "scale": [1, 1, 1]
+        }
+      ],
+      "right": [
+        {
+          "id": "drum-right",
+          "url": "/models/motors/drum-motor.glb",
+          "rotationDeg": [0, 0, 0],
+          "scale": [1, 1, 1]
+        }
+      ]
+    }
+  },
+  "components": {
+    "deflectionUnit": [
+      {
+        "id": "deflection-unit-default",
+        "url": "/models/components/deflection-unit/deflection-unit.glb"
+      }
+    ],
+    "drives": {
+      "direct": [
+        {
+          "id": "direct-drive-default",
+          "url": "/models/components/direct-drive/direct-drive.glb"
+        }
+      ],
+      "indirect": [
+        {
+          "id": "indirect-drive-default",
+          "url": "/models/components/indirect-drive/indirect-drive.glb"
+        }
+      ],
+      "center": [
+        {
+          "id": "center-drive-default",
+          "url": "/models/components/center-drive/center-drive.glb"
+        }
+      ],
+      "drum": [
+        {
+          "id": "drum-drive-default",
+          "url": "/models/components/drum-motor/drum-motor.glb"
+        }
+      ]
+    }
   },
   "floorElements": {
     "feet": {

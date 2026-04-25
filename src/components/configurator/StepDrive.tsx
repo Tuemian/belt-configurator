@@ -17,6 +17,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
     { value: 'direct' as const, label: t('driveDirect', lang), desc: t('driveDirectDesc', lang) },
     { value: 'indirect' as const, label: t('driveIndirect', lang), desc: t('driveIndirectDesc', lang) },
     { value: 'center' as const, label: t('driveCenter', lang), desc: t('driveCenterDesc', lang) },
+    { value: 'drum' as const, label: t('driveDrum', lang), desc: t('driveDrumDesc', lang) },
   ];
 
   const motorAngles = [0, 90, 180, 270] as const;
@@ -31,7 +32,10 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => onChange({ driveType: opt.value, centerDriveOffset: opt.value === 'center' ? config.centerDriveOffset : 0 })}
+                onClick={() => onChange({
+                  driveType: opt.value,
+                  centerDriveOffset: opt.value === 'center' ? config.centerDriveOffset : 0,
+                })}
                 className={cn(
                   'flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left',
                   config.driveType === opt.value
@@ -47,7 +51,9 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
         </div>
 
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground">{t('motorPosition', lang)}</Label>
+          <Label className="text-sm font-semibold text-foreground">
+            {config.driveType === 'drum' ? t('cableExit', lang) : t('motorPosition', lang)}
+          </Label>
           <div className="grid grid-cols-2 gap-3">
             {(['left', 'right'] as const).map((pos) => (
               <button
@@ -61,12 +67,15 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
                     : 'border-border hover:border-primary/50'
                 )}
               >
-                {pos === 'left' ? t('motorLeft', lang) : t('motorRight', lang)}
+                {pos === 'left'
+                  ? (config.driveType === 'drum' ? t('cableLeft', lang) : t('motorLeft', lang))
+                  : (config.driveType === 'drum' ? t('cableRight', lang) : t('motorRight', lang))}
               </button>
             ))}
           </div>
         </div>
 
+        {config.driveType !== 'drum' && (
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground">{t('motorAngle', lang)}</Label>
           <div className="grid grid-cols-4 gap-2">
@@ -102,6 +111,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
             ))}
           </div>
         </div>
+        )}
 
         {config.driveType === 'center' && (
           <div className="space-y-3">
