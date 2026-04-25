@@ -965,25 +965,56 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           asset={resolvedAssets.sideRails}
           fallback={(
             <>
-              <Box pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
-              <Box pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]} size={[beltLength, frameHeight, frameSectionWidth]} color={C.frame} />
+              {/* Aluminium-Seitenprofile: MOTIS40 (40 mm) oder MOTIS80 (80 mm) – Höhe via frameHeight */}
+              <Box
+                pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]}
+                size={[beltLength, frameHeight, frameSectionWidth]}
+                color="#c5cdd6"
+                metalness={0.7}
+                roughness={0.35}
+              />
+              <Box
+                pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]}
+                size={[beltLength, frameHeight, frameSectionWidth]}
+                color="#c5cdd6"
+                metalness={0.7}
+                roughness={0.35}
+              />
+              {/* Profilnut-Andeutung (dunkle Schlitze auf Außenseite) */}
+              {[-1, 1].map((side) => (
+                <Box
+                  key={`profile-slot-${side}`}
+                  pos={[0, 0, side * (frameWidth / 2 + 0.5)]}
+                  size={[beltLength * 0.99, frameHeight * 0.18, 1]}
+                  color="#3a4250"
+                  metalness={0.2}
+                  roughness={0.9}
+                />
+              ))}
             </>
           )}
         />
 
+        {/* Querstreben aus Aluminium */}
         {Array.from({ length: Math.min(18, Math.max(2, Math.floor(beltLength / 500))) }, (_, index) => {
-          const x = -beltLength / 2 + ((index + 1) * beltLength) / (Math.min(18, Math.max(2, Math.floor(beltLength / 500))) + 1);
+          const total = Math.min(18, Math.max(2, Math.floor(beltLength / 500)));
+          const x = -beltLength / 2 + ((index + 1) * beltLength) / (total + 1);
           return (
             <Box
               key={`cross-member-${index}`}
               pos={[x, -frameHeight * 0.2, 0]}
               size={[frameSectionWidth * 0.5, frameHeight * 0.55, frameWidth - 2 * frameSectionWidth]}
-              color={C.frameDark}
+              color="#9aa3ad"
+              metalness={0.6}
+              roughness={0.4}
             />
           );
         })}
 
-        <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        {/* Umlenktrommeln – bei drum wird die Antriebsseite durch das GLB ersetzt */}
+        {driveType !== 'drum' && (
+          <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        )}
         <Cyl pos={[-beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
 
         <Box
