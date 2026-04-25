@@ -26,7 +26,7 @@ function getBeltLabel(type: ConveyorConfig['beltType'], lang: Language) {
 }
 
 function getDriveLabel(type: ConveyorConfig['driveType'], lang: Language) {
-  const map = { direct: 'driveDirect', indirect: 'driveIndirect', center: 'driveCenter' } as const;
+  const map = { direct: 'driveDirect', indirect: 'driveIndirect', center: 'driveCenter', drum: 'driveDrum' } as const;
   return t(map[type], lang);
 }
 
