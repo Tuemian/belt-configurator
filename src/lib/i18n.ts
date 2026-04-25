@@ -143,6 +143,15 @@ const translations = {
     required: 'Pflichtfeld',
     imprintLink: 'Impressum',
     privacyPolicyLink: 'Datenschutz',
+
+    // Pricing
+    priceIndicative: 'Indikativer Preis',
+    priceTotal: 'Gesamt (netto, ohne MwSt.)',
+    priceBreakdown: 'Aufstellung',
+    priceDisclaimer: 'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.',
+    priceOnRequest: 'Preis auf Anfrage',
+    priceOnRequestHint: 'Für diese Konfiguration liegt noch kein vollständiger Richtpreis vor. Bitte senden Sie eine Anfrage – wir melden uns mit einem konkreten Angebot zurück.',
+    priceItemOnRequest: 'auf Anfrage',
   },
   en: {
     onlineConfigurator: 'Online Configurator',
