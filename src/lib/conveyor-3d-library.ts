@@ -54,6 +54,10 @@ export interface Conveyor3DLibrary {
       right: ModelVariant[];
     };
     center: ModelVariant[];
+    drum: {
+      left: ModelVariant[];
+      right: ModelVariant[];
+    };
   };
   floorElements: {
     feet: FloorElementDefinition;
@@ -112,6 +116,14 @@ const defaultLibrary: Conveyor3DLibrary = {
       { id: 'center-compact', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
       { id: 'center-large', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
     ],
+    drum: {
+      left: [
+        { id: 'drum-left', url: '/models/motors/drum-motor.glb', rotationDeg: [0, 0, 0], scale: [1, 1, 1] },
+      ],
+      right: [
+        { id: 'drum-right', url: '/models/motors/drum-motor.glb', rotationDeg: [0, 0, 0], scale: [1, 1, 1] },
+      ],
+    },
   },
   floorElements: {
     feet: {
