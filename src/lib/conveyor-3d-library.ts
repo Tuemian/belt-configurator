@@ -687,7 +687,17 @@ export function resolveConveyor3DAssets(
     };
   }
 
-  if (library.profiles?.sideRails?.length) {
+  if (config.driveType === 'drum') {
+    const variant = selectVariant(measurements.frameWidth, library.motors.drum[config.motorPosition]);
+    resolved.drumMotor = {
+      url: variant.url,
+      // An der Antriebsseite (Bandende positiv) als Umlenktrommel
+      position: [measurements.beltLength / 2, 0, 0],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
+      frameWidthMm: measurements.frameWidth,
+    };
+  }
     const profileVariant = selectVariant(measurements.frameWidth, library.profiles.sideRails);
     const frameSectionWidth = measurements.frameSectionWidth;
     const railZ = measurements.frameWidth / 2 - frameSectionWidth / 2;
