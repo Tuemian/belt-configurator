@@ -97,6 +97,7 @@ export interface Conveyor3DResolvedAssets {
   indirectMount?: ModelPlacement;
   centerMount?: ModelPlacement;
   motor?: ModelPlacement;
+  drumMotor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
   floorBolts?: ModelInstances;
@@ -316,7 +317,11 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         ? { left: indirectLegacy, right: indirectLegacy }
         : null;
 
-  if (!directLeft || !directRight || !resolvedIndirect || !center || !drum?.left || !drum?.right || !feet || !castors) {
+  const resolvedDrum = drum?.left && drum?.right
+    ? { left: drum.left, right: drum.right }
+    : defaultLibrary.motors.drum;
+
+  if (!directLeft || !directRight || !resolvedIndirect || !center || !feet || !castors) {
     return null;
   }
 
@@ -328,10 +333,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       },
       indirect: resolvedIndirect,
       center,
-      drum: {
-        left: drum.left,
-        right: drum.right,
-      },
+      drum: resolvedDrum,
     },
     floorElements: {
       feet,
@@ -597,9 +599,7 @@ export function resolveConveyor3DAssets(
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    const finalRot = config.motorPosition === 'right'
-      ? rotateAroundLocalYAxis(baseRot, directAngleRad)
-      : rotateAroundConveyorAxis(baseRot, directAngleRad);
+    const finalRot = rotateAroundConveyorAxis(baseRot, directAngleRad);
     resolved.motor = {
       url: variant.url,
       position: [
@@ -711,12 +711,14 @@ export function resolveConveyor3DAssets(
   }
 
   if (config.driveType === 'drum') {
-    const drumVariant = selectVariant(measurements.frameWidth, library.motors.drum[config.motorPosition]);
-    resolved.motor = {
-      url: drumVariant.url,
-      position: [-(measurements.beltLength / 2), 0, 0],
-      rotation: drumVariant.rotation ?? [0, 0, 0],
-      scale: drumVariant.scale ?? [1, 1, 1],
+    const variant = selectVariant(measurements.frameWidth, library.motors.drum[config.motorPosition]);
+    resolved.drumMotor = {
+      url: variant.url,
+      // An der Antriebsseite (Bandende positiv) als Umlenktrommel
+      position: [measurements.beltLength / 2, 0, 0],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
+      frameWidthMm: measurements.frameWidth,
     };
   }
 

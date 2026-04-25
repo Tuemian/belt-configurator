@@ -21,6 +21,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
   ];
 
   const motorAngles = [0, 90, 180, 270] as const;
+  const isDrum = config.driveType === 'drum';
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -35,6 +36,8 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
                 onClick={() => onChange({
                   driveType: opt.value,
                   centerDriveOffset: opt.value === 'center' ? config.centerDriveOffset : 0,
+                  // Trommelmotor: keine Motorstellung, default 0
+                  motorAngle: opt.value === 'drum' ? 0 : config.motorAngle,
                 })}
                 className={cn(
                   'flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left',
@@ -52,7 +55,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
 
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground">
-            {config.driveType === 'drum' ? t('cableExit', lang) : t('motorPosition', lang)}
+            {isDrum ? t('cableExit', lang) : t('motorPosition', lang)}
           </Label>
           <div className="grid grid-cols-2 gap-3">
             {(['left', 'right'] as const).map((pos) => (
@@ -67,50 +70,48 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
                     : 'border-border hover:border-primary/50'
                 )}
               >
-                {pos === 'left'
-                  ? (config.driveType === 'drum' ? t('cableLeft', lang) : t('motorLeft', lang))
-                  : (config.driveType === 'drum' ? t('cableRight', lang) : t('motorRight', lang))}
+                {isDrum
+                  ? (pos === 'left' ? t('cableLeft', lang) : t('cableRight', lang))
+                  : (pos === 'left' ? t('motorLeft', lang) : t('motorRight', lang))}
               </button>
             ))}
           </div>
         </div>
 
-        {config.driveType !== 'drum' && (
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground">{t('motorAngle', lang)}</Label>
-          <div className="grid grid-cols-4 gap-2">
-            {motorAngles.map((angle) => (
-              (() => {
+        {!isDrum && (
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold text-foreground">{t('motorAngle', lang)}</Label>
+            <div className="grid grid-cols-4 gap-2">
+              {motorAngles.map((angle) => {
                 const isDisabled = config.driveType === 'indirect'
                   ? (config.motorPosition === 'left' ? (angle === 90 || angle === 180) : (angle === 180 || angle === 270))
                   : config.driveType === 'center'
                     ? angle === 180
                     : false;
                 return (
-              <button
-                key={angle}
-                type="button"
-                onClick={() => {
-                  if (!isDisabled) {
-                    onChange({ motorAngle: angle });
-                  }
-                }}
-                disabled={isDisabled}
-                className={cn(
-                  'p-3 rounded-lg border-2 transition-all font-medium text-sm',
-                  isDisabled && 'opacity-40 cursor-not-allowed border-border bg-muted/20 text-muted-foreground hover:border-border',
-                  config.motorAngle === angle
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                )}
-              >
-                {angle}°
-              </button>
+                  <button
+                    key={angle}
+                    type="button"
+                    onClick={() => {
+                      if (!isDisabled) {
+                        onChange({ motorAngle: angle });
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={cn(
+                      'p-3 rounded-lg border-2 transition-all font-medium text-sm',
+                      isDisabled && 'opacity-40 cursor-not-allowed border-border bg-muted/20 text-muted-foreground hover:border-border',
+                      config.motorAngle === angle
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    )}
+                  >
+                    {angle}°
+                  </button>
                 );
-              })()
-            ))}
+              })}
+            </div>
           </div>
-        </div>
         )}
 
         {config.driveType === 'center' && (

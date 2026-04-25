@@ -150,6 +150,15 @@ const translations = {
     required: 'Pflichtfeld',
     imprintLink: 'Impressum',
     privacyPolicyLink: 'Datenschutz',
+
+    // Pricing
+    priceIndicative: 'Indikativer Preis',
+    priceTotal: 'Gesamt (netto, ohne MwSt.)',
+    priceBreakdown: 'Aufstellung',
+    priceDisclaimer: 'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.',
+    priceOnRequest: 'Preis auf Anfrage',
+    priceOnRequestHint: 'Für diese Konfiguration liegt noch kein vollständiger Richtpreis vor. Bitte senden Sie eine Anfrage – wir melden uns mit einem konkreten Angebot zurück.',
+    priceItemOnRequest: 'auf Anfrage',
   },
   en: {
     onlineConfigurator: 'Online Configurator',
@@ -238,7 +247,7 @@ const translations = {
     driveCenter: 'Center Drive',
     driveCenterDesc: 'Underneath at belt center',
     driveDrum: 'Drum Motor',
-    driveDrumDesc: 'Drive integrated into the return drum',
+    driveDrumDesc: 'Drive integrated in pulley',
     motorPosition: 'Motor Position',
     motorLeft: 'Left',
     motorRight: 'Right',
@@ -292,6 +301,14 @@ const translations = {
     required: 'Required',
     imprintLink: 'Legal notice',
     privacyPolicyLink: 'Privacy policy',
+
+    priceIndicative: 'Indicative Price',
+    priceTotal: 'Total (net, excl. VAT)',
+    priceBreakdown: 'Breakdown',
+    priceDisclaimer: 'Non-binding indicative price. Final price after technical review by NOVAMOTIS.',
+    priceOnRequest: 'Price on request',
+    priceOnRequestHint: 'No complete indicative price is available for this configuration yet. Please send an inquiry – we will get back to you with a concrete offer.',
+    priceItemOnRequest: 'on request',
   },
   it: {
     onlineConfigurator: 'Configuratore online',
@@ -434,6 +451,14 @@ const translations = {
     required: 'Obbligatorio',
     imprintLink: 'Note legali',
     privacyPolicyLink: 'Privacy policy',
+
+    priceIndicative: 'Prezzo indicativo',
+    priceTotal: 'Totale (netto, IVA esclusa)',
+    priceBreakdown: 'Dettaglio',
+    priceDisclaimer: 'Prezzo indicativo non vincolante. Prezzo finale dopo verifica tecnica da parte di NOVAMOTIS.',
+    priceOnRequest: 'Prezzo su richiesta',
+    priceOnRequestHint: 'Per questa configurazione non e ancora disponibile un prezzo indicativo completo. Invia una richiesta – ti risponderemo con un\'offerta concreta.',
+    priceItemOnRequest: 'su richiesta',
   },
 } as const;
 

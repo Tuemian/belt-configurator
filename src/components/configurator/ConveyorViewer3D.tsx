@@ -3,7 +3,10 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { GizmoHelper, GizmoViewport, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+type OrbitControlsImpl = {
+  target: THREE.Vector3;
+  update: () => void;
+};
 import { ConveyorConfig } from '@/lib/configurator-types';
 import {
   Conveyor3DMeasurements,
@@ -222,6 +225,8 @@ function Cyl({
   h,
   color,
   segs = 24,
+  metalness = 0.75,
+  roughness = 0.2,
 }: {
   pos: Vec3;
   rot?: Vec3;
@@ -229,11 +234,13 @@ function Cyl({
   h: number;
   color: string;
   segs?: number;
+  metalness?: number;
+  roughness?: number;
 }) {
   return (
     <mesh position={pos} rotation={rot}>
       <cylinderGeometry args={[r, r, h, segs]} />
-      <meshStandardMaterial color={color} metalness={0.75} roughness={0.2} />
+      <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
     </mesh>
   );
 }
@@ -534,7 +541,7 @@ function ControlsRig({
 
   return (
     <OrbitControls
-      ref={controlsRef}
+      ref={controlsRef as unknown as React.Ref<never>}
       makeDefault
       enablePan
       minPolarAngle={0.1}
@@ -1060,44 +1067,57 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
           asset={resolvedAssets.sideRails}
           fallback={(
             <>
+              {/* Aluminium-Seitenprofile: MOTIS40 (40 mm) oder MOTIS80 (80 mm) – Höhe via frameHeight */}
               <Box
                 pos={[0, 0, -(frameWidth / 2 - frameSectionWidth / 2)]}
                 size={[beltLength, frameHeight, frameSectionWidth]}
-                color={C.frame}
+                color="#c5cdd6"
                 metalness={0.7}
                 roughness={0.35}
               />
               <Box
                 pos={[0, 0, frameWidth / 2 - frameSectionWidth / 2]}
                 size={[beltLength, frameHeight, frameSectionWidth]}
-                color={C.frame}
+                color="#c5cdd6"
                 metalness={0.7}
                 roughness={0.35}
               />
+              {/* Profilnut-Andeutung (dunkle Schlitze auf Außenseite) */}
+              {[-1, 1].map((side) => (
+                <Box
+                  key={`profile-slot-${side}`}
+                  pos={[0, 0, side * (frameWidth / 2 + 0.5)]}
+                  size={[beltLength * 0.99, frameHeight * 0.18, 1]}
+                  color="#3a4250"
+                  metalness={0.2}
+                  roughness={0.9}
+                />
+              ))}
             </>
           )}
         />
 
+        {/* Querstreben aus Aluminium */}
         {Array.from({ length: Math.min(18, Math.max(2, Math.floor(beltLength / 500))) }, (_, index) => {
-          const x = -beltLength / 2 + ((index + 1) * beltLength) / (Math.min(18, Math.max(2, Math.floor(beltLength / 500))) + 1);
+          const total = Math.min(18, Math.max(2, Math.floor(beltLength / 500)));
+          const x = -beltLength / 2 + ((index + 1) * beltLength) / (total + 1);
           return (
             <Box
               key={`cross-member-${index}`}
               pos={[x, -frameHeight * 0.2, 0]}
               size={[frameSectionWidth * 0.5, frameHeight * 0.55, frameWidth - 2 * frameSectionWidth]}
-              color={C.frameDark}
+              color="#9aa3ad"
+              metalness={0.6}
+              roughness={0.4}
             />
           );
         })}
 
-        <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
-        <Cyl
-          pos={[-beltLength / 2, 0, 0]}
-          rot={[Math.PI / 2, 0, 0]}
-          r={driveType === 'drum' ? drumRadius * 1.28 : drumRadius}
-          h={driveType === 'drum' ? frameWidth + 30 : frameWidth + 24}
-          color={driveType === 'drum' ? C.drumDark : C.drum}
-        />
+        {/* Umlenktrommeln – bei drum wird die Antriebsseite durch das GLB ersetzt */}
+        {driveType !== 'drum' && (
+          <Cyl pos={[beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
+        )}
+        <Cyl pos={[-beltLength / 2, 0, 0]} rot={[Math.PI / 2, 0, 0]} r={drumRadius} h={frameWidth + 24} color={C.drum} />
 
         <Box
           pos={[0, beltTopY - beltThickness / 2, 0]}
@@ -1210,14 +1230,30 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
         {driveType === 'drum' && (
           <ExternalAsset
-            asset={resolvedAssets.motor}
+            asset={resolvedAssets.drumMotor}
             fallback={
-              <ParametricDrumMotor
-                length={beltLength}
-                width={frameWidth}
-                drumRadius={drumRadius}
-                cableSide={motorPosition}
-              />
+              <group position={[beltLength / 2, 0, 0]}>
+                {/* Trommelmotor: dunkle, kräftigere Umlenktrommel */}
+                <Cyl
+                  pos={[0, 0, 0]}
+                  rot={[Math.PI / 2, 0, 0]}
+                  r={drumRadius * 1.25}
+                  h={frameWidth + 8}
+                  color="#2a2f38"
+                  metalness={0.5}
+                  roughness={0.45}
+                />
+                {/* Kabelausgang auf gewählter Seite */}
+                <Cyl
+                  pos={[0, -drumRadius * 0.4, motorPosition === 'left' ? -(frameWidth / 2 + 18) : frameWidth / 2 + 18]}
+                  rot={[Math.PI / 2, 0, 0]}
+                  r={4}
+                  h={36}
+                  color="#1a1d24"
+                  metalness={0.2}
+                  roughness={0.9}
+                />
+              </group>
             }
           />
         )}
