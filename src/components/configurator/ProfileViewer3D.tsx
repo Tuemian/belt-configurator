@@ -1,87 +1,114 @@
 import { useRef, useMemo, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ProfileSection, ProfileHole } from '@/lib/profile-configurator-types';
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Profile cross-section shape builder
+// Produces an accurate T-slot aluminum profile cross-section.
+// All hole paths are CW (negative signed area) so Three.js treats them as
+// subtractions from the CCW outer shape.
 // ---------------------------------------------------------------------------
 
 function buildProfileShape(section: ProfileSection): THREE.Shape {
-  const { w, h, slotDepth, slotWidth, cornerR, webThickness } = section;
+  const { w, h, slotDepth: sd, slotWidth: sw, cornerR, webThickness: wt } = section;
   const hw = w / 2;
   const hh = h / 2;
+  // T-groove is wider than the slot opening (the "T" expansion)
+  const gw = sw * 1.72;
+  // Neck depth: narrow channel before the T expands
+  const nk = Math.min(1.8, sd * 0.28);
 
+  // ---- Outer rounded rectangle (CCW) ------------------------------------
   const shape = new THREE.Shape();
-
-  // Outer rounded rectangle
   shape.moveTo(-hw + cornerR, -hh);
-  shape.lineTo(hw - cornerR, -hh);
-  shape.quadraticCurveTo(hw, -hh, hw, -hh + cornerR);
-  shape.lineTo(hw, hh - cornerR);
-  shape.quadraticCurveTo(hw, hh, hw - cornerR, hh);
-  shape.lineTo(-hw + cornerR, hh);
-  shape.quadraticCurveTo(-hw, hh, -hw, hh - cornerR);
+  shape.lineTo( hw - cornerR, -hh);
+  shape.quadraticCurveTo( hw, -hh,  hw, -hh + cornerR);
+  shape.lineTo( hw,  hh - cornerR);
+  shape.quadraticCurveTo( hw,  hh,  hw - cornerR,  hh);
+  shape.lineTo(-hw + cornerR,  hh);
+  shape.quadraticCurveTo(-hw,  hh, -hw,  hh - cornerR);
   shape.lineTo(-hw, -hh + cornerR);
   shape.quadraticCurveTo(-hw, -hh, -hw + cornerR, -hh);
 
-  // Punching out the hollow interior: inner rectangle
-  const wallT = webThickness;
-  const inner = new THREE.Path();
-  const iw = hw - wallT;
-  const ih = hh - wallT;
-  inner.moveTo(-iw, -ih);
-  inner.lineTo(iw, -ih);
-  inner.lineTo(iw, ih);
-  inner.lineTo(-iw, ih);
-  inner.lineTo(-iw, -ih);
-  shape.holes.push(inner);
+  // ---- T-slot hole helper (all produce CW paths = negative signed area) --
+  // Top slot: opens at y=+hh, extends downward
+  const top = new THREE.Path();
+  top.moveTo( sw/2,  hh);
+  top.lineTo( sw/2,  hh - nk);
+  top.lineTo( gw/2,  hh - nk);
+  top.lineTo( gw/2,  hh - sd);
+  top.lineTo(-gw/2,  hh - sd);
+  top.lineTo(-gw/2,  hh - nk);
+  top.lineTo(-sw/2,  hh - nk);
+  top.lineTo(-sw/2,  hh);
+  top.closePath();
+  shape.holes.push(top);
 
-  // T-slots on 4 faces
-  const addSlot = (path: THREE.Path, axis: 'x' | 'y', dir: 1 | -1) => {
-    const sw = slotWidth / 2;
-    const sd = slotDepth;
-    const outer = axis === 'y' ? hh : hw;
-    const inner2 = outer - sd;
-    if (axis === 'y') {
-      path.moveTo(-sw, dir * outer);
-      path.lineTo(-sw, dir * inner2);
-      path.lineTo(-sw * 1.6, dir * inner2);
-      path.lineTo(-sw * 1.6, dir * (inner2 - 1.5));
-      path.lineTo(sw * 1.6, dir * (inner2 - 1.5));
-      path.lineTo(sw * 1.6, dir * inner2);
-      path.lineTo(sw, dir * inner2);
-      path.lineTo(sw, dir * outer);
-      path.lineTo(-sw, dir * outer);
-    } else {
-      path.moveTo(dir * outer, -sw);
-      path.lineTo(dir * inner2, -sw);
-      path.lineTo(dir * inner2, -sw * 1.6);
-      path.lineTo(dir * (inner2 - 1.5), -sw * 1.6);
-      path.lineTo(dir * (inner2 - 1.5), sw * 1.6);
-      path.lineTo(dir * inner2, sw * 1.6);
-      path.lineTo(dir * inner2, sw);
-      path.lineTo(dir * outer, sw);
-      path.lineTo(dir * outer, -sw);
-    }
-  };
+  // Bottom slot: 180° rotation of top (preserves CW orientation)
+  const bot = new THREE.Path();
+  bot.moveTo(-sw/2, -hh);
+  bot.lineTo(-sw/2, -(hh - nk));
+  bot.lineTo(-gw/2, -(hh - nk));
+  bot.lineTo(-gw/2, -(hh - sd));
+  bot.lineTo( gw/2, -(hh - sd));
+  bot.lineTo( gw/2, -(hh - nk));
+  bot.lineTo( sw/2, -(hh - nk));
+  bot.lineTo( sw/2, -hh);
+  bot.closePath();
+  shape.holes.push(bot);
 
-  const topSlot = new THREE.Path();
-  addSlot(topSlot, 'y', 1);
-  shape.holes.push(topSlot);
+  // Right slot: 90° CW rotation of top (using hw)
+  const rgt = new THREE.Path();
+  rgt.moveTo( hw,  -sw/2);
+  rgt.lineTo( hw - nk, -sw/2);
+  rgt.lineTo( hw - nk, -gw/2);
+  rgt.lineTo( hw - sd, -gw/2);
+  rgt.lineTo( hw - sd,  gw/2);
+  rgt.lineTo( hw - nk,  gw/2);
+  rgt.lineTo( hw - nk,  sw/2);
+  rgt.lineTo( hw,       sw/2);
+  rgt.closePath();
+  shape.holes.push(rgt);
 
-  const botSlot = new THREE.Path();
-  addSlot(botSlot, 'y', -1);
-  shape.holes.push(botSlot);
+  // Left slot: 270° CW rotation of top (using hw)
+  const lft = new THREE.Path();
+  lft.moveTo(-hw,       sw/2);
+  lft.lineTo(-hw + nk,  sw/2);
+  lft.lineTo(-hw + nk,  gw/2);
+  lft.lineTo(-hw + sd,  gw/2);
+  lft.lineTo(-hw + sd, -gw/2);
+  lft.lineTo(-hw + nk, -gw/2);
+  lft.lineTo(-hw + nk, -sw/2);
+  lft.lineTo(-hw,      -sw/2);
+  lft.closePath();
+  shape.holes.push(lft);
 
-  const rightSlot = new THREE.Path();
-  addSlot(rightSlot, 'x', 1);
-  shape.holes.push(rightSlot);
+  // Center bore (CW arc)
+  const boreR = Math.min(hw, hh) * 0.22;
+  const bore = new THREE.Path();
+  bore.absarc(0, 0, boreR, 0, Math.PI * 2, true); // true = CW
+  shape.holes.push(bore);
 
-  const leftSlot = new THREE.Path();
-  addSlot(leftSlot, 'x', -1);
-  shape.holes.push(leftSlot);
+  // Inner hollow connecting T-slot backs (shows hollow web structure)
+  // Octagon fits between the T-slot back faces, reversed to be CW
+  const ie = Math.min(hw, hh) - sd - wt * 0.3;
+  if (ie > boreR + 3) {
+    const ic = ie * 0.72;
+    const inn = new THREE.Path();
+    // CW octagon (reversed CCW order):
+    inn.moveTo( ie, -ic);
+    inn.lineTo( ic, -ie);
+    inn.lineTo(-ic, -ie);
+    inn.lineTo(-ie, -ic);
+    inn.lineTo(-ie,  ic);
+    inn.lineTo(-ic,  ie);
+    inn.lineTo( ic,  ie);
+    inn.lineTo( ie,  ic);
+    inn.closePath();
+    shape.holes.push(inn);
+  }
 
   return shape;
 }
@@ -93,64 +120,46 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
 interface ProfileMeshProps {
   section: ProfileSection;
   length: number;
-  angleStart: number; // degrees
-  angleEnd: number;   // degrees
+  angleStart: number;
+  angleEnd: number;
   holes: ProfileHole[];
 }
 
 function ProfileMesh({ section, length, angleStart, angleEnd, holes }: ProfileMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
-  // Slowly rotate for presentation feel (only if no user interaction — OrbitControls override)
-  useFrame(() => {/* static */});
-
   const geometry = useMemo(() => {
     const shape = buildProfileShape(section);
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
 
-    const extrudeSettings: THREE.ExtrudeGeometryParameters = {
-      depth: length,
-      bevelEnabled: false,
-      steps: 1,
-    };
-
-    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-    // Apply miter cut at start (z=0) and end (z=length)
-    const tanStart = Math.tan((angleStart * Math.PI) / 180);
-    const tanEnd   = Math.tan((angleEnd   * Math.PI) / 180);
-
+    // Miter cuts: shift Z by X-position (tilt around Y-axis)
+    const tanS = Math.tan((angleStart * Math.PI) / 180);
+    const tanE = Math.tan((angleEnd   * Math.PI) / 180);
     const pos = geo.attributes.position as THREE.BufferAttribute;
     const arr = pos.array as Float32Array;
-
     for (let i = 0; i < arr.length; i += 3) {
       const x = arr[i];
       const z = arr[i + 2];
       if (z < length * 0.5) {
-        // start face — tilt along X axis
-        arr[i + 2] = Math.max(0, z + x * tanStart);
+        arr[i + 2] = Math.max(0, z + x * tanS);
       } else {
-        // end face — tilt
-        arr[i + 2] = Math.min(length, z - x * tanEnd);
+        arr[i + 2] = Math.min(length, z - x * tanE);
       }
     }
-
     pos.needsUpdate = true;
     geo.computeVertexNormals();
     return geo;
   }, [section, length, angleStart, angleEnd]);
 
-  // Hole visualisation (cylinders punched through profile faces)
+  // Hole markers: dark cylinders on the top face
   const holeMeshes = useMemo(() => {
     return holes.map((hole, idx) => {
       const r = hole.diameter / 2;
-      const geo = new THREE.CylinderGeometry(r, r, section.w * 2, 24);
-      const mat = new THREE.MeshStandardMaterial({ color: '#1a1a2e', roughness: 0.8, metalness: 0.1 });
-      // Holes are placed at a Z position along the length
-      // face: 'top' | 'side' — placed on top face for now
-      const zPos = Math.max(0, Math.min(length, hole.zPosition));
-      const m = new THREE.Mesh(geo, mat);
+      const cylGeo = new THREE.CylinderGeometry(r, r, section.w * 2, 20);
+      const mat = new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.85, metalness: 0.05 });
+      const m = new THREE.Mesh(cylGeo, mat);
       m.rotation.z = Math.PI / 2;
-      m.position.set(0, section.h / 2, zPos);
+      m.position.set(0, section.h / 2, Math.max(0, Math.min(length, hole.zPosition)));
       return <primitive key={idx} object={m} />;
     });
   }, [holes, section, length]);
@@ -158,12 +167,7 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes }: ProfileMe
   return (
     <group position={[0, 0, -length / 2]}>
       <mesh ref={meshRef} geometry={geometry} castShadow receiveShadow>
-        <meshStandardMaterial
-          color="#c8d4e0"
-          metalness={0.85}
-          roughness={0.18}
-          envMapIntensity={1.2}
-        />
+        <meshStandardMaterial color="#b8c8d8" metalness={0.88} roughness={0.15} envMapIntensity={1.4} />
       </mesh>
       {holeMeshes}
     </group>
@@ -184,31 +188,26 @@ interface SceneProps {
 
 function Scene({ section, length, angleStart, angleEnd, holes }: SceneProps) {
   const maxDim = Math.max(section.w, section.h, length);
-
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[200, 400, 300]} intensity={1.4} castShadow />
-      <directionalLight position={[-200, -100, -200]} intensity={0.5} />
-      <pointLight position={[0, 300, 0]} intensity={0.6} />
+      <ambientLight intensity={0.45} />
+      <directionalLight position={[200, 400, 300]} intensity={1.5} castShadow />
+      <directionalLight position={[-150, -80, -200]} intensity={0.45} />
+      <pointLight position={[0, 300, 0]} intensity={0.5} />
       <Environment preset="studio" />
 
-      <group rotation={[Math.PI / 8, Math.PI / 5, 0]}>
-        <ProfileMesh
-          section={section}
-          length={length}
-          angleStart={angleStart}
-          angleEnd={angleEnd}
-          holes={holes}
-        />
-      </group>
+      <ProfileMesh
+        section={section}
+        length={length}
+        angleStart={angleStart}
+        angleEnd={angleEnd}
+        holes={holes}
+      />
 
       <OrbitControls
         enablePan={false}
-        minDistance={maxDim * 0.5}
-        maxDistance={maxDim * 4}
-        autoRotate
-        autoRotateSpeed={0.6}
+        minDistance={maxDim * 0.4}
+        maxDistance={maxDim * 5}
       />
     </>
   );
@@ -230,7 +229,7 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes }
   return (
     <Canvas
       shadows
-      camera={{ position: [length * 0.8, length * 0.5, length * 1.2], fov: 40 }}
+      camera={{ position: [length * 0.9, length * 0.55, length * 1.3], fov: 38 }}
       style={{ background: 'linear-gradient(135deg, #0f1923 0%, #1a2840 100%)' }}
     >
       <Suspense fallback={null}>
