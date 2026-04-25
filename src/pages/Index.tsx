@@ -74,9 +74,9 @@ const tools = [
     slug: 'profile-configurator',
     titleKey: 'hubToolProfileTitle',
     descKey: 'hubToolProfileDesc',
-    statusKey: 'hubAvailableNow',
-    available: true,
-    password: undefined as string | undefined,
+    statusKey: 'hubBeta',
+    available: false,
+    password: 'nova2025' as string | undefined,
     icon: ProfileIcon,
   },
   {
