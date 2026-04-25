@@ -124,7 +124,7 @@ const translations = {
     beltAndSpeed: 'Gurt & Geschwindigkeit',
     drive: 'Antrieb',
     standAndAccessories: 'Untergestell & Zubehör',
-    priceIndicative: 'Indikativer Preis',
+    priceIndicative: 'Orientierungspreis',
     priceTotal: 'Richtpreis gesamt',
     priceBreakdown: 'Aufstellung',
     priceDisclaimer: 'Unverbindlicher Richtwert, finaler Preis nach technischer Anfrageprüfung.',
@@ -152,7 +152,7 @@ const translations = {
     privacyPolicyLink: 'Datenschutz',
 
     // Pricing
-    priceIndicative: 'Indikativer Preis',
+    priceIndicative: 'Orientierungspreis',
     priceTotal: 'Gesamt (netto, ohne MwSt.)',
     priceBreakdown: 'Aufstellung',
     priceDisclaimer: 'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.',
@@ -276,7 +276,7 @@ const translations = {
     beltAndSpeed: 'Belt & Speed',
     drive: 'Drive',
     standAndAccessories: 'Stand & Accessories',
-    priceIndicative: 'Indicative Price',
+    priceIndicative: 'Approximate Price',
     priceTotal: 'Estimated total',
     priceBreakdown: 'Breakdown',
     priceDisclaimer: 'Non-binding estimate, final price after technical review.',
@@ -302,7 +302,7 @@ const translations = {
     imprintLink: 'Legal notice',
     privacyPolicyLink: 'Privacy policy',
 
-    priceIndicative: 'Indicative Price',
+    priceIndicative: 'Approximate Price',
     priceTotal: 'Total (net, excl. VAT)',
     priceBreakdown: 'Breakdown',
     priceDisclaimer: 'Non-binding indicative price. Final price after technical review by NOVAMOTIS.',
@@ -426,7 +426,7 @@ const translations = {
     beltAndSpeed: 'Nastro e velocita',
     drive: 'Azionamento',
     standAndAccessories: 'Struttura e accessori',
-    priceIndicative: 'Prezzo indicativo',
+    priceIndicative: 'Prezzo orientativo',
     priceTotal: 'Totale indicativo',
     priceBreakdown: 'Dettaglio',
     priceDisclaimer: 'Valore indicativo non vincolante, prezzo finale dopo verifica tecnica.',
@@ -452,7 +452,7 @@ const translations = {
     imprintLink: 'Note legali',
     privacyPolicyLink: 'Privacy policy',
 
-    priceIndicative: 'Prezzo indicativo',
+    priceIndicative: 'Prezzo orientativo',
     priceTotal: 'Totale (netto, IVA esclusa)',
     priceBreakdown: 'Dettaglio',
     priceDisclaimer: 'Prezzo indicativo non vincolante. Prezzo finale dopo verifica tecnica da parte di NOVAMOTIS.',
