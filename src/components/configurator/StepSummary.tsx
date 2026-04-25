@@ -631,7 +631,12 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       </div>
 
       {/* Contact Form */}
-      <Card className="border">
+      <div className="space-y-4">
+        <div className="rounded-xl overflow-hidden border" style={{ height: '280px' }}>
+          <ConveyorViewer3D config={config} />
+        </div>
+
+        <Card className="border">
         <CardHeader>
           <CardTitle className="text-lg">{t('contactTitle', lang)}</CardTitle>
           <p className="text-sm text-muted-foreground">{t('contactDesc', lang)}</p>
@@ -689,6 +694,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           </form>
         </CardContent>
       </Card>
+      </div>
       </div>
     </>
   );
