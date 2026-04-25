@@ -54,6 +54,10 @@ export interface Conveyor3DLibrary {
       right: ModelVariant[];
     };
     center: ModelVariant[];
+    drum: {
+      left: ModelVariant[];
+      right: ModelVariant[];
+    };
   };
   floorElements: {
     feet: FloorElementDefinition;
@@ -82,6 +86,7 @@ export interface Conveyor3DResolvedAssets {
   indirectMount?: ModelPlacement;
   centerMount?: ModelPlacement;
   motor?: ModelPlacement;
+  drumMotor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
   floorBolts?: ModelInstances;
@@ -112,6 +117,14 @@ const defaultLibrary: Conveyor3DLibrary = {
       { id: 'center-compact', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { maxFrameWidth: 500 } },
       { id: 'center-large', url: '/models/motors/center_motor.glb', rotationDeg: [90, 90, 0], scale: [1000, 1000, 1000], rules: { minFrameWidth: 501 } },
     ],
+    drum: {
+      left: [
+        { id: 'drum-left', url: '/models/motors/drum-motor.glb', rotationDeg: [0, 0, 0], scale: [1, 1, 1] },
+      ],
+      right: [
+        { id: 'drum-right', url: '/models/motors/drum-motor.glb', rotationDeg: [0, 0, 0], scale: [1, 1, 1] },
+      ],
+    },
   },
   floorElements: {
     feet: {
@@ -244,6 +257,12 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       }
     : null;
   const center = parseVariantArray(value.motors.center);
+  const drum = isObject(value.motors.drum)
+    ? {
+        left: parseVariantArray(value.motors.drum.left),
+        right: parseVariantArray(value.motors.drum.right),
+      }
+    : null;
   const feet = toFloorElement(value.floorElements.feet);
   const castors = toFloorElement(value.floorElements.castors);
   const floorBolts = toFloorElement(value.floorElements.floorBolts);
@@ -264,6 +283,10 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         ? { left: indirectLegacy, right: indirectLegacy }
         : null;
 
+  const resolvedDrum = drum?.left && drum?.right
+    ? { left: drum.left, right: drum.right }
+    : defaultLibrary.motors.drum;
+
   if (!directLeft || !directRight || !resolvedIndirect || !center || !feet || !castors) {
     return null;
   }
@@ -276,6 +299,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       },
       indirect: resolvedIndirect,
       center,
+      drum: resolvedDrum,
     },
     floorElements: {
       feet,
@@ -438,6 +462,10 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
     urls.push(selectVariant(config.frameWidth, library.motors.center).url);
   }
 
+  if (config.driveType === 'drum') {
+    urls.push(selectVariant(config.frameWidth, library.motors.drum[config.motorPosition]).url);
+  }
+
   if (config.withStand) {
     if (config.floorElement === 'feet') {
       urls.push(selectVariant(config.frameWidth, library.floorElements.feet.variants).url);
@@ -546,13 +574,9 @@ export function resolveConveyor3DAssets(
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    let finalRot = config.motorPosition === 'right'
+    const finalRot = config.motorPosition === 'right'
       ? rotateAroundLocalYAxis(baseRot, directAngleRad)
       : rotateAroundConveyorAxis(baseRot, directAngleRad);
-    // For right side, apply additional 180° rotation around local X-axis
-    if (config.motorPosition === 'right') {
-      finalRot = rotateAroundLocalXAxis(finalRot, Math.PI);
-    }
     resolved.motor = {
       url: variant.url,
       position: [
@@ -660,6 +684,18 @@ export function resolveConveyor3DAssets(
       ],
       rotation: centerMotorRot,
       scale: motorVariant.scale ?? [1, 1, 1],
+    };
+  }
+
+  if (config.driveType === 'drum') {
+    const variant = selectVariant(measurements.frameWidth, library.motors.drum[config.motorPosition]);
+    resolved.drumMotor = {
+      url: variant.url,
+      // An der Antriebsseite (Bandende positiv) als Umlenktrommel
+      position: [measurements.beltLength / 2, 0, 0],
+      rotation: variant.rotation ?? [0, 0, 0],
+      scale: variant.scale ?? [1, 1, 1],
+      frameWidthMm: measurements.frameWidth,
     };
   }
 
