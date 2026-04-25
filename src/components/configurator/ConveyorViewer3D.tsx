@@ -470,7 +470,7 @@ function ControlsRig({
 
   return (
     <OrbitControls
-      ref={controlsRef}
+      ref={controlsRef as unknown as React.Ref<never>}
       makeDefault
       enablePan
       minPolarAngle={0.1}
