@@ -462,6 +462,10 @@ export function getSelectedConveyorAssetUrls(config: ConveyorConfig): string[] {
     urls.push(selectVariant(config.frameWidth, library.motors.center).url);
   }
 
+  if (config.driveType === 'drum') {
+    urls.push(selectVariant(config.frameWidth, library.motors.drum[config.motorPosition]).url);
+  }
+
   if (config.withStand) {
     if (config.floorElement === 'feet') {
       urls.push(selectVariant(config.frameWidth, library.floorElements.feet.variants).url);
