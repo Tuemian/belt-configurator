@@ -256,6 +256,12 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       }
     : null;
   const center = parseVariantArray(value.motors.center);
+  const drum = isObject(value.motors.drum)
+    ? {
+        left: parseVariantArray(value.motors.drum.left),
+        right: parseVariantArray(value.motors.drum.right),
+      }
+    : null;
   const feet = toFloorElement(value.floorElements.feet);
   const castors = toFloorElement(value.floorElements.castors);
   const floorBolts = toFloorElement(value.floorElements.floorBolts);
@@ -276,6 +282,10 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
         ? { left: indirectLegacy, right: indirectLegacy }
         : null;
 
+  const resolvedDrum = drum?.left && drum?.right
+    ? { left: drum.left, right: drum.right }
+    : defaultLibrary.motors.drum;
+
   if (!directLeft || !directRight || !resolvedIndirect || !center || !feet || !castors) {
     return null;
   }
@@ -288,6 +298,7 @@ function toLibrary(value: unknown): Conveyor3DLibrary | null {
       },
       indirect: resolvedIndirect,
       center,
+      drum: resolvedDrum,
     },
     floorElements: {
       feet,
