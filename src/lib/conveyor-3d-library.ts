@@ -86,6 +86,7 @@ export interface Conveyor3DResolvedAssets {
   indirectMount?: ModelPlacement;
   centerMount?: ModelPlacement;
   motor?: ModelPlacement;
+  drumMotor?: ModelPlacement;
   feet?: ModelInstances;
   castors?: ModelInstances;
   floorBolts?: ModelInstances;
