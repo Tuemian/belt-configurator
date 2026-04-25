@@ -287,6 +287,14 @@ const translations = {
     required: 'Required',
     imprintLink: 'Legal notice',
     privacyPolicyLink: 'Privacy policy',
+
+    priceIndicative: 'Indicative Price',
+    priceTotal: 'Total (net, excl. VAT)',
+    priceBreakdown: 'Breakdown',
+    priceDisclaimer: 'Non-binding indicative price. Final price after technical review by NOVAMOTIS.',
+    priceOnRequest: 'Price on request',
+    priceOnRequestHint: 'No complete indicative price is available for this configuration yet. Please send an inquiry – we will get back to you with a concrete offer.',
+    priceItemOnRequest: 'on request',
   },
   it: {
     onlineConfigurator: 'Configuratore online',
