@@ -11,7 +11,7 @@ export interface ConveyorConfig {
   loadCapacity: number;
 
   // Step 3 - Drive
-  driveType: 'direct' | 'indirect' | 'center';
+  driveType: 'direct' | 'indirect' | 'center' | 'drum';
   motorPosition: 'left' | 'right';
   motorAngle: 0 | 90 | 180 | 270;
   centerDriveOffset: number;

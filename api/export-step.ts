@@ -42,7 +42,7 @@ function isValidConfig(value: unknown): value is ConveyorConfig {
     isNumber('standHeight') &&
     isNumber('centerDriveOffset') &&
     oneOf('beltType', ['standard', 'grip', 'heavy-grip', 'food-safe']) &&
-    oneOf('driveType', ['direct', 'indirect', 'center']) &&
+    oneOf('driveType', ['direct', 'indirect', 'center', 'drum']) &&
     oneOf('motorPosition', ['left', 'right']) &&
     [0, 90, 180, 270].includes(cfg.motorAngle as number) &&
     isBoolean('withStand') &&

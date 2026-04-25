@@ -6,7 +6,7 @@ export type ConveyorConfig = {
   beltType: 'standard' | 'grip' | 'heavy-grip' | 'food-safe';
   speed: number;
   loadCapacity: number;
-  driveType: 'direct' | 'indirect' | 'center';
+  driveType: 'direct' | 'indirect' | 'center' | 'drum';
   motorPosition: 'left' | 'right';
   motorAngle: 0 | 90 | 180 | 270;
   withStand: boolean;
