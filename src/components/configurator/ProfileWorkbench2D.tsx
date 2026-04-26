@@ -1035,21 +1035,25 @@ function EndFaceOverlay({ section, endLabel, treatment, onChange, onClose }: End
 
   const activeBores = useMemo(() => {
     if (!t.thread) return new Set<number>();
+    if (t.scope === 'custom' && t.bores) return new Set(t.bores);
     if (t.scope === 'all' || t.scope === undefined) return new Set(allBoreNums);
     if (t.scope === 'center') {
       const mid = Math.ceil(allBoreNums.length / 2);
       return new Set([mid]);
     }
     return new Set(allBoreNums);
-  }, [t.thread, t.scope, allBoreNums]);
+  }, [t.thread, t.scope, t.bores, allBoreNums]);
 
   const toggleBore = (num: number) => {
     const next = new Set(activeBores);
     if (next.has(num)) next.delete(num); else next.add(num);
-    if (next.size === 0) onChange({ ...t, thread: false });
-    else if (next.size === allBoreNums.length) onChange({ ...t, thread: true, scope: 'all' });
-    else if (next.size === 1) onChange({ ...t, thread: true, scope: 'center' });
-    else onChange({ ...t, thread: true, scope: 'all' });
+    if (next.size === 0) {
+      onChange({ ...t, thread: false, scope: 'custom', bores: [] });
+    } else if (next.size === allBoreNums.length) {
+      onChange({ ...t, thread: true, scope: 'all', bores: undefined });
+    } else {
+      onChange({ ...t, thread: true, scope: 'custom', bores: Array.from(next).sort((a, b) => a - b) });
+    }
   };
 
   return (
