@@ -289,6 +289,9 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
               ))}
             </div>
           </div>
+
+          <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer pt-1">
+            <Checkbox
               checked={form.privacy}
               onCheckedChange={(v) => setForm({ ...form, privacy: !!v })}
               className="mt-0.5"
