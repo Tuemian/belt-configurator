@@ -531,7 +531,7 @@ export function ProfileWorkbench2D({
 
         {/* Selected-item floating panel */}
         {(selectedHole || selectedConn) && (
-          <div className="absolute right-52 bottom-20 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
+          <div className="absolute inset-x-2 bottom-2 sm:inset-x-auto sm:right-52 sm:bottom-20 sm:w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20 max-h-[60vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-foreground">
                 {selectedHole ? 'Bohrung' : 'Verbinder'}
