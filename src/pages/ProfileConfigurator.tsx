@@ -550,7 +550,7 @@ export default function ProfileConfigurator() {
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
                   Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
                 </p>
-                <Button onClick={sendInquiry} className="w-full gap-2 font-semibold" size="lg">
+                <Button onClick={openInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />
                   Anfrage per E-Mail senden
                 </Button>
