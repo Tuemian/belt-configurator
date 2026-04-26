@@ -431,39 +431,6 @@ export default function ProfileConfigurator() {
             />
           </div>
 
-          {/* Collapsible 3D preview */}
-          <div className={`border-t border-slate-200 bg-white transition-all duration-300 ${show3D ? 'h-[280px]' : 'h-9'} shrink-0 flex flex-col`}>
-            <button
-              onClick={() => setShow3D((v) => !v)}
-              className="flex items-center justify-between px-4 h-9 text-xs font-medium text-muted-foreground hover:text-foreground border-b border-slate-100"
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wider">3D-Vorschau</span>
-                <span className="text-[10px] text-muted-foreground/60">{section.label} · {config.length} mm</span>
-              </span>
-              {show3D ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-            </button>
-            {show3D && (
-              <div className="flex-1 min-h-0">
-                <Suspense
-                  fallback={
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
-                      3D-Ansicht wird geladen…
-                    </div>
-                  }
-                >
-                  <ProfileViewer3D
-                    section={section}
-                    length={config.length}
-                    angleStart={config.angleStart}
-                    angleEnd={config.angleEnd}
-                    holes={config.holes}
-                    connectors={config.connectors}
-                  />
-                </Suspense>
-              </div>
-            )}
-          </div>
 
 
           {/* Price bar */}
