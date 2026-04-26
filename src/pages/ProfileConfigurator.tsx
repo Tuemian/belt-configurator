@@ -553,13 +553,20 @@ export default function ProfileConfigurator() {
                 </p>
                 <Button onClick={openInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />
-                  Anfrage per E-Mail senden
+                  Anfrage senden
                 </Button>
               </div>
             )}
           </div>
         </div>
       )}
+
+      <ProfileInquiryDialog
+        open={inquiryOpen}
+        onOpenChange={setInquiryOpen}
+        cart={cart}
+        onSubmitted={() => { setCart([]); setCartOpen(false); }}
+      />
     </div>
   );
 }
