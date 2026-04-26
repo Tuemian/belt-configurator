@@ -425,7 +425,7 @@ export default function ProfileConfigurator() {
 
           {/* Price bar */}
           <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-6">
-            <div className="grid grid-cols-4 gap-6 text-xs">
+            <div className="grid grid-cols-5 gap-6 text-xs">
               <div>
                 <div className="text-muted-foreground">Material</div>
                 <div className="text-foreground font-medium">{fmt.format(price.material)}</div>
@@ -435,8 +435,12 @@ export default function ProfileConfigurator() {
                 <div className="text-foreground font-medium">{fmt.format(price.miterCuts)}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Bohrungen / Gewinde</div>
+                <div className="text-muted-foreground">Bohrungen</div>
                 <div className="text-foreground font-medium">{fmt.format(price.holes)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Stirngewinde</div>
+                <div className="text-foreground font-medium">{fmt.format(price.endThreads)}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Verbinder</div>
