@@ -118,23 +118,21 @@ export function ProfileWorkbench2D({
   const counts = useMemo(() => getSlotCounts(section), [section]);
   const MODULE = getModulePitch(section);
 
-  /** Liste aller Slot-Reihen, die wir vertikal stapeln */
-  const slotRows = useMemo(() => {
-    const rows: { slot: SlotId; moduleIndex: number; number: number; faceWidth: number; centerOnFace: number }[] = [];
-    SLOT_ORDER.forEach((slot) => {
+  // Zoom für lange Profile
+  const [zoom, setZoom] = useState(1);
+
+  /** Eine Reihe pro Profilseite (A/B/C/D); jede Reihe hat 1..n Nut-Spuren */
+  const sideRows = useMemo(() => {
+    return SLOT_ORDER.map((slot) => {
       const n = counts[slot];
-      // sichtbare Profilbreite, wenn man frontal auf diese Seite schaut
       const faceWidth = (slot === 'A' || slot === 'C') ? section.w : section.h;
-      for (let mi = 0; mi < n; mi++) {
-        rows.push({
-          slot, moduleIndex: mi,
-          number: getSlotNumber(section, slot, mi),
-          faceWidth,
-          centerOnFace: MODULE * (mi + 0.5),
-        });
-      }
+      const lanes = Array.from({ length: n }, (_, mi) => ({
+        moduleIndex: mi,
+        number: getSlotNumber(section, slot, mi),
+        centerOnFace: MODULE * (mi + 0.5),
+      }));
+      return { slot, faceWidth, lanes };
     });
-    return rows;
   }, [section, counts, MODULE]);
 
   /** Liste aller derzeit ausgewählten Slots (immer mind. der aktive) */
@@ -379,12 +377,52 @@ export function ProfileWorkbench2D({
                 </SelectContent>
               </Select>
             )}
+
+            {/* Zoom */}
+            <div className="flex items-center gap-1.5 bg-white rounded-md border border-slate-200 px-2 py-1">
+              <span className="text-[10px] text-muted-foreground">Zoom</span>
+              <input
+                type="range"
+                min={1}
+                max={4}
+                step={0.25}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-24 accent-primary"
+              />
+              <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{zoom.toFixed(2)}×</span>
+              {zoom !== 1 && (
+                <button onClick={() => setZoom(1)} className="text-[10px] text-primary hover:underline">reset</button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Main stage: linke Spalte = stack der 4 Nut-Ansichten, rechte Spalte = Stirnseiten */}
+
+        {/* Main stage:
+            EU 1st-angle layout:
+              - Stirnseite "Ende"  links der Reihen
+              - 4 Reihen je Profilseite (A/B/C/D), eine pro Seite
+              - Stirnseite "Anfang" rechts der Reihen
+        */}
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          {/* Left: stacked rows */}
+          {/* Left: end face "Ende" */}
+          {onUpdateEndEnd && (
+            <aside className="w-40 shrink-0 border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Ende</div>
+              <EndFacePanel
+                label="Ende"
+                section={section}
+                treatment={endEnd}
+                onChange={(t) => onUpdateEndEnd?.(t)}
+              />
+              <p className="text-[9px] text-muted-foreground leading-tight px-1">
+                Klick auf Kernzug = M8-Gewinde (× = aktiv).
+              </p>
+            </aside>
+          )}
+
+          {/* Center: stacked side rows */}
           <div className="flex-1 min-w-0 overflow-auto p-3 space-y-2 relative">
             {overlapWarning && (
               <div className="sticky top-0 z-10 inline-flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
@@ -393,30 +431,30 @@ export function ProfileWorkbench2D({
               </div>
             )}
 
-            {slotRows.map((row) => {
-              const rowKey = keyOf(row.slot, row.moduleIndex);
-              const isActive = row.slot === activeKey.slot && row.moduleIndex === activeKey.moduleIndex;
-              const isMulti = multiSelected.has(rowKey);
-              const rowHoles = holes.filter((h) => ensureSlot(h) === row.slot && (h.moduleIndex ?? 0) === row.moduleIndex);
-              const rowConns = connectors.filter((c) => c.slot === row.slot && (c.moduleIndex ?? 0) === row.moduleIndex);
+            <div style={{ width: `${zoom * 100}%`, minWidth: '100%' }} className="space-y-2">
+            {sideRows.map((side) => {
+              const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
+              const sideConns = connectors.filter((c) => c.slot === side.slot);
+              const isActiveSide = side.slot === activeKey.slot;
+              const isMultiSide = side.lanes.some((l) => multiSelected.has(keyOf(side.slot, l.moduleIndex)));
               return (
-                <SlotRow
-                  key={rowKey}
+                <SideRow
+                  key={side.slot}
                   section={section}
-                  row={row}
+                  side={side}
                   length={length}
                   angleStart={angleStart}
                   angleEnd={angleEnd}
-                  holes={rowHoles}
-                  connectors={rowConns}
+                  holes={sideHoles}
+                  connectors={sideConns}
                   tool={tool}
-                  isActive={isActive}
-                  isMulti={isMulti}
+                  activeModuleIndex={isActiveSide ? activeKey.moduleIndex : null}
+                  multiSelected={multiSelected}
                   selectedId={selectedId}
                   draggingId={draggingId}
-                  hoverZ={hoverZ?.key === rowKey ? hoverZ.z : null}
-                  onHover={(z) => setHoverZ(z === null ? null : { key: rowKey, z })}
-                  onClick={(zMm, additive) => handleRowClick(row, zMm, additive)}
+                  hoverInfo={hoverZ && hoverZ.key.startsWith(side.slot + ':') ? { moduleIndex: Number(hoverZ.key.split(':')[1]), z: hoverZ.z } : null}
+                  onHover={(mi, z) => setHoverZ(z === null ? null : { key: keyOf(side.slot, mi), z })}
+                  onClick={(mi, zMm, additive) => handleRowClick({ slot: side.slot, moduleIndex: mi }, zMm, additive)}
                   onDragStart={(id) => { setDraggingId(id); setSelectedId(id); }}
                   onDragMove={(id, zMm) => {
                     const conn = connectors.find((c) => c.id === id);
@@ -427,7 +465,8 @@ export function ProfileWorkbench2D({
                     }
                     const hole = holes.find((h) => h.id === id);
                     if (hole) {
-                      const z = snapValue(zMm, SNAP_FINE, snapPointsFor(rowKey).filter((p) => Math.abs(p - hole.zPosition) > 0.1), length);
+                      const rk = keyOf(ensureSlot(hole), hole.moduleIndex ?? 0);
+                      const z = snapValue(zMm, SNAP_FINE, snapPointsFor(rk).filter((p) => Math.abs(p - hole.zPosition) > 0.1), length);
                       onUpdateHoles(holes.map((h) => h.id === id ? { ...h, zPosition: z } : h));
                     }
                   }}
@@ -436,38 +475,34 @@ export function ProfileWorkbench2D({
                 />
               );
             })}
+            </div>
 
             {/* Bottom hint */}
             {holes.length === 0 && connectors.length === 0 && (
               <div className="text-center text-[11px] text-muted-foreground py-3">
                 <Plus className="h-3 w-3 inline mr-1" />
-                Klicke auf eine Nut-Reihe, um eine Bohrung zu setzen. Mit Shift-Klick zusätzliche Nuten gleichzeitig auswählen.
+                Klicke auf eine Nut, um eine Bohrung zu setzen. Mit Shift-Klick zusätzliche Nuten gleichzeitig auswählen.
               </div>
             )}
           </div>
 
-          {/* Right: persistent end-faces (Stirnseiten) */}
-          {(onUpdateEndStart || onUpdateEndEnd) && (
-            <aside className="w-44 shrink-0 border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-3">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseiten</div>
+          {/* Right: end face "Anfang" */}
+          {onUpdateEndStart && (
+            <aside className="w-40 shrink-0 border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Anfang</div>
               <EndFacePanel
                 label="Anfang"
                 section={section}
                 treatment={endStart}
                 onChange={(t) => onUpdateEndStart?.(t)}
               />
-              <EndFacePanel
-                label="Ende"
-                section={section}
-                treatment={endEnd}
-                onChange={(t) => onUpdateEndEnd?.(t)}
-              />
               <p className="text-[9px] text-muted-foreground leading-tight px-1">
-                Klicke auf einen Kernzug, um ein <span className="font-semibold">M8-Gewinde</span> zu setzen (× = aktiv).
+                Klick auf Kernzug = M8-Gewinde (× = aktiv).
               </p>
             </aside>
           )}
         </div>
+
 
         {/* Selected-item floating panel */}
         {(selectedHole || selectedConn) && (
@@ -579,110 +614,129 @@ export function ProfileWorkbench2D({
 }
 
 // ---------------------------------------------------------------------------
-// Single slot row (one face track view)
+// SideRow: eine Reihe pro Profilseite (A/B/C/D), mit 1..n Nut-Spuren übereinander
 // ---------------------------------------------------------------------------
 
-interface SlotRowProps {
+interface SideRowProps {
   section: ProfileSection;
-  row: { slot: SlotId; moduleIndex: number; number: number; faceWidth: number; centerOnFace: number };
+  side: {
+    slot: SlotId;
+    faceWidth: number;
+    lanes: { moduleIndex: number; number: number; centerOnFace: number }[];
+  };
   length: number;
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
   tool: Tool;
-  isActive: boolean;
-  isMulti: boolean;
+  activeModuleIndex: number | null;
+  multiSelected: Set<string>;
   selectedId: string | null;
   draggingId: string | null;
-  hoverZ: number | null;
-  onHover: (z: number | null) => void;
-  onClick: (zMm: number, additive: boolean) => void;
+  hoverInfo: { moduleIndex: number; z: number } | null;
+  onHover: (moduleIndex: number, z: number | null) => void;
+  onClick: (moduleIndex: number, zMm: number, additive: boolean) => void;
   onDragStart: (id: string) => void;
   onDragMove: (id: string, zMm: number) => void;
   onDragEnd: () => void;
   onSelectMarker: (id: string) => void;
 }
 
-function SlotRow({
-  section, row, length, angleStart, angleEnd, holes, connectors, tool,
-  isActive, isMulti, selectedId, draggingId, hoverZ,
+function SideRow({
+  section, side, length, angleStart, angleEnd, holes, connectors, tool,
+  activeModuleIndex, multiSelected, selectedId, draggingId, hoverInfo,
   onHover, onClick, onDragStart, onDragMove, onDragEnd, onSelectMarker,
-}: SlotRowProps) {
+}: SideRowProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Geometrie: schmaler Balken pro Reihe
+  // Geometrie
   const PAD_X = 32;
   const PAD_Y = 10;
-  const ROW_PIX_HEIGHT = 56; // px Profilstreifen
+  const LANE_PIX_HEIGHT = 36;            // px pro Nut-Spur
   const RULER_H = 14;
+  const ROW_PIX_HEIGHT = LANE_PIX_HEIGHT * side.lanes.length;
   const VB_W = length + PAD_X * 2;
   const VB_H = PAD_Y * 2 + RULER_H + ROW_PIX_HEIGHT;
 
-  // Center der Nut innerhalb des Balkens (mittig)
-  const cy = PAD_Y + RULER_H + ROW_PIX_HEIGHT / 2;
+  // EU 1st-angle Konvention: Anfang (z=0) zeigt RECHTS, Ende (z=length) zeigt LINKS.
+  // dx() bildet eine z-Position (mm) auf die Display-X-Koordinate ab.
+  const dx = useCallback((z: number) => length - z, [length]);
 
-  // Schrägschnitt-Profil-Polygon
+  // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const cutS = ROW_PIX_HEIGHT * tanS;
   const cutE = ROW_PIX_HEIGHT * tanE;
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
-  const profilePath = `M ${cutS} ${top} L ${length - cutE} ${top} L ${length} ${bot} L 0 ${bot} Z`;
+  // links = Ende, rechts = Anfang. Schräge oben: links cutE rein, rechts cutS rein.
+  const profilePath = `M ${cutE} ${top} L ${length - cutS} ${top} L ${length} ${bot} L 0 ${bot} Z`;
 
-  // Mausmapping
-  const screenToMm = useCallback((clientX: number): number | null => {
+  // y-Position der Nut-Mitte je Lane (oberste Lane = Lane 0)
+  const laneCy = (laneIdx: number) => top + LANE_PIX_HEIGHT * (laneIdx + 0.5);
+
+  // Mausmapping → (moduleIndex, zMm). Beachte X-Spiegelung.
+  const screenToLocal = useCallback((clientX: number, clientY: number): { mi: number; z: number } | null => {
     const svg = svgRef.current;
     if (!svg) return null;
     const pt = svg.createSVGPoint();
-    pt.x = clientX; pt.y = 0;
+    pt.x = clientX; pt.y = clientY;
     const ctm = svg.getScreenCTM();
     if (!ctm) return null;
     const local = pt.matrixTransform(ctm.inverse());
-    return local.x - PAD_X;
-  }, []);
+    const xInBody = local.x - PAD_X;
+    const z = length - xInBody;        // gespiegelt
+    const yRel = local.y - top;
+    const laneIdx = Math.max(0, Math.min(side.lanes.length - 1, Math.floor(yRel / LANE_PIX_HEIGHT)));
+    return { mi: side.lanes[laneIdx].moduleIndex, z };
+  }, [side.lanes, length]);
 
   const handleMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const z = screenToMm(e.clientX);
-    if (z === null) return;
-    if (z >= 0 && z <= length) onHover(z); else onHover(null);
-    if (draggingId) onDragMove(draggingId, z);
+    const loc = screenToLocal(e.clientX, e.clientY);
+    if (!loc) return;
+    if (loc.z >= 0 && loc.z <= length) onHover(loc.mi, loc.z); else onHover(loc.mi, null);
+    if (draggingId) onDragMove(draggingId, loc.z);
   };
 
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const target = e.target as SVGElement;
     if (target.dataset.role === 'marker') return;
-    const z = screenToMm(e.clientX);
-    if (z === null || z < 0 || z > length) return;
-    onClick(z, e.shiftKey || e.metaKey || e.ctrlKey);
+    const loc = screenToLocal(e.clientX, e.clientY);
+    if (!loc || loc.z < 0 || loc.z > length) return;
+    onClick(loc.mi, loc.z, e.shiftKey || e.metaKey || e.ctrlKey);
   };
 
-  // Ruler
-  const rulerStep = length <= 500 ? 50 : length <= 1500 ? 100 : 250;
+  // Ruler — Labels zeigen z-Wert, aber an gespiegelter X-Position
+  const rulerStep = length <= 500 ? 50 : length <= 1500 ? 100 : length <= 3000 ? 250 : 500;
   const ticks: { z: number; major: boolean; label: string | null }[] = [];
   for (let z = 0; z <= length; z += rulerStep / 5) {
     const major = z % rulerStep === 0;
     ticks.push({ z, major, label: major ? `${z}` : null });
   }
 
+
   const showConnectorMagnets = tool === 'connector' || draggingId !== null;
   const cursor = tool === 'hole' || tool === 'connector' ? 'crosshair' : 'default';
 
-  // Border style based on selection
-  const borderClass = isActive
+  const isAnyActive = activeModuleIndex !== null;
+  const isAnyMulti = side.lanes.some((l) => multiSelected.has(`${side.slot}:${l.moduleIndex}`));
+  const borderClass = isAnyActive
     ? 'border-primary ring-1 ring-primary/30'
-    : isMulti
+    : isAnyMulti
     ? 'border-primary/50 bg-primary/5'
     : 'border-slate-200 hover:border-primary/40';
 
   return (
     <div className={`flex items-stretch gap-2 rounded-md border bg-white transition-colors ${borderClass}`}>
-      {/* Label column */}
-      <div className={`shrink-0 w-20 flex flex-col items-center justify-center py-1 px-1 text-center rounded-l-md ${isActive ? 'bg-primary/10' : isMulti ? 'bg-primary/5' : 'bg-slate-50'}`}>
-        <div className={`text-base font-bold ${isActive ? 'text-primary' : 'text-foreground'}`}>Nut {row.number}</div>
-        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{SLOT_SIDE_DE[row.slot]}</div>
-        <div className="text-[9px] text-muted-foreground mt-0.5">{holes.length} B · {connectors.length} V</div>
+      {/* Label column (Seite) */}
+      <div className={`shrink-0 w-20 flex flex-col items-center justify-center py-1 px-1 text-center rounded-l-md ${isAnyActive ? 'bg-primary/10' : isAnyMulti ? 'bg-primary/5' : 'bg-slate-50'}`}>
+        <div className={`text-sm font-bold ${isAnyActive ? 'text-primary' : 'text-foreground'}`}>Seite {side.slot}</div>
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{SLOT_SIDE_DE[side.slot]}</div>
+        <div className="text-[9px] text-muted-foreground mt-0.5">
+          Nut {side.lanes.map((l) => l.number).join(', ')}
+        </div>
+        <div className="text-[9px] text-muted-foreground">{holes.length} B · {connectors.length} V</div>
       </div>
 
       {/* SVG */}
@@ -690,29 +744,29 @@ function SlotRow({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VB_W} ${VB_H}`}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
           className="w-full select-none"
-          style={{ height: ROW_PIX_HEIGHT + RULER_H + PAD_Y * 2, cursor }}
+          style={{ height: VB_H, cursor }}
           onPointerMove={handleMove}
-          onPointerLeave={() => onHover(null)}
+          onPointerLeave={() => onHover(0, null)}
           onPointerUp={onDragEnd}
           onClick={handleClick}
         >
           <defs>
-            <linearGradient id={`alu-${row.slot}-${row.moduleIndex}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={`alu-${side.slot}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#e2e8f0" />
               <stop offset="100%" stopColor="#94a3b8" />
             </linearGradient>
           </defs>
 
-          {/* Ruler */}
+          {/* Ruler — gespiegelt: 0 (Anfang) ist rechts, length (Ende) ist links */}
           <g transform={`translate(${PAD_X}, ${PAD_Y})`}>
             <line x1="0" y1={RULER_H} x2={length} y2={RULER_H} stroke="#64748b" strokeWidth="0.6" />
             {ticks.map((tk, i) => (
               <g key={i}>
-                <line x1={tk.z} y1={tk.major ? RULER_H - 6 : RULER_H - 3} x2={tk.z} y2={RULER_H} stroke="#64748b" strokeWidth={tk.major ? 0.8 : 0.4} />
+                <line x1={dx(tk.z)} y1={tk.major ? RULER_H - 6 : RULER_H - 3} x2={dx(tk.z)} y2={RULER_H} stroke="#64748b" strokeWidth={tk.major ? 0.8 : 0.4} />
                 {tk.label !== null && (
-                  <text x={tk.z} y={RULER_H - 8} textAnchor="middle" fontSize="8" fill="#475569" fontFamily="ui-monospace, monospace">
+                  <text x={dx(tk.z)} y={RULER_H - 8} textAnchor="middle" fontSize="8" fill="#475569" fontFamily="ui-monospace, monospace">
                     {tk.label}
                   </text>
                 )}
@@ -720,12 +774,67 @@ function SlotRow({
             ))}
           </g>
 
+
           {/* Profile body */}
           <g transform={`translate(${PAD_X}, 0)`}>
-            <path d={profilePath} fill={`url(#alu-${row.slot}-${row.moduleIndex})`} stroke="#475569" strokeWidth="0.6" />
+            <path d={profilePath} fill={`url(#alu-${side.slot})`} stroke="#475569" strokeWidth="0.6" />
 
-            {/* Slot center line */}
-            <line x1="0" y1={cy} x2={length} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="3 3" opacity="0.6" />
+            {/* Lane center lines + lane labels + lane highlights */}
+            {side.lanes.map((lane, idx) => {
+              const cy = laneCy(idx);
+              const isLaneActive = activeModuleIndex === lane.moduleIndex;
+              const isLaneMulti = multiSelected.has(`${side.slot}:${lane.moduleIndex}`);
+              return (
+                <g key={lane.moduleIndex}>
+                  {(isLaneActive || isLaneMulti) && (
+                    <rect
+                      x={0}
+                      y={top + LANE_PIX_HEIGHT * idx}
+                      width={length}
+                      height={LANE_PIX_HEIGHT}
+                      fill="hsl(var(--primary))"
+                      opacity={isLaneActive ? 0.1 : 0.05}
+                      pointerEvents="none"
+                    />
+                  )}
+                  <line
+                    x1="0"
+                    y1={cy}
+                    x2={length}
+                    y2={cy}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="0.4"
+                    strokeDasharray="3 3"
+                    opacity={isLaneActive ? 0.8 : 0.4}
+                  />
+                  {/* Lane number label — beim "Anfang" (rechts) gut sichtbar */}
+                  <text
+                    x={length - 6}
+                    y={cy + 2.5}
+                    textAnchor="end"
+                    fontSize="7"
+                    fill={isLaneActive ? 'hsl(var(--primary))' : '#64748b'}
+                    fontWeight="600"
+                    pointerEvents="none"
+                  >
+                    Nut {lane.number}
+                  </text>
+                  {/* divider between lanes */}
+                  {idx > 0 && (
+                    <line
+                      x1={cutS}
+                      y1={top + LANE_PIX_HEIGHT * idx}
+                      x2={length - cutE}
+                      y2={top + LANE_PIX_HEIGHT * idx}
+                      stroke="#cbd5e1"
+                      strokeWidth="0.3"
+                      strokeDasharray="1 2"
+                      pointerEvents="none"
+                    />
+                  )}
+                </g>
+              );
+            })}
 
             {/* Connector magnets */}
             {showConnectorMagnets && (
@@ -736,21 +845,30 @@ function SlotRow({
             )}
 
             {/* Hover */}
-            {hoverZ !== null && !draggingId && (tool === 'hole' || tool === 'connector') && (
-              <g pointerEvents="none">
-                <line x1={hoverZ} y1={top - 4} x2={hoverZ} y2={bot + 4} stroke="hsl(var(--primary))" strokeWidth="0.5" strokeDasharray="2 2" />
-                <rect x={hoverZ - 16} y={top - 12} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
-                <text x={hoverZ} y={top - 4} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
-                  {Math.round(hoverZ)} mm
-                </text>
-              </g>
-            )}
+            {hoverInfo !== null && !draggingId && (tool === 'hole' || tool === 'connector') && (() => {
+              const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === hoverInfo.moduleIndex);
+              if (laneIdx < 0) return null;
+              const cy = laneCy(laneIdx);
+              const hx = dx(hoverInfo.z);
+              return (
+                <g pointerEvents="none">
+                  <line x1={hx} y1={cy - LANE_PIX_HEIGHT / 2} x2={hx} y2={cy + LANE_PIX_HEIGHT / 2} stroke="hsl(var(--primary))" strokeWidth="0.5" strokeDasharray="2 2" />
+                  <rect x={hx - 16} y={cy - LANE_PIX_HEIGHT / 2 - 11} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
+                  <text x={hx} y={cy - LANE_PIX_HEIGHT / 2 - 3} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
+                    {Math.round(hoverInfo.z)} mm
+                  </text>
+                </g>
+              );
+            })()}
 
-            {/* Connectors */}
+            {/* Connectors — start (Anfang) jetzt RECHTS, end (Ende) LINKS */}
             {connectors.map((c) => {
+              const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (c.moduleIndex ?? 0));
+              if (laneIdx < 0) return null;
+              const cy = laneCy(laneIdx);
               const isSel = selectedId === c.id;
               const w = CONNECTOR_FOOTPRINT;
-              const x = c.end === 'start' ? 0 : length - w;
+              const x = c.end === 'start' ? length - w : 0;
               return (
                 <g
                   key={c.id}
@@ -769,9 +887,13 @@ function SlotRow({
 
             {/* Holes */}
             {holes.map((h) => {
+              const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
+              if (laneIdx < 0) return null;
+              const cy = laneCy(laneIdx);
               const isSel = selectedId === h.id;
-              const r = Math.max(3, Math.min(10, h.diameter * 0.7));
+              const r = Math.max(3, Math.min(8, h.diameter * 0.6));
               const color = holeColor(h.type);
+              const hx = dx(h.zPosition);
               return (
                 <g
                   key={h.id}
@@ -781,25 +903,26 @@ function SlotRow({
                   style={{ cursor: 'grab' }}
                 >
                   {(isSel || draggingId === h.id) && (
-                    <text x={h.zPosition} y={bot + 8} textAnchor="middle" fontSize="7" fill="hsl(var(--primary))" fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
+                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill="hsl(var(--primary))" fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
                       {Math.round(h.zPosition)} mm
                     </text>
                   )}
-                  <circle data-role="marker" cx={h.zPosition} cy={cy} r={r + 1.5} fill="white" stroke={isSel ? 'hsl(var(--primary))' : '#cbd5e1'} strokeWidth={isSel ? 1.4 : 0.6} />
-                  <circle data-role="marker" cx={h.zPosition} cy={cy} r={r} fill={color} />
+                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={isSel ? 'hsl(var(--primary))' : '#cbd5e1'} strokeWidth={isSel ? 1.4 : 0.6} />
+                  <circle data-role="marker" cx={hx} cy={cy} r={r} fill={color} />
                 </g>
               );
             })}
           </g>
 
-          {/* End labels */}
-          <text x={PAD_X} y={VB_H - 1} fontSize="7" fill="#94a3b8">Anfang</text>
-          <text x={PAD_X + length} y={VB_H - 1} textAnchor="end" fontSize="7" fill="#94a3b8">Ende</text>
+          {/* End labels (EU 1st-angle: Ende links, Anfang rechts) */}
+          <text x={PAD_X} y={VB_H - 1} fontSize="7" fill="#94a3b8">Ende ←</text>
+          <text x={PAD_X + length} y={VB_H - 1} textAnchor="end" fontSize="7" fill="#94a3b8">→ Anfang</text>
         </svg>
       </div>
     </div>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // End face panel (Stirnseite Anfang / Ende)
