@@ -506,6 +506,26 @@ export function ProfileWorkbench2D({
             )}
           </div>
 
+          {/* Stirnseiten-Modus */}
+          {(onUpdateEndStart || onUpdateEndEnd) && (
+            <div className="flex items-center gap-1 bg-white rounded-md border border-slate-200 p-0.5">
+              <button
+                onClick={() => setEndFaceMode((m) => m === 'start' ? null : 'start')}
+                title="Stirnseite Anfang – Kernzug-Gewinde wählen"
+                className={`px-2 py-1 text-[11px] rounded flex items-center gap-1 ${endFaceMode === 'start' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Eye className="h-3 w-3" /> Stirn Anfang
+              </button>
+              <button
+                onClick={() => setEndFaceMode((m) => m === 'end' ? null : 'end')}
+                title="Stirnseite Ende – Kernzug-Gewinde wählen"
+                className={`px-2 py-1 text-[11px] rounded flex items-center gap-1 ${endFaceMode === 'end' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Eye className="h-3 w-3" /> Stirn Ende
+              </button>
+            </div>
+          )}
+
           {/* Raster: festes 1-mm-Feinraster */}
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span>Raster</span>
