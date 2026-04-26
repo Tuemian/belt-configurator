@@ -624,9 +624,9 @@ export function ProfileWorkbench2D({
         )}
 
         {/* Status bar */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-t border-slate-200 bg-slate-50 text-[10px] text-muted-foreground">
-          <div>{holes.length} Bohrung{holes.length !== 1 ? 'en' : ''} · {connectors.length} Verbinder gesamt</div>
-          <div>
+        <div className="flex items-center justify-between px-3 py-1.5 border-t border-slate-200 bg-slate-50 text-[10px] text-muted-foreground gap-2">
+          <div className="truncate">{holes.length} Bohrung{holes.length !== 1 ? 'en' : ''} · {connectors.length} Verbinder</div>
+          <div className="hidden md:block shrink-0">
             <kbd className="px-1 bg-white border border-slate-200 rounded">B</kbd> Bohrung ·{' '}
             <kbd className="px-1 bg-white border border-slate-200 rounded">V</kbd> Verbinder ·{' '}
             <kbd className="px-1 bg-white border border-slate-200 rounded">S</kbd> Auswahl ·{' '}
