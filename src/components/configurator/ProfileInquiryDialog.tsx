@@ -119,6 +119,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
             email: cust.email,
             phone: cust.phone,
             message: cust.message,
+            desiredDelivery: cust.desiredDelivery,
           },
           summary,
           attachment: {
