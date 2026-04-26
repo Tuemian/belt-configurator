@@ -720,7 +720,7 @@ export function ProfileWorkbench2D({
               })}
             </g>
 
-            <text x={PAD_X} y={VB_H - 4} fontSize="9" fill="#94a3b8">Start</text>
+            <text x={PAD_X} y={VB_H - 4} fontSize="9" fill="#94a3b8">Anfang</text>
             <text x={PAD_X + length} y={VB_H - 4} textAnchor="end" fontSize="9" fill="#94a3b8">Ende ({length} mm)</text>
           </svg>
 
