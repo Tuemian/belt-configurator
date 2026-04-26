@@ -48,6 +48,8 @@ export interface ProfileSection {
   orderCode?: string;
   /** Massenpro-Meter (kg/m) – für PDF, Statik, Versand */
   massPerMeter?: number;
+  /** Rastermaß / Modulteilung (mm). 30er-Reihe = 30, sonst 40. */
+  modulePitch?: number;
 }
 
 export interface ProfileHole {
