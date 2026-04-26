@@ -581,7 +581,7 @@ function scopeLabel(scope: string | undefined, section: ProfileSection): string 
   }
 }
 
-function drawHolesTable(doc: jsPDF, holes: ProfileHole[], x: number, y: number, w: number): number {
+function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSection, x: number, y: number, w: number): number {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text(`BOHRUNGEN (${holes.length})`, x, y);
   y += 2;
@@ -594,8 +594,7 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], x: number, y: number, 
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
   doc.text('Ø', x + 70, y);
-  doc.text('NUT', x + 84, y);
-  doc.text('SPUR', x + 110, y);
+  doc.text('NUT (ALVARIS)', x + 90, y);
   doc.text('POSITION', x + 130, y);
   doc.text('VOM ENDE', x + 162, y);
   y += 3;
@@ -610,15 +609,15 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], x: number, y: number, 
     doc.text(String(idx + 1), x, y);
     doc.text(truncate(HOLE_TYPES.find((t) => t.id === h.type)?.label ?? h.label, 36), x + 12, y);
     doc.text(`${h.diameter} mm`, x + 70, y);
-    doc.text(SLOT_LABEL_DE[h.slot].split(' ')[1] ?? h.slot, x + 84, y);
-    doc.text(String((h.moduleIndex ?? 0) + 1), x + 110, y);
+    const slotN = getSlotNumber(section, h.slot, h.moduleIndex ?? 0);
+    doc.text(`Nut ${slotN} (${SLOT_SIDE_DE[h.slot]})`, x + 90, y);
     doc.text(`${h.zPosition} mm`, x + 130, y);
     y += 5;
   });
   return y + 4;
 }
 
-function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], x: number, y: number, w: number): number {
+function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section: ProfileSection, x: number, y: number, w: number): number {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text(`VERBINDER (${connectors.length})`, x, y);
   y += 2;
@@ -629,8 +628,7 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], x: numb
   setText(doc, SLATE_500, 7, 'bold');
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
-  doc.text('NUT', x + 90, y);
-  doc.text('SPUR', x + 116, y);
+  doc.text('NUT (ALVARIS)', x + 96, y);
   doc.text('POSITION', x + 140, y);
   y += 3;
 
@@ -644,8 +642,8 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], x: numb
     setText(doc, SLATE_900, 8.5, 'normal');
     doc.text(String(idx + 1), x, y);
     doc.text(truncate(def?.label ?? c.label, 40), x + 12, y);
-    doc.text(SLOT_LABEL_DE[c.slot].split(' ')[1] ?? c.slot, x + 90, y);
-    doc.text(String((c.moduleIndex ?? 0) + 1), x + 116, y);
+    const slotN = getSlotNumber(section, c.slot, c.moduleIndex ?? 0);
+    doc.text(`Nut ${slotN} (${SLOT_SIDE_DE[c.slot]})`, x + 96, y);
     doc.text(c.end === 'start' ? 'Anfang' : 'Ende', x + 140, y);
     y += 5;
   });
