@@ -192,6 +192,18 @@ export function ProfileWorkbench2D({
       return;
     }
 
+    // Determine which slot track the click belongs to (multi-module profiles)
+    const nearestModuleIndex = (() => {
+      if (slotCenters.length <= 1) return 0;
+      let best = 0;
+      let bestDist = Infinity;
+      slotCenters.forEach((c, i) => {
+        const d = Math.abs((m.y ?? faceDepth / 2) - c);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      return best;
+    })();
+
     if (tool === 'hole') {
       const z = snapValue(m.z, snap, snapPoints, length);
       const typeDef = HOLE_TYPES.find((t) => t.id === holeType)!;
@@ -200,15 +212,16 @@ export function ProfileWorkbench2D({
         zPosition: z,
         diameter: typeDef.diameter,
         slot: activeSlot,
+        moduleIndex: nearestModuleIndex,
         type: holeType,
         label: typeDef.label,
       };
       onUpdateHoles([...holes, newHole]);
       setSelectedId(newHole.id);
     } else if (tool === 'connector') {
-      // Only one connector per end per slot
+      // Only one connector per end per slot per module
       const end: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end);
+      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === nearestModuleIndex);
       if (taken) {
         setSelectedId(null);
         return;
@@ -219,6 +232,7 @@ export function ProfileWorkbench2D({
         type: connType,
         end,
         slot: activeSlot,
+        moduleIndex: nearestModuleIndex,
         label: typeDef.label,
       };
       onUpdateConnectors([...connectors, newConn]);
