@@ -215,12 +215,80 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
               className="text-sm"
-              placeholder="Liefertermin, besondere Anforderungen, Lieferanschrift …"
+              placeholder="Besondere Anforderungen, Lieferanschrift …"
             />
           </div>
 
-          <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer pt-1">
-            <Checkbox
+          {/* Wunschliefertermin */}
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+            <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+              Wunschliefertermin
+            </Label>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      'h-9 flex-1 justify-start text-left font-normal',
+                      !desiredDelivery && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {desiredDelivery
+                      ? format(desiredDelivery, 'EEEE, d. MMMM yyyy', { locale: de })
+                      : 'Datum auswählen'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={desiredDelivery}
+                    onSelect={setDesiredDelivery}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                    locale={de}
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+              {desiredDelivery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-2 text-xs text-muted-foreground"
+                  onClick={() => setDesiredDelivery(undefined)}
+                >
+                  Zurücksetzen
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+              {([
+                { v: 'on', label: 'Genau an diesem Tag' },
+                { v: 'around', label: 'Etwa zu diesem Termin' },
+                { v: 'asap', label: 'So schnell wie möglich' },
+              ] as const).map((opt) => (
+                <button
+                  type="button"
+                  key={opt.v}
+                  onClick={() => setDeliveryFlexibility(opt.v)}
+                  className={cn(
+                    'px-2.5 py-1 text-[11px] rounded-full border transition-colors',
+                    deliveryFlexibility === opt.v
+                      ? 'bg-primary/10 border-primary text-primary font-semibold'
+                      : 'bg-white border-slate-200 text-muted-foreground hover:border-primary/40',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
               checked={form.privacy}
               onCheckedChange={(v) => setForm({ ...form, privacy: !!v })}
               className="mt-0.5"
