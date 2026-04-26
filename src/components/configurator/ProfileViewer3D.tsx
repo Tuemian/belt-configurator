@@ -82,12 +82,12 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
 
   // T-slots: one per module on each face
   for (let i = 0; i < numW; i++) {
-    const cx = -hw + MODULE * (i + 0.5);
+    const cx = -hw + PITCH * (i + 0.5);
     addSlotTop(shape, cx, hh, sw, gw, sd);
     addSlotBottom(shape, cx, -hh, sw, gw, sd);
   }
   for (let j = 0; j < numH; j++) {
-    const cy = -hh + MODULE * (j + 0.5);
+    const cy = -hh + PITCH * (j + 0.5);
     addSlotRight(shape, hw, cy, sw, gw, sd);
     addSlotLeft(shape, -hw, cy, sw, gw, sd);
   }
@@ -95,16 +95,14 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
   // Center bore + inner hollow per module cell
   for (let i = 0; i < numW; i++) {
     for (let j = 0; j < numH; j++) {
-      const cx = -hw + MODULE * (i + 0.5);
-      const cy = -hh + MODULE * (j + 0.5);
+      const cx = -hw + PITCH * (i + 0.5);
+      const cy = -hh + PITCH * (j + 0.5);
 
-      // Center bore (CW arc = hole)
       const bore = new THREE.Path();
       bore.absarc(cx, cy, boreRadius, 0, Math.PI * 2, true);
       shape.holes.push(bore);
 
-      // Inner hollow octagon (CW) — represents the hollow web structure
-      const ie = MODULE / 2 - sd - wt * 0.3;
+      const ie = PITCH / 2 - sd - wt * 0.3;
       if (ie > boreRadius + 2.5) {
         const ic = ie * 0.72;
         const inn = new THREE.Path();
