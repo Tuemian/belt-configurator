@@ -807,10 +807,11 @@ function SideRow({
                     strokeDasharray="3 3"
                     opacity={isLaneActive ? 0.8 : 0.4}
                   />
-                  {/* Lane number label inside the body */}
+                  {/* Lane number label — beim "Anfang" (rechts) gut sichtbar */}
                   <text
-                    x={6}
+                    x={length - 6}
                     y={cy + 2.5}
+                    textAnchor="end"
                     fontSize="7"
                     fill={isLaneActive ? 'hsl(var(--primary))' : '#64748b'}
                     fontWeight="600"
