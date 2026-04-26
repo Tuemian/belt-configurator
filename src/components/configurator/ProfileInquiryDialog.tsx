@@ -1,12 +1,18 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Mail, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import {
   buildProfileInquiryPdf,
   buildProfileInquirySummary,
@@ -46,11 +52,21 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
     message: '',
     privacy: false,
   });
+  const [desiredDelivery, setDesiredDelivery] = useState<Date | undefined>();
+  const [deliveryFlexibility, setDeliveryFlexibility] = useState<'on' | 'asap' | 'around'>('on');
   const [sending, setSending] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const total = cart.reduce((s, i) => s + i.price.total, 0);
   const canSubmit = form.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && form.privacy && cart.length > 0;
+
+  const formatDeliveryForPdf = (): string | undefined => {
+    if (!desiredDelivery) return deliveryFlexibility === 'asap' ? 'schnellstmöglich' : undefined;
+    const datePart = format(desiredDelivery, 'dd.MM.yyyy', { locale: de });
+    if (deliveryFlexibility === 'around') return `ca. ${datePart} (±1 Woche)`;
+    if (deliveryFlexibility === 'asap') return `schnellstmöglich, spätestens ${datePart}`;
+    return datePart;
+  };
 
   const customer = (): CustomerInfo => ({
     name: form.name.trim(),
@@ -58,6 +74,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
     email: form.email.trim(),
     phone: form.phone.trim() || undefined,
     message: form.message.trim() || undefined,
+    desiredDelivery: formatDeliveryForPdf(),
   });
 
   const handleDownload = async () => {
