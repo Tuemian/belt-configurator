@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
+import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
 import {
   PROFILE_SECTIONS,
   PROFILE_SIZES,
