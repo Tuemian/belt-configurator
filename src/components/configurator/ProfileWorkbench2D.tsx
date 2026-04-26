@@ -102,7 +102,9 @@ export function ProfileWorkbench2D({
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const faceDepth = getFaceWidth(section, activeSlot);
+  const MODULE = getModulePitch(section);
   const numModulesOnFace = Math.max(1, Math.round(faceDepth / MODULE));
+  const slotCenters = getSlotCenters(section, activeSlot);
 
   // Filter visible items by slot (with backwards compat)
   const visibleHoles = useMemo(() => holes.filter((h) => ensureSlot(h) === activeSlot), [holes, activeSlot]);
