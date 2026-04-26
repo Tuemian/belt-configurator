@@ -826,8 +826,8 @@ export function ProfileWorkbench2D({
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-200 rounded-full px-4 py-1.5 text-[11px] text-muted-foreground shadow-sm pointer-events-none">
               <Plus className="h-3 w-3 inline mr-1" />
               {tool === 'connector'
-                ? `Klicke an einen Profilende-Bereich, um einen Verbinder auf ${SLOT_LABEL_DE[activeSlot]} zu setzen`
-                : `Klicke auf das Profil, um eine Bohrung auf ${SLOT_LABEL_DE[activeSlot]} zu setzen`}
+                ? `Klicke an einen Profilende-Bereich, um einen Verbinder auf Nut ${activeSlotNumber} zu setzen`
+                : `Klicke auf das Profil, um eine Bohrung auf Nut ${activeSlotNumber} zu setzen`}
             </div>
           )}
         </div>
@@ -835,7 +835,7 @@ export function ProfileWorkbench2D({
         {/* Status bar */}
         <div className="flex items-center justify-between px-3 py-1.5 border-t border-slate-200 bg-slate-50 text-[10px] text-muted-foreground">
           <div>
-            {visibleHoles.length} Bohrung{visibleHoles.length !== 1 ? 'en' : ''} · {visibleConnectors.length} Verbinder auf {SLOT_LABEL_DE[activeSlot]}
+            {visibleHoles.length} Bohrung{visibleHoles.length !== 1 ? 'en' : ''} · {visibleConnectors.length} Verbinder auf Nut {activeSlotNumber} ({SLOT_SIDE_DE[activeSlot]})
           </div>
           <div className="flex items-center gap-3">
             <span>Raster: Genau (1 mm)</span>
