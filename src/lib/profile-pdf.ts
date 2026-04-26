@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Multi-page PDF generator for profile cut configurations.
-// Layout: cover page with table of contents + 1 page per profile cut
-// (cross-section, side view with holes/connectors, dimensioned table).
+// Layout reuses the corporate look of the Gurtförderer summary PDF
+// (header + footer background images, brand blue accents, panel cards).
 // ---------------------------------------------------------------------------
 
 import jsPDF from 'jspdf';
@@ -19,6 +19,8 @@ import {
   type ProfileConnector,
   type SlotId,
 } from './profile-configurator-types';
+import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
+import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
 
 export interface CartItemLike {
   id: string;
@@ -32,19 +34,53 @@ export interface CustomerInfo {
   email: string;
   phone?: string;
   message?: string;
+  desiredDelivery?: string; // ISO date or human-readable text from the form
 }
 
 const PAGE_W = 210;   // A4 mm
 const PAGE_H = 297;
-const MARGIN = 14;
-const BRAND = { r: 19, g: 78, b: 161 };           // novamotis blue
-const SLATE_900 = { r: 15, g: 23, b: 42 };
-const SLATE_500 = { r: 100, g: 116, b: 139 };
-const SLATE_200 = { r: 226, g: 232, b: 240 };
-const SLATE_50  = { r: 248, g: 250, b: 252 };
-const ACCENT_BG = { r: 235, g: 244, b: 255 };
+const MARGIN = 16;    // matches Fördertechnik layout
+const BRAND       = { r: 0,   g: 51,  b: 102 };  // #003366 corporate blue
+const BRAND_GRAY  = { r: 98,  g: 108, b: 122 };
+const SLATE_900   = { r: 48,  g: 63,  b: 79  };
+const SLATE_500   = { r: 100, g: 116, b: 139 };
+const SLATE_200   = { r: 226, g: 232, b: 240 };
+const BORDER_GRAY = { r: 210, g: 214, b: 220 };
+const SLATE_50    = { r: 248, g: 250, b: 252 };
+const ACCENT_BG   = { r: 235, g: 244, b: 255 };
+const PANEL_FILL  = { r: 255, g: 255, b: 255 };
+
+const FOOTER_TEXT_COLUMNS = [
+  ['Erste Bank und Sparkasse', 'BIC/SWIFT: DOSPAT2DXXX', 'IBAN: AT10 2060 2000 0068 0215'],
+  ['Gerichtsstand: Landesgericht Feldkirch', 'Firmenbuchnummer: FN 669496 d', 'UID-Nummer: ATU82899035'],
+  ['Geschaeftsfuehrung:', 'Simon Martin, Slovyana Votchyna', 'M: office@novamotis.com', 'W: www.novamotis.com'],
+] as const;
 
 const fmtEur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+
+// ---------------------------------------------------------------------------
+// Image helpers (cached per call so we only decode each background once)
+// ---------------------------------------------------------------------------
+
+type CachedImage = { dataUrl: string; width: number; height: number };
+
+async function loadImage(src: string): Promise<CachedImage> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth || 1200;
+      const h = img.naturalHeight || 260;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('canvas context')); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve({ dataUrl: canvas.toDataURL('image/png'), width: w, height: h });
+    };
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = src;
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -57,13 +93,20 @@ export async function buildProfileInquiryPdf(
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   const totalNet = cart.reduce((sum, i) => sum + i.price.total, 0);
 
+  let headerImg: CachedImage | null = null;
+  let footerImg: CachedImage | null = null;
+  try { headerImg = await loadImage(headerBackground); } catch { /* fallback to flat header */ }
+  try { footerImg = await loadImage(footerBackground); } catch { /* fallback */ }
+
+  const totalPages = cart.length + 1;
+
   // ---- Cover / TOC ----
-  drawCoverPage(doc, cart, totalNet, customer);
+  drawCoverPage(doc, cart, totalNet, customer, headerImg, footerImg, totalPages);
 
   // ---- One detail page per cart item ----
   cart.forEach((item, idx) => {
     doc.addPage();
-    drawProfilePage(doc, item, idx + 1, cart.length);
+    drawProfilePage(doc, item, idx + 1, cart.length, headerImg, footerImg, totalPages);
   });
 
   return doc.output('blob');
