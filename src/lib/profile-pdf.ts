@@ -379,16 +379,24 @@ function drawCrossSection(
   const r = Math.min(2, s.cornerR * scale);
   doc.roundedRect(ox, oy, profileW, profileH, r, r, 'FD');
 
-  // Center bores per module
+  // Center bores per module (mit blauer Alvaris-Nummerierung in Kreisen)
   const MODULE = getModulePitch(s);
   const numW = Math.max(1, Math.round(s.w / MODULE));
   const numH = Math.max(1, Math.round(s.h / MODULE));
-  setFill(doc, { r: 255, g: 255, b: 255 });
   for (let i = 0; i < numW; i++) {
     for (let j = 0; j < numH; j++) {
       const cx = ox + (MODULE * (i + 0.5)) * scale;
       const cy = oy + (MODULE * (j + 0.5)) * scale;
+      // Bohrungs-Hintergrund
+      setFill(doc, { r: 255, g: 255, b: 255 });
       doc.circle(cx, cy, s.boreRadius * scale, 'F');
+      // Blauer Kreis mit Nummer
+      const lblR = Math.max(s.boreRadius * scale, 1.6);
+      setStroke(doc, { r: 29, g: 78, b: 216 });
+      doc.setLineWidth(0.2);
+      doc.circle(cx, cy, lblR, 'S');
+      setText(doc, { r: 29, g: 78, b: 216 }, 4.5, 'bold');
+      doc.text(String(j * numW + i + 1), cx, cy + 1.4, { align: 'center' });
     }
   }
 
@@ -407,20 +415,40 @@ function drawCrossSection(
     doc.rect(ox + profileW - slotD, cy - slotW / 2, slotD, slotW, 'F'); // B
   }
 
-  // Slot labels A / B / C / D
-  setText(doc, SLATE_900, 6, 'bold');
-  doc.text('A', ox + profileW / 2, oy - 1, { align: 'center' });
-  doc.text('C', ox + profileW / 2, oy + profileH + 4, { align: 'center' });
-  doc.text('B', ox + profileW + 3, oy + profileH / 2 + 1.5);
-  doc.text('D', ox - 3, oy + profileH / 2 + 1.5, { align: 'right' });
+  // Rote Alvaris-Nutnummern an jeder Nut
+  setText(doc, { r: 220, g: 38, b: 38 }, 4.5, 'bold');
+  // A (oben, links→rechts)
+  for (let i = 0; i < numW; i++) {
+    const cx = ox + (MODULE * (i + 0.5)) * scale;
+    const num = getSlotNumber(s, 'A', i);
+    doc.text(String(num), cx, oy + slotD + 3.5, { align: 'center' });
+  }
+  // B (rechts, oben→unten)
+  for (let j = 0; j < numH; j++) {
+    const cy = oy + (MODULE * (j + 0.5)) * scale;
+    const num = getSlotNumber(s, 'B', j);
+    doc.text(String(num), ox + profileW - slotD - 1.5, cy + 1.4, { align: 'right' });
+  }
+  // C (unten, rechts→links)
+  for (let i = 0; i < numW; i++) {
+    const cx = ox + (MODULE * (i + 0.5)) * scale;
+    const num = getSlotNumber(s, 'C', i);
+    doc.text(String(num), cx, oy + profileH - slotD - 1.5, { align: 'center' });
+  }
+  // D (links, unten→oben)
+  for (let j = 0; j < numH; j++) {
+    const cy = oy + (MODULE * (j + 0.5)) * scale;
+    const num = getSlotNumber(s, 'D', j);
+    doc.text(String(num), ox + slotD + 1.5, cy + 1.4, { align: 'left' });
+  }
 
   // Annotate which slots have features
-  const usedSlots = new Set<SlotId>();
-  holes.forEach((hh) => usedSlots.add(hh.slot));
-  connectors.forEach((cc) => usedSlots.add(cc.slot));
-  if (usedSlots.size) {
+  const usedSlotNums = new Set<number>();
+  holes.forEach((hh) => usedSlotNums.add(getSlotNumber(s, hh.slot, hh.moduleIndex ?? 0)));
+  connectors.forEach((cc) => usedSlotNums.add(getSlotNumber(s, cc.slot, cc.moduleIndex ?? 0)));
+  if (usedSlotNums.size) {
     setText(doc, BRAND, 6, 'bold');
-    doc.text(`Bearbeitet: ${[...usedSlots].sort().join(', ')}`, x + 2, y + h - 2);
+    doc.text(`Bearbeitete Nuten: ${[...usedSlotNums].sort((a, b) => a - b).join(', ')}`, x + 2, y + h - 2);
   }
 }
 
