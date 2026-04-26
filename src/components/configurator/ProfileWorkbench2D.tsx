@@ -48,6 +48,44 @@ const SNAP_FINE = 1;
 
 const CONNECTOR_FOOTPRINT = 22; // mm – Länge des Verbinder-Blocks im Profil
 
+// Number-Input, der freie Eingabe (auch leer / "1" / "15") erlaubt und erst bei
+// Blur bzw. Enter clamped. Verhindert das frustrierende Verschlucken einstelliger
+// Eingaben durch sofortiges Math.max in onChange.
+function NumericInput({
+  value, min, max, step = 1, onCommit, className,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onCommit: (n: number) => void;
+  className?: string;
+}) {
+  const [draft, setDraft] = useState<string>(String(value));
+  useEffect(() => { setDraft(String(value)); }, [value]);
+  const commit = () => {
+    if (draft.trim() === '' || draft === '-' ) { setDraft(String(value)); return; }
+    const n = Number(draft);
+    if (Number.isNaN(n)) { setDraft(String(value)); return; }
+    const clamped = Math.max(min, Math.min(max, n));
+    onCommit(clamped);
+    setDraft(String(clamped));
+  };
+  return (
+    <Input
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+      className={className}
+    />
+  );
+}
+
 function holeColor(type: ProfileHole['type']): string {
   if (type === 'm6-thread' || type === 'm8-thread') return '#b78628';
   if (type === 'step-m6' || type === 'step-m8') return '#3b67a8';
