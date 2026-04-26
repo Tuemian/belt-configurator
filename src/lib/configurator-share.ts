@@ -158,6 +158,22 @@ function buildNextConfiguratorId(): string {
   }
 }
 
+export function createNewCurrentConfiguratorId(): string {
+  const nextId = buildNextConfiguratorId();
+
+  if (typeof window === 'undefined') {
+    return nextId;
+  }
+
+  try {
+    window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, nextId);
+  } catch {
+    // Ignore storage access issues and still return the generated ID.
+  }
+
+  return nextId;
+}
+
 export function getOrCreateCurrentConfiguratorId(currentUrl?: string): string {
   if (typeof window === 'undefined') {
     return buildNextConfiguratorId();

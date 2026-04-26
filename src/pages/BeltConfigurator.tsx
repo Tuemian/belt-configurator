@@ -1,6 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
-import { clearSharedConfiguratorStateFromUrl, readSharedConfiguratorState } from '@/lib/configurator-share';
+import {
+  clearSharedConfiguratorStateFromUrl,
+  createNewCurrentConfiguratorId,
+  readSharedConfiguratorState,
+} from '@/lib/configurator-share';
 import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
@@ -36,6 +40,7 @@ const BeltConfigurator = () => {
 
     const sharedState = readSharedConfiguratorState(window.location.search);
     if (!sharedState) {
+      createNewCurrentConfiguratorId();
       return;
     }
 
@@ -64,6 +69,7 @@ const BeltConfigurator = () => {
     setConfig(defaultConfig);
     setStep(0);
     clearSharedConfiguratorStateFromUrl();
+    createNewCurrentConfiguratorId();
   }, []);
 
   const stepTitles = [
