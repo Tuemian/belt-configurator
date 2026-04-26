@@ -1,9 +1,12 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   HOLE_TYPES,
   CONNECTOR_TYPES,
