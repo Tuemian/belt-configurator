@@ -350,10 +350,11 @@ export default function ProfileConfigurator() {
                             >
                               <option value="all">Alle Kernzüge</option>
                               <option value="center">Nur Zentrumsbohrung</option>
-                              <option value="A">Nut A (oben)</option>
-                              <option value="B">Nut B (rechts)</option>
-                              <option value="C">Nut C (unten)</option>
-                              <option value="D">Nut D (links)</option>
+                              {getAllSlots(section).map((s) => (
+                                <option key={`${s.slot}-${s.moduleIndex}`} value={s.slot}>
+                                  Nut {s.number} ({SLOT_SIDE_DE[s.slot]})
+                                </option>
+                              ))}
                             </select>
                           </div>
                         )}
