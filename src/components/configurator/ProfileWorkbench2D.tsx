@@ -43,11 +43,8 @@ interface Props {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const SNAP_OPTIONS: { value: number; label: string; tooltip: string }[] = [
-  { value: 1,  label: 'Genau',  tooltip: 'Position rastet auf jeden mm' },
-  { value: 5,  label: 'Mittel', tooltip: 'Position rastet auf 5-mm-Raster' },
-  { value: 10, label: 'Grob',   tooltip: 'Position rastet auf 10-mm-Raster' },
-];
+// Festes feines 1-mm-Raster – Auswahl wurde auf Wunsch entfernt.
+const SNAP_FINE = 1;
 
 const CONNECTOR_FOOTPRINT = 22; // mm – Länge des Verbinder-Blocks im Profil
 
@@ -100,7 +97,7 @@ export function ProfileWorkbench2D({
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeSlot, setActiveSlot] = useState<SlotId>('A');
   const [tool, setTool] = useState<Tool>('hole');
-  const [snap, setSnap] = useState<number>(5);
+  const snap = SNAP_FINE;
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
   const [connType, setConnType] = useState<ConnectorType>('tnut-m8');
   const [hoverZ, setHoverZ] = useState<number | null>(null);
