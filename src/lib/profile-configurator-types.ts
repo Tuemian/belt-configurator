@@ -54,12 +54,14 @@ export interface ProfileSection {
 
 export interface ProfileHole {
   id: string;
-  zPosition: number;          // mm vom Start
+  zPosition: number;          // mm vom Anfang
   diameter: number;
   /** Backwards-compat: ältere Configs hatten 'face' (top|bottom|left|right) */
   face?: 'top' | 'bottom' | 'left' | 'right';
   /** Neu: Nut, auf der die Bohrung sitzt */
   slot: SlotId;
+  /** Bei Multi-Modul-Profilen (z. B. 80×40 hat 2 Nuten auf A/C): welche Spur (0..n-1). Default 0. */
+  moduleIndex?: number;
   type: 'd55' | 'd85' | 'm6-thread' | 'm8-thread' | 'step-m6' | 'step-m8';
   label: string;
 }
