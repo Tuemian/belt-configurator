@@ -1,12 +1,18 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Mail, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import {
   buildProfileInquiryPdf,
   buildProfileInquirySummary,
@@ -46,11 +52,21 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
     message: '',
     privacy: false,
   });
+  const [desiredDelivery, setDesiredDelivery] = useState<Date | undefined>();
+  const [deliveryFlexibility, setDeliveryFlexibility] = useState<'on' | 'asap' | 'around'>('on');
   const [sending, setSending] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const total = cart.reduce((s, i) => s + i.price.total, 0);
   const canSubmit = form.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && form.privacy && cart.length > 0;
+
+  const formatDeliveryForPdf = (): string | undefined => {
+    if (!desiredDelivery) return deliveryFlexibility === 'asap' ? 'schnellstmöglich' : undefined;
+    const datePart = format(desiredDelivery, 'dd.MM.yyyy', { locale: de });
+    if (deliveryFlexibility === 'around') return `ca. ${datePart} (±1 Woche)`;
+    if (deliveryFlexibility === 'asap') return `schnellstmöglich, spätestens ${datePart}`;
+    return datePart;
+  };
 
   const customer = (): CustomerInfo => ({
     name: form.name.trim(),
@@ -58,6 +74,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
     email: form.email.trim(),
     phone: form.phone.trim() || undefined,
     message: form.message.trim() || undefined,
+    desiredDelivery: formatDeliveryForPdf(),
   });
 
   const handleDownload = async () => {
@@ -102,6 +119,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
             email: cust.email,
             phone: cust.phone,
             message: cust.message,
+            desiredDelivery: cust.desiredDelivery,
           },
           summary,
           attachment: {
@@ -122,6 +140,8 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
         description: 'Vielen Dank! Sie erhalten eine Bestätigung per E-Mail. Eine Kopie geht an office@novamotis.com.',
       });
       setForm({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
+      setDesiredDelivery(undefined);
+      setDeliveryFlexibility('on');
       onSubmitted();
       onOpenChange(false);
     } catch (err) {
@@ -195,8 +215,79 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
               className="text-sm"
-              placeholder="Liefertermin, besondere Anforderungen, Lieferanschrift …"
+              placeholder="Besondere Anforderungen, Lieferanschrift …"
             />
+          </div>
+
+          {/* Wunschliefertermin */}
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+            <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+              Wunschliefertermin
+            </Label>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      'h-9 flex-1 justify-start text-left font-normal',
+                      !desiredDelivery && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {desiredDelivery
+                      ? format(desiredDelivery, 'EEEE, d. MMMM yyyy', { locale: de })
+                      : 'Datum auswählen'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={desiredDelivery}
+                    onSelect={setDesiredDelivery}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                    locale={de}
+                    className={cn('p-3 pointer-events-auto')}
+                  />
+                </PopoverContent>
+              </Popover>
+              {desiredDelivery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-2 text-xs text-muted-foreground"
+                  onClick={() => setDesiredDelivery(undefined)}
+                >
+                  Zurücksetzen
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+              {([
+                { v: 'on', label: 'Genau an diesem Tag' },
+                { v: 'around', label: 'Etwa zu diesem Termin' },
+                { v: 'asap', label: 'So schnell wie möglich' },
+              ] as const).map((opt) => (
+                <button
+                  type="button"
+                  key={opt.v}
+                  onClick={() => setDeliveryFlexibility(opt.v)}
+                  className={cn(
+                    'px-2.5 py-1 text-[11px] rounded-full border transition-colors',
+                    deliveryFlexibility === opt.v
+                      ? 'bg-primary/10 border-primary text-primary font-semibold'
+                      : 'bg-white border-slate-200 text-muted-foreground hover:border-primary/40',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer pt-1">

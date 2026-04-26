@@ -12,6 +12,7 @@ import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
 import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
+import { NumericInput } from '@/components/configurator/NumericInput';
 import {
   PROFILE_SECTIONS,
   PROFILE_SIZES,
@@ -235,16 +236,15 @@ export default function ProfileConfigurator() {
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Länge (mm)</Label>
                   <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
+                    <NumericInput
                       min={50}
                       max={3000}
                       step={5}
                       value={config.length}
-                      onChange={(e) => {
-                        const v = Math.max(50, Math.min(3000, Number(e.target.value)));
-                        update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) });
-                      }}
+                      onCommit={(v) => update({
+                        length: v,
+                        holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
+                      })}
                       className="h-8 w-24 text-right text-sm"
                     />
                     <span className="text-muted-foreground text-xs">mm</span>
@@ -268,12 +268,11 @@ export default function ProfileConfigurator() {
               <SectionDivider label="Menge" />
               <div className="mt-3 flex items-center gap-3">
                 <Label className="text-xs text-muted-foreground shrink-0">Stückzahl</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   min={1}
                   max={9999}
                   value={config.quantity}
-                  onChange={(e) => update({ quantity: Math.max(1, Number(e.target.value)) })}
+                  onCommit={(v) => update({ quantity: v })}
                   className="h-8 w-24 text-right"
                 />
               </div>
@@ -293,13 +292,12 @@ export default function ProfileConfigurator() {
                     <div key={end} className="space-y-2">
                       <Label className="text-xs text-muted-foreground">{end}</Label>
                       <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
+                        <NumericInput
                           min={-45}
                           max={45}
                           step={1}
                           value={val}
-                          onChange={(e) => update({ [key]: Math.max(-45, Math.min(45, Number(e.target.value))) })}
+                          onCommit={(v) => update({ [key]: v })}
                           className="h-8 w-16 text-right text-sm"
                         />
                         <span className="text-muted-foreground text-xs">°</span>

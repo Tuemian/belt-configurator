@@ -21,6 +21,7 @@ import {
   type SlotId,
 } from '@/lib/profile-configurator-types';
 import { ProfileCrossSection2D } from './ProfileCrossSection2D';
+import { NumericInput } from './NumericInput';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,11 +44,8 @@ interface Props {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const SNAP_OPTIONS: { value: number; label: string; tooltip: string }[] = [
-  { value: 1,  label: 'Genau',  tooltip: 'Position rastet auf jeden mm' },
-  { value: 5,  label: 'Mittel', tooltip: 'Position rastet auf 5-mm-Raster' },
-  { value: 10, label: 'Grob',   tooltip: 'Position rastet auf 10-mm-Raster' },
-];
+// Festes feines 1-mm-Raster – Auswahl wurde auf Wunsch entfernt.
+const SNAP_FINE = 1;
 
 const CONNECTOR_FOOTPRINT = 22; // mm – Länge des Verbinder-Blocks im Profil
 
@@ -100,7 +98,7 @@ export function ProfileWorkbench2D({
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeSlot, setActiveSlot] = useState<SlotId>('A');
   const [tool, setTool] = useState<Tool>('hole');
-  const [snap, setSnap] = useState<number>(5);
+  const snap = SNAP_FINE;
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
   const [connType, setConnType] = useState<ConnectorType>('tnut-m8');
   const [hoverZ, setHoverZ] = useState<number | null>(null);
@@ -424,26 +422,12 @@ export function ProfileWorkbench2D({
             )}
           </div>
 
-          {/* Snap (renamed) */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Raster</span>
-            {SNAP_OPTIONS.map((opt) => (
-              <Tooltip key={opt.value}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setSnap(opt.value)}
-                    className={`px-2 py-1 text-xs rounded border transition-colors ${
-                      snap === opt.value
-                        ? 'bg-primary/10 border-primary text-primary font-semibold'
-                        : 'bg-white border-slate-200 text-muted-foreground hover:border-primary/50'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{opt.tooltip}</TooltipContent>
-              </Tooltip>
-            ))}
+          {/* Raster: festes 1-mm-Feinraster */}
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span>Raster</span>
+            <span className="px-2 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary font-semibold normal-case tracking-normal text-[11px]">
+              Genau · 1 mm
+            </span>
           </div>
         </div>
 
@@ -763,19 +747,14 @@ export function ProfileWorkbench2D({
                   </div>
                   <div>
                     <Label className="text-[10px] text-muted-foreground mb-1 block">
-                      Position (mm vom Anfang) · Schritt {snap} mm
+                      Position (mm vom Anfang)
                     </Label>
-                    <Input
-                      type="number"
-                      min={snap}
-                      max={length - 1}
-                      step={snap}
+                    <NumericInput
                       value={selectedHole.zPosition}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value);
-                        const z = Math.max(snap, Math.min(length - 1, Math.round(raw / snap) * snap));
-                        updateHole({ zPosition: z });
-                      }}
+                      min={1}
+                      max={length - 1}
+                      step={1}
+                      onCommit={(z) => updateHole({ zPosition: z })}
                       className="h-8 text-xs"
                     />
                   </div>
@@ -877,7 +856,7 @@ export function ProfileWorkbench2D({
             {visibleHoles.length} Bohrung{visibleHoles.length !== 1 ? 'en' : ''} · {visibleConnectors.length} Verbinder auf {SLOT_LABEL_DE[activeSlot]}
           </div>
           <div className="flex items-center gap-3">
-            <span>Raster: {SNAP_OPTIONS.find((o) => o.value === snap)?.label}</span>
+            <span>Raster: Genau (1 mm)</span>
             <span>
               <kbd className="px-1 bg-white border border-slate-200 rounded">B</kbd> Bohrung ·{' '}
               <kbd className="px-1 bg-white border border-slate-200 rounded">V</kbd> Verbinder ·{' '}
