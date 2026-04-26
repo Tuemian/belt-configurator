@@ -419,25 +419,27 @@ export function ProfileWorkbench2D({
               - 4 Reihen je Profilseite (A/B/C/D), eine pro Seite
               - Stirnseite "Anfang" rechts der Reihen
         */}
-        <div className="flex-1 min-h-0 flex overflow-hidden">
-          {/* Left: end face "Ende" */}
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+          {/* Top (mobile) / Left (desktop): end face "Ende" */}
           {onUpdateEndEnd && (
-            <aside className="w-40 shrink-0 border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Ende</div>
-              <EndFacePanel
-                label="Ende"
-                section={section}
-                treatment={endEnd}
-                onChange={(t) => onUpdateEndEnd?.(t)}
-              />
-              <p className="text-[9px] text-muted-foreground leading-tight px-1">
+            <aside className="md:w-40 shrink-0 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50 overflow-x-auto md:overflow-y-auto p-2 flex md:block items-center gap-2 md:space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:text-center shrink-0 md:shrink">Stirnseite Ende</div>
+              <div className="shrink-0 md:shrink mx-auto md:mx-0">
+                <EndFacePanel
+                  label="Ende"
+                  section={section}
+                  treatment={endEnd}
+                  onChange={(t) => onUpdateEndEnd?.(t)}
+                />
+              </div>
+              <p className="text-[9px] text-muted-foreground leading-tight px-1 hidden md:block">
                 Klick auf Kernzug = M8-Gewinde (× = aktiv).
               </p>
             </aside>
           )}
 
           {/* Center: stacked side rows */}
-          <div className="flex-1 min-w-0 overflow-auto p-3 space-y-2 relative">
+          <div className="flex-1 min-w-0 overflow-auto p-2 sm:p-3 space-y-2 relative">
             {overlapWarning && (
               <div className="sticky top-0 z-10 inline-flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
                 <AlertTriangle className="h-3 w-3" />
@@ -452,7 +454,6 @@ export function ProfileWorkbench2D({
             {sideRows.map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
-              // Bohrungen von der gegenüberliegenden Seite (A↔C, B↔D) als Geister-Marker
               const oppositeSlot: SlotId =
                 side.slot === 'A' ? 'C' : side.slot === 'C' ? 'A' : side.slot === 'B' ? 'D' : 'B';
               const ghostHoles = holes.filter((h) => ensureSlot(h) === oppositeSlot);
@@ -508,17 +509,19 @@ export function ProfileWorkbench2D({
             )}
           </div>
 
-          {/* Right: end face "Anfang" */}
+          {/* Bottom (mobile) / Right (desktop): end face "Anfang" */}
           {onUpdateEndStart && (
-            <aside className="w-40 shrink-0 border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Anfang</div>
-              <EndFacePanel
-                label="Anfang"
-                section={section}
-                treatment={endStart}
-                onChange={(t) => onUpdateEndStart?.(t)}
-              />
-              <p className="text-[9px] text-muted-foreground leading-tight px-1">
+            <aside className="md:w-40 shrink-0 border-t md:border-t-0 md:border-l border-slate-200 bg-slate-50 overflow-x-auto md:overflow-y-auto p-2 flex md:block items-center gap-2 md:space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:text-center shrink-0 md:shrink">Stirnseite Anfang</div>
+              <div className="shrink-0 md:shrink mx-auto md:mx-0">
+                <EndFacePanel
+                  label="Anfang"
+                  section={section}
+                  treatment={endStart}
+                  onChange={(t) => onUpdateEndStart?.(t)}
+                />
+              </div>
+              <p className="text-[9px] text-muted-foreground leading-tight px-1 hidden md:block">
                 Klick auf Kernzug = M8-Gewinde (× = aktiv).
               </p>
             </aside>
