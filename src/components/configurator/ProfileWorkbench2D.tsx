@@ -98,6 +98,7 @@ export function ProfileWorkbench2D({
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeSlot, setActiveSlot] = useState<SlotId>('A');
+  const [activeModuleIndex, setActiveModuleIndex] = useState<number>(0);
   const [tool, setTool] = useState<Tool>('hole');
   const snap = SNAP_FINE;
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
@@ -108,12 +109,27 @@ export function ProfileWorkbench2D({
 
   const faceDepth = getFaceWidth(section, activeSlot);
   const MODULE = getModulePitch(section);
-  const numModulesOnFace = Math.max(1, Math.round(faceDepth / MODULE));
   const slotCenters = getSlotCenters(section, activeSlot);
+  const allSlots = useMemo(() => getAllSlots(section), [section]);
 
-  // Filter visible items by slot (with backwards compat)
-  const visibleHoles = useMemo(() => holes.filter((h) => ensureSlot(h) === activeSlot), [holes, activeSlot]);
-  const visibleConnectors = useMemo(() => connectors.filter((c) => c.slot === activeSlot), [connectors, activeSlot]);
+  // Wenn Profilwechsel den moduleIndex ungültig macht, korrigieren
+  useEffect(() => {
+    if (activeModuleIndex >= slotCenters.length) setActiveModuleIndex(0);
+  }, [activeModuleIndex, slotCenters.length]);
+
+  // Aktive Spur (für Visualisierung der einen aktiven Nut)
+  const activeCenter = slotCenters[Math.min(activeModuleIndex, slotCenters.length - 1)] ?? slotCenters[0];
+  const activeSlotNumber = getSlotNumber(section, activeSlot, activeModuleIndex);
+
+  // Filter visible items by slot + moduleIndex (with backwards compat)
+  const visibleHoles = useMemo(
+    () => holes.filter((h) => ensureSlot(h) === activeSlot && (h.moduleIndex ?? 0) === activeModuleIndex),
+    [holes, activeSlot, activeModuleIndex],
+  );
+  const visibleConnectors = useMemo(
+    () => connectors.filter((c) => c.slot === activeSlot && (c.moduleIndex ?? 0) === activeModuleIndex),
+    [connectors, activeSlot, activeModuleIndex],
+  );
 
   // Overlap detection (warning only, not blocking)
   const overlapWarning = useMemo(() => {
