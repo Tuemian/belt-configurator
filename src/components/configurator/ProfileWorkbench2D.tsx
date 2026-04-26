@@ -363,7 +363,7 @@ export function ProfileWorkbench2D({
 
             {tool === 'hole' && (
               <Select value={holeType} onValueChange={(v) => setHoleType(v as ProfileHole['type'])}>
-                <SelectTrigger className="h-7 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-full sm:w-[200px] text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {HOLE_TYPES.map((t) => (
                     <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
@@ -373,7 +373,7 @@ export function ProfileWorkbench2D({
             )}
             {tool === 'connector' && (
               <Select value={connType} onValueChange={(v) => setConnType(v as ConnectorType)}>
-                <SelectTrigger className="h-7 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-full sm:w-[200px] text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CONNECTOR_TYPES.map((t) => (
                     <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
