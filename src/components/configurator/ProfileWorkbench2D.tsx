@@ -317,10 +317,7 @@ export function ProfileWorkbench2D({
   const cutE = faceDepth * tanE;
   const profilePath = `M 0 ${faceDepth} L ${length} ${faceDepth} L ${length - cutE} 0 L ${cutS} 0 Z`;
 
-  const slotGuides: number[] = [];
-  for (let i = 0; i < numModulesOnFace; i++) {
-    slotGuides.push(MODULE * (i + 0.5));
-  }
+  const slotGuides: number[] = slotCenters;
 
   const showConnectorMagnets = tool === 'connector' || draggingId !== null;
 
