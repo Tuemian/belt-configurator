@@ -74,8 +74,13 @@ export interface ProfileConnector {
   /** Entweder 'start' oder 'end' – Verbinder sitzen nur an Profilenden */
   end: 'start' | 'end';
   slot: SlotId;
+  /** Bei Multi-Modul-Profilen: Spur-Index (0..n-1). Default 0. */
+  moduleIndex?: number;
   label: string;
 }
+
+/** Auswahl, wo das Stirnseiten-Gewinde sitzen soll. */
+export type EndThreadScope = 'all' | 'center' | SlotId;
 
 export interface EndTreatment {
   thread: boolean;
