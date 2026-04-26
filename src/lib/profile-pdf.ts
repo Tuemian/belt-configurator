@@ -674,26 +674,83 @@ function drawPriceBreakdown(
 // Header / Footer / Helpers
 // ---------------------------------------------------------------------------
 
-function drawHeader(doc: jsPDF, title: string) {
-  setFill(doc, BRAND);
-  doc.rect(0, 0, PAGE_W, 22, 'F');
-  setText(doc, { r: 255, g: 255, b: 255 }, 14, 'bold');
-  doc.text('NOVAMOTIS', MARGIN, 10);
-  setText(doc, { r: 200, g: 220, b: 245 }, 7.5, 'normal');
-  doc.text('Profilzuschnitte · Konfigurator', MARGIN, 15);
-  setText(doc, { r: 255, g: 255, b: 255 }, 11, 'bold');
-  doc.text(title, PAGE_W - MARGIN, 12, { align: 'right' });
-  setText(doc, { r: 200, g: 220, b: 245 }, 7, 'normal');
-  doc.text('www.novamotis.com', PAGE_W - MARGIN, 17, { align: 'right' });
+function drawHeader(doc: jsPDF, headerImg: CachedImage | null, title: string, subtitle?: string): number {
+  let headerHeight: number;
+  if (headerImg) {
+    headerHeight = PAGE_W * (headerImg.height / headerImg.width);
+    try {
+      doc.addImage(headerImg.dataUrl, 'PNG', 0, 0, PAGE_W, headerHeight, undefined, 'FAST');
+    } catch {
+      headerHeight = 22;
+      setFill(doc, BRAND);
+      doc.rect(0, 0, PAGE_W, headerHeight, 'F');
+    }
+  } else {
+    headerHeight = 22;
+    setFill(doc, BRAND);
+    doc.rect(0, 0, PAGE_W, headerHeight, 'F');
+    setText(doc, { r: 255, g: 255, b: 255 }, 14, 'bold');
+    doc.text('NOVAMOTIS', MARGIN, 12);
+  }
+
+  // Divider line
+  setStroke(doc, BORDER_GRAY);
+  doc.setLineWidth(0.4);
+  doc.line(0, headerHeight, PAGE_W, headerHeight);
+
+  // Title block (below the header image)
+  const titleY = headerHeight + 10;
+  setText(doc, BRAND, 18, 'bold');
+  doc.text(title, MARGIN, titleY);
+
+  setText(doc, BRAND_GRAY, 9, 'normal');
+  doc.text(new Date().toLocaleDateString('de-DE'), PAGE_W - MARGIN, titleY - 4, { align: 'right' });
+
+  let bodyY = titleY + 5;
+  if (subtitle) {
+    setText(doc, BRAND_GRAY, 9.5, 'normal');
+    doc.text(subtitle, MARGIN, bodyY);
+    bodyY += 5;
+  }
+  setStroke(doc, BORDER_GRAY);
+  doc.setLineWidth(0.4);
+  doc.line(MARGIN, bodyY + 2, PAGE_W - MARGIN, bodyY + 2);
+  return bodyY + 8;
 }
 
-function drawFooter(doc: jsPDF, page: number, totalPages: number) {
-  setStroke(doc, SLATE_200);
+function drawFooter(doc: jsPDF, footerImg: CachedImage | null, page: number, totalPages: number) {
+  const footerHeight = 21;
+  const footerY = PAGE_H - footerHeight;
+
+  if (footerImg) {
+    try {
+      doc.addImage(footerImg.dataUrl, 'PNG', 0, footerY, PAGE_W, footerHeight, undefined, 'FAST');
+    } catch {
+      setFill(doc, { r: 247, g: 249, b: 252 });
+      doc.rect(0, footerY, PAGE_W, footerHeight, 'F');
+    }
+  } else {
+    setFill(doc, { r: 247, g: 249, b: 252 });
+    doc.rect(0, footerY, PAGE_W, footerHeight, 'F');
+  }
+
+  setStroke(doc, { r: 220, g: 225, b: 232 });
   doc.setLineWidth(0.2);
-  doc.line(MARGIN, PAGE_H - 12, PAGE_W - MARGIN, PAGE_H - 12);
-  setText(doc, SLATE_500, 7, 'normal');
-  doc.text('NOVAMOTIS GmbH · office@novamotis.com · www.novamotis.com', MARGIN, PAGE_H - 7);
-  doc.text(`Seite ${page} / ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' });
+  doc.line(0, footerY, PAGE_W, footerY);
+
+  setText(doc, { r: 57, g: 63, b: 70 }, 6.2, 'normal');
+  const contentWidth = PAGE_W - MARGIN * 2;
+  const columnGap = 6;
+  const columnWidth = (contentWidth - columnGap * 2) / 3;
+  const columnsX = [MARGIN, MARGIN + columnWidth + columnGap, MARGIN + columnWidth * 2 + columnGap * 2];
+  const columnsY = footerY + 6.8;
+  FOOTER_TEXT_COLUMNS.forEach((lines, index) => {
+    const wrapped = lines.flatMap((line) => doc.splitTextToSize(line, columnWidth) as string[]);
+    doc.text(wrapped, columnsX[index], columnsY, { lineHeightFactor: 1.12 });
+  });
+
+  setText(doc, BRAND_GRAY, 7, 'bold');
+  doc.text(`Seite ${page} / ${totalPages}`, PAGE_W - MARGIN, footerY - 2, { align: 'right' });
 }
 
 function setText(doc: jsPDF, color: { r: number; g: number; b: number }, size: number, style: 'normal' | 'bold' | 'italic') {
