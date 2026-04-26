@@ -571,9 +571,9 @@ export function ProfileWorkbench2D({
             />
           </div>
 
-          {/* Overlap warning */}
+          {/* Overlap warning – links oben, wo früher der Querschnitt war */}
           {overlapWarning && (
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
+            <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
               <AlertTriangle className="h-3 w-3" />
               Bohrungen überlappen
             </div>
