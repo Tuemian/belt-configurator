@@ -625,6 +625,20 @@ export function ProfileWorkbench2D({
             Shift-Klick = mehrere Nuten
           </div>
         </div>
+
+        {/* Bulk-Eingabe-Dialog */}
+        <BulkHolesDialog
+          open={listDialogOpen}
+          onOpenChange={setListDialogOpen}
+          section={section}
+          length={length}
+          activeKey={activeKey}
+          defaultType={holeType}
+          onApply={(newHoles) => {
+            onUpdateHoles([...holes, ...newHoles]);
+            setListDialogOpen(false);
+          }}
+        />
       </div>
     </TooltipProvider>
   );
