@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,13 +15,16 @@ import {
   getSlotCenters,
   getAllSlots,
   getSlotNumber,
+  getBoreCounts,
+  getBoreNumber,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
   type ConnectorType,
   type SlotId,
+  type EndTreatment,
 } from '@/lib/profile-configurator-types';
-import { ProfileCrossSection2D } from './ProfileCrossSection2D';
+import { ProfileCrossSection2D, slotKey } from './ProfileCrossSection2D';
 import { NumericInput } from './NumericInput';
 
 // ---------------------------------------------------------------------------
