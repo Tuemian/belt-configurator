@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@shared": path.resolve(__dirname, "./shared"),
+      "@configurators/belt-conveyor": path.resolve(__dirname, "./configurators/belt-conveyor/src"),
+      "@configurators/cutting": path.resolve(__dirname, "./configurators/cutting/src"),
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },

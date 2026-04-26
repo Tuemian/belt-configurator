@@ -5,9 +5,10 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"],
+      "@configurators/belt-conveyor/*": ["./configurators/belt-conveyor/src/*"],
+      "@configurators/cutting/*": ["./configurators/cutting/src/*"]
     },
     "skipLibCheck": true,
     "strictNullChecks": false

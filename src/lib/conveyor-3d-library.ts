@@ -25,6 +25,7 @@ export interface ModelAssetDefinition {
   url: string;
   rotation?: Vec3;
   rotationDeg?: Vec3;
+  localRotation?: Vec3;
   scale?: Vec3;
 }
 
@@ -417,6 +418,16 @@ function rotateAroundLocalYAxis(rotation: Vec3 | undefined, angleRad: number): V
   return [finalEuler.x, finalEuler.y, finalEuler.z];
 }
 
+function rotateAroundLocalXAxis(rotation: Vec3 | undefined, angleRad: number): Vec3 {
+  const [x, y, z] = rotation ?? [0, 0, 0];
+  const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+  const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleRad);
+  const finalQuat = baseQuat.clone().multiply(localQuat);
+  const finalEuler = new THREE.Euler().setFromQuaternion(finalQuat, 'XYZ');
+
+  return [finalEuler.x, finalEuler.y, finalEuler.z];
+}
+
 function combineRotations(base: Vec3, delta: Vec3): Vec3 {
   const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(base[0], base[1], base[2], 'XYZ'));
   const deltaQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(delta[0], delta[1], delta[2], 'XYZ'));
@@ -599,10 +610,10 @@ export function resolveConveyor3DAssets(
       : (config.motorAngle + 270) % 360;
     const directAngleRad = directAngleDeg * (Math.PI / 180);
     const baseRot = variant.rotation ?? [0, 0, 0];
-    const rotated = rotateAroundConveyorAxis(baseRot, directAngleRad);
-    const finalRot = config.motorPosition === 'right'
-      ? rotateAroundLocalYAxis(rotated, Math.PI)
-      : rotated;
+    const localBaseRot = config.motorPosition === 'right'
+      ? rotateAroundLocalXAxis(baseRot, Math.PI)
+      : baseRot;
+    const finalRot = rotateAroundConveyorAxis(localBaseRot, directAngleRad);
     resolved.motor = {
       url: variant.url,
       position: [
@@ -624,7 +635,7 @@ export function resolveConveyor3DAssets(
     const motorScale = motorVariant.scale ?? [1, 1, 1];
     const snappedAngle = snapIndirectMotorAngle(config.motorAngle, config.motorPosition);
     const indirectAngleDeg = config.motorPosition === 'right'
-      ? (90 - snappedAngle + 360) % 360
+      ? (270 - snappedAngle + 360) % 360
       : (snappedAngle + 270) % 360;
     const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
     const baseX = measurements.beltLength / 2 - measurements.motorWidth * 0.3;

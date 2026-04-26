@@ -1,6 +1,23 @@
-# Welcome to your Lovable project
+# ConfigNovi - Modular NOVAMOTIS Configuration Platform
 
-TODO: Document your project here
+> **v1.0.0**: Project restructured into modular architecture for scalability and maintainability.
+
+## 📋 New Project Structure
+
+```
+ConfigNovi/
+├── src/                    ← Main application (pages, routing, App wrapper)
+├── configurators/          ← Module templates (belt-conveyor/ is reference implementation)
+├── shared/                 ← Shared module templates (for future extraction)
+├── public/                 ← Models, pricing, static assets
+└── package.json            ← "confignovi" @ v1.0.0
+```
+
+**Key Improvement**: New configurators can now be added to `configurators/[name]/` independently, with modular imports via `@configurators/[name]` alias.
+
+**Available Modules**:
+- ✅ `configurators/belt-conveyor/` – Belt Conveyor Configurator (implemented reference)
+- 📦 `configurators/cutting/` – Cutting/Trimming Configurator (template ready for implementation)
 
 ## STEP Export
 

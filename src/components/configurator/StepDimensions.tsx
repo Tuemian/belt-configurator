@@ -173,6 +173,8 @@ function FieldInfoHint({ text }: { text: string }) {
 
 export const StepDimensions = ({ config, onChange, lang }: Props) => {
   const [dismissedStandardHintFor, setDismissedStandardHintFor] = useState<number | null>(null);
+  const [sideGuideInput, setSideGuideInput] = useState<string>(String(config.sideGuideHeight));
+  useEffect(() => { setSideGuideInput(String(config.sideGuideHeight)); }, [config.sideGuideHeight]);
   const frameWidthIndex = ALLOWED_FRAME_WIDTHS.findIndex((v) => v === config.frameWidth);
   const selectedFrameWidthIndex = frameWidthIndex === -1 ? 0 : frameWidthIndex;
   const minLengthFromWidth = Math.max(MIN_BELT_LENGTH, Math.ceil(config.frameWidth * 1.5));
@@ -305,7 +307,7 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
           <div className="flex items-center gap-4">
             <Slider
               value={[config.sideGuideHeight]}
-              onValueChange={([v]) => onChange({ sideGuideHeight: snapSideGuide(v) })}
+              onValueChange={([v]) => { const snapped = snapSideGuide(v); setSideGuideInput(String(snapped)); onChange({ sideGuideHeight: snapped }); }}
               min={SIDE_GUIDE_MIN}
               max={SIDE_GUIDE_MAX}
               step={1}
@@ -314,11 +316,13 @@ export const StepDimensions = ({ config, onChange, lang }: Props) => {
             <div className="flex min-w-[100px] items-center gap-1">
               <Input
                 type="number"
-                value={config.sideGuideHeight}
+                value={sideGuideInput}
                 min={SIDE_GUIDE_MIN}
                 max={SIDE_GUIDE_MAX}
                 step={1}
-                onChange={(e) => onChange({ sideGuideHeight: snapSideGuide(Number(e.target.value)) })}
+                onChange={(e) => setSideGuideInput(e.target.value)}
+                onBlur={() => { const snapped = snapSideGuide(Number(sideGuideInput)); setSideGuideInput(String(snapped)); onChange({ sideGuideHeight: snapped }); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { const snapped = snapSideGuide(Number(sideGuideInput)); setSideGuideInput(String(snapped)); onChange({ sideGuideHeight: snapped }); } }}
                 className="h-9 w-20 text-right"
               />
               <span className="text-sm text-muted-foreground">mm</span>

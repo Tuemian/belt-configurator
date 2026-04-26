@@ -407,12 +407,13 @@ function ExternalAsset({ asset, fallback }: { asset?: ModelPlacement; fallback: 
   }
 
   return (
-    <primitive
-      object={clonedScene}
-      position={asset.position}
-      rotation={asset.rotation ?? [0, 0, 0]}
-      scale={asset.scale ?? [1, 1, 1]}
-    />
+    <group position={asset.position} rotation={asset.rotation ?? [0, 0, 0]}>
+      <primitive
+        object={clonedScene}
+        rotation={asset.localRotation ?? [0, 0, 0]}
+        scale={asset.scale ?? [1, 1, 1]}
+      />
+    </group>
   );
 }
 
@@ -620,7 +621,7 @@ function ParametricDirectMotor({
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
   const directAngleDeg = motorPosition === 'right'
-    ? (270 - motorAngle + 180) % 360
+    ? (270 - motorAngle + 360) % 360
     : (motorAngle + 270) % 360;
   const directAngleRad = directAngleDeg * (Math.PI / 180);
 
@@ -690,7 +691,7 @@ function ParametricIndirectMotor({
   }, allowedAngles[0]);
   const side = motorPosition === 'left' ? -1 : 1;
   const indirectAngleDeg = motorPosition === 'right'
-    ? (90 - snappedAngle + 360) % 360
+    ? (270 - snappedAngle + 360) % 360
     : (snappedAngle + 270) % 360;
   const indirectAngleRad = indirectAngleDeg * (Math.PI / 180);
   const effectiveAngleRad = centerMounted ? 0 : indirectAngleRad;
