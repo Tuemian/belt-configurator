@@ -173,21 +173,29 @@ export function ProfileCrossSection2D({
                 onClick={clickable ? (e) => { e.stopPropagation(); onSelectBore!(num); } : undefined}
                 style={{ cursor: clickable ? 'pointer' : 'default' }}
               >
-                <circle cx={cx} cy={cy} r={boreRadius} fill={isActiveBore ? '#fde68a' : '#f1f5f9'} stroke={isActiveBore ? '#b78628' : '#94a3b8'} strokeWidth={isActiveBore ? 0.6 : 0.3} />
-                {showLabels && (
+                <circle cx={cx} cy={cy} r={boreRadius} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={0.3} />
+                {showLabels && !isActiveBore && (
                   <>
-                    <circle cx={cx} cy={cy} r={lblR} fill="white" stroke={isActiveBore ? '#b78628' : '#1d4ed8'} strokeWidth="0.4" opacity="0.95" />
+                    <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#1d4ed8" strokeWidth="0.4" opacity="0.95" />
                     <text
                       x={cx}
                       y={cy + boreFs * 0.36}
                       textAnchor="middle"
                       fontSize={boreFs}
                       fontWeight="700"
-                      fill={isActiveBore ? '#b78628' : '#1d4ed8'}
+                      fill="#1d4ed8"
                       fontFamily="ui-sans-serif, system-ui"
                     >
                       {num}
                     </text>
+                  </>
+                )}
+                {showLabels && isActiveBore && (
+                  <>
+                    {/* X-Markierung für aktives Gewinde */}
+                    <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#dc2626" strokeWidth="0.6" />
+                    <line x1={cx - lblR * 0.6} y1={cy - lblR * 0.6} x2={cx + lblR * 0.6} y2={cy + lblR * 0.6} stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round" />
+                    <line x1={cx + lblR * 0.6} y1={cy - lblR * 0.6} x2={cx - lblR * 0.6} y2={cy + lblR * 0.6} stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round" />
                   </>
                 )}
               </g>
