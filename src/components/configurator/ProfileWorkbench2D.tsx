@@ -759,20 +759,21 @@ function SideRow({
             </linearGradient>
           </defs>
 
-          {/* Ruler */}
+          {/* Ruler — gespiegelt: 0 (Anfang) ist rechts, length (Ende) ist links */}
           <g transform={`translate(${PAD_X}, ${PAD_Y})`}>
             <line x1="0" y1={RULER_H} x2={length} y2={RULER_H} stroke="#64748b" strokeWidth="0.6" />
             {ticks.map((tk, i) => (
               <g key={i}>
-                <line x1={tk.z} y1={tk.major ? RULER_H - 6 : RULER_H - 3} x2={tk.z} y2={RULER_H} stroke="#64748b" strokeWidth={tk.major ? 0.8 : 0.4} />
+                <line x1={dx(tk.z)} y1={tk.major ? RULER_H - 6 : RULER_H - 3} x2={dx(tk.z)} y2={RULER_H} stroke="#64748b" strokeWidth={tk.major ? 0.8 : 0.4} />
                 {tk.label !== null && (
-                  <text x={tk.z} y={RULER_H - 8} textAnchor="middle" fontSize="8" fill="#475569" fontFamily="ui-monospace, monospace">
+                  <text x={dx(tk.z)} y={RULER_H - 8} textAnchor="middle" fontSize="8" fill="#475569" fontFamily="ui-monospace, monospace">
                     {tk.label}
                   </text>
                 )}
               </g>
             ))}
           </g>
+
 
           {/* Profile body */}
           <g transform={`translate(${PAD_X}, 0)`}>
