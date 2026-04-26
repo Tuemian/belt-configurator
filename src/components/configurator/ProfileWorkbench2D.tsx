@@ -442,7 +442,10 @@ export function ProfileWorkbench2D({
               </div>
             )}
 
-            <div style={{ width: `${zoom * 100}%`, minWidth: '100%' }} className="space-y-2">
+            <div
+              style={detailView ? { minWidth: `${Math.max(800, length * 0.6 + 80)}px` } : undefined}
+              className="space-y-2"
+            >
             {sideRows.map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
