@@ -26,23 +26,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       input: "./index.html",
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) {
-            return;
-          }
-          if (id.includes("three") || id.includes("@react-three")) {
-            return "three-vendor";
-          }
-          if (id.includes("react") || id.includes("react-dom") || id.includes("react-router")) {
-            return "react-vendor";
-          }
-          if (id.includes("jspdf") || id.includes("html2canvas") || id.includes("xlsx") || id.includes("pdfjs-dist")) {
-            return "docs-vendor";
-          }
-          return "vendor";
-        },
-      },
+      output: {},
     },
   },
 }));
