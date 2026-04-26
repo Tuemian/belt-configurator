@@ -537,18 +537,36 @@ export function ProfileWorkbench2D({
 
         {/* SVG stage */}
         <div className="flex-1 relative overflow-auto bg-gradient-to-br from-slate-50 to-slate-100">
-          {/* Mini cross-section overlay */}
+          {/* Mini cross-section overlay (multi-select aware, rotated for tall profiles) */}
           <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
             <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 text-center">
-              Querschnitt
+              Querschnitt {section.h > section.w && '(↻90°)'}
             </div>
             <ProfileCrossSection2D
               section={section}
               activeSlot={activeSlot}
               activeModuleIndex={activeModuleIndex}
-              onSelectSlot={(s, mi) => { setActiveSlot(s); setActiveModuleIndex(mi); setSelectedId(null); }}
-              size={108}
+              selectedKeys={
+                multiSelected.size > 0
+                  ? new Set([...multiSelected, slotKey(activeSlot, activeModuleIndex)])
+                  : undefined
+              }
+              onSelectSlot={(s, mi, additive) => {
+                if (additive) {
+                  setMultiSelected((prev) => {
+                    const k = slotKey(s, mi);
+                    if (s === activeSlot && mi === activeModuleIndex) return prev;
+                    const next = new Set(prev);
+                    if (next.has(k)) next.delete(k); else next.add(k);
+                    return next;
+                  });
+                } else {
+                  setActiveSlot(s); setActiveModuleIndex(mi); setMultiSelected(new Set()); setSelectedId(null);
+                }
+              }}
+              size={120}
               showLabels
+              rotate90={section.h > section.w}
             />
           </div>
 
@@ -558,6 +576,20 @@ export function ProfileWorkbench2D({
               <AlertTriangle className="h-3 w-3" />
               Bohrungen überlappen
             </div>
+          )}
+
+          {/* Stirnseiten-Großansicht (Kernzug-Auswahl) */}
+          {endFaceMode && (
+            <EndFaceOverlay
+              section={section}
+              endLabel={endFaceMode === 'start' ? 'Anfang' : 'Ende'}
+              treatment={endFaceMode === 'start' ? endStart : endEnd}
+              onChange={(t) => {
+                if (endFaceMode === 'start') onUpdateEndStart?.(t);
+                else onUpdateEndEnd?.(t);
+              }}
+              onClose={() => setEndFaceMode(null)}
+            />
           )}
 
           <svg
