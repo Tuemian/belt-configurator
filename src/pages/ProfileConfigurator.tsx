@@ -34,8 +34,8 @@ const DEFAULT_CONFIG: ProfileConfig = {
   length: 500,
   angleStart: 0,
   angleEnd: 0,
-  endStart: { thread: false, coreHole: false },
-  endEnd: { thread: false, coreHole: false },
+  endStart: { thread: false },
+  endEnd: { thread: false },
   holes: [],
   connectors: [],
   quantity: 1,
@@ -348,14 +348,6 @@ export default function ProfileConfigurator() {
                           />
                           Gewinde M8
                           {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-foreground">
-                          <Checkbox
-                            checked={val.coreHole}
-                            onCheckedChange={(v) => update({ [endKey]: { ...val, coreHole: !!v } })}
-                          />
-                          Kernloch
-                          {val.coreHole && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
                         </label>
                       </div>
                     </div>
