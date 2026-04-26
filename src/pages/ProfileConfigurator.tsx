@@ -1,6 +1,6 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -19,15 +19,11 @@ import {
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
-  // getAllSlots / SLOT_SIDE_DE: nicht mehr in der Sidebar gebraucht (Kernzug-Auswahl per Klick im Overlay)
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
 } from '@/lib/profile-configurator-types';
 
-const ProfileViewer3D = lazy(() =>
-  import('@/components/configurator/ProfileViewer3D').then((m) => ({ default: m.ProfileViewer3D }))
-);
 
 // ---------------------------------------------------------------------------
 // Default config
@@ -82,7 +78,6 @@ export default function ProfileConfigurator() {
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [show3D, setShow3D] = useState(true);
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
@@ -284,47 +279,37 @@ export default function ProfileConfigurator() {
             <div>
               <SectionDivider label="Schrägschnitte" />
               <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Pro Stirnseite separat aktivierbar. Winkel 0–45°.
+                Winkel 0° = gerader Schnitt. Bereich 0–45° pro Stirnseite.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-4">
                 {(['Anfang', 'Ende'] as const).map((end) => {
                   const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
                   const val = config[key];
-                  const enabled = val !== 0;
                   return (
                     <div key={end} className="space-y-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                          checked={enabled}
-                          onCheckedChange={(v) => {
-                            // Beim Aktivieren: Default 15°. Beim Deaktivieren: zurück auf 0.
-                            update({ [key]: v ? 15 : 0 });
-                          }}
-                        />
+                      <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-foreground">{end}</span>
-                      </label>
-                      {enabled && (
-                        <>
-                          <div className="flex items-center gap-1">
-                            <NumericInput
-                              min={0}
-                              max={45}
-                              step={1}
-                              value={val}
-                              onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
-                              className="h-8 w-16 text-right text-sm"
-                            />
-                            <span className="text-muted-foreground text-xs">°</span>
-                          </div>
-                          <Slider
+                        <div className="flex items-center gap-1">
+                          <NumericInput
                             min={0}
                             max={45}
                             step={1}
-                            value={[val]}
-                            onValueChange={([v]) => update({ [key]: v })}
+                            value={val}
+                            onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
+                            className="h-8 w-16 text-right text-sm"
                           />
-                          <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
-                        </>
+                          <span className="text-muted-foreground text-xs">°</span>
+                        </div>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={45}
+                        step={1}
+                        value={[val]}
+                        onValueChange={([v]) => update({ [key]: v })}
+                      />
+                      {val > 0 && (
+                        <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
                       )}
                     </div>
                   );
@@ -336,7 +321,7 @@ export default function ProfileConfigurator() {
             <div>
               <SectionDivider label="Stirnseitenbearbeitung" />
               <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Klicke in der 2D-Werkbank auf <span className="font-medium text-foreground">„Stirn Anfang"</span> bzw. <span className="font-medium text-foreground">„Stirn Ende"</span>, um Kernzug-Gewinde direkt auf den blauen Nummern auszuwählen.
+                Die Stirnseiten Anfang/Ende werden rechts neben der Profilansicht permanent angezeigt. Klick auf einen Kernzug setzt dort ein M8-Gewinde (markiert mit ×).
               </p>
               <div className="mt-3 space-y-2">
                 {(['endStart', 'endEnd'] as const).map((endKey) => {
@@ -436,39 +421,6 @@ export default function ProfileConfigurator() {
             />
           </div>
 
-          {/* Collapsible 3D preview */}
-          <div className={`border-t border-slate-200 bg-white transition-all duration-300 ${show3D ? 'h-[280px]' : 'h-9'} shrink-0 flex flex-col`}>
-            <button
-              onClick={() => setShow3D((v) => !v)}
-              className="flex items-center justify-between px-4 h-9 text-xs font-medium text-muted-foreground hover:text-foreground border-b border-slate-100"
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wider">3D-Vorschau</span>
-                <span className="text-[10px] text-muted-foreground/60">{section.label} · {config.length} mm</span>
-              </span>
-              {show3D ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-            </button>
-            {show3D && (
-              <div className="flex-1 min-h-0">
-                <Suspense
-                  fallback={
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
-                      3D-Ansicht wird geladen…
-                    </div>
-                  }
-                >
-                  <ProfileViewer3D
-                    section={section}
-                    length={config.length}
-                    angleStart={config.angleStart}
-                    angleEnd={config.angleEnd}
-                    holes={config.holes}
-                    connectors={config.connectors}
-                  />
-                </Suspense>
-              </div>
-            )}
-          </div>
 
 
           {/* Price bar */}

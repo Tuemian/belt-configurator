@@ -54,8 +54,9 @@ const PANEL_FILL  = { r: 255, g: 255, b: 255 };
 
 const FOOTER_TEXT_COLUMNS = [
   ['Erste Bank und Sparkasse', 'BIC/SWIFT: DOSPAT2DXXX', 'IBAN: AT10 2060 2000 0068 0215'],
-  ['Gerichtsstand: Landesgericht Feldkirch', 'Firmenbuchnummer: FN 669496 d', 'UID-Nummer: ATU82899035'],
-  ['Geschaeftsfuehrung:', 'Simon Martin, Slovyana Votchyna', 'M: office@novamotis.com', 'W: www.novamotis.com'],
+  ['Gerichtsstand: LG Feldkirch', 'Firmenbuch: FN 669496 d', 'UID: ATU82899035'],
+  ['Geschäftsführung:', 'Simon Martin', 'Slovyana Votchyna'],
+  ['Kontakt:', 'office@novamotis.com', 'www.novamotis.com'],
 ] as const;
 
 const fmtEur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
@@ -338,7 +339,7 @@ function drawProfilePage(
   }
 
   // Price breakdown
-  drawPriceBreakdown(doc, item.price, MARGIN, PAGE_H - 38, drawAreaW);
+  drawPriceBreakdown(doc, item.price, MARGIN, PAGE_H - 56, drawAreaW);
 
   drawFooter(doc, footerImg, posIndex + 1, totalPages);
 }
@@ -379,7 +380,7 @@ function drawCrossSection(
   const r = Math.min(2, s.cornerR * scale);
   doc.roundedRect(ox, oy, profileW, profileH, r, r, 'FD');
 
-  // Center bores per module (mit blauer Alvaris-Nummerierung in Kreisen)
+  // Center bores per module (mit blauer Nummerierung in Kreisen)
   const MODULE = getModulePitch(s);
   const numW = Math.max(1, Math.round(s.w / MODULE));
   const numH = Math.max(1, Math.round(s.h / MODULE));
@@ -415,7 +416,7 @@ function drawCrossSection(
     doc.rect(ox + profileW - slotD, cy - slotW / 2, slotD, slotW, 'F'); // B
   }
 
-  // Rote Alvaris-Nutnummern an jeder Nut
+  // Rote Nutnummern an jeder Nut
   setText(doc, { r: 220, g: 38, b: 38 }, 4.5, 'bold');
   // A (oben, links→rechts)
   for (let i = 0; i < numW; i++) {
@@ -622,13 +623,13 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSectio
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
   doc.text('Ø', x + 70, y);
-  doc.text('NUT (ALVARIS)', x + 90, y);
+  doc.text('NUT', x + 90, y);
   doc.text('POSITION', x + 130, y);
   doc.text('VOM ENDE', x + 162, y);
   y += 3;
 
   holes.forEach((h, idx) => {
-    if (y > PAGE_H - 50) return; // keep room for price
+    if (y > PAGE_H - 68) return; // keep room for price
     if (idx % 2 === 1) {
       setFill(doc, SLATE_50);
       doc.rect(x - 1, y - 3.2, w + 2, 5, 'F');
@@ -656,12 +657,12 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section
   setText(doc, SLATE_500, 7, 'bold');
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
-  doc.text('NUT (ALVARIS)', x + 96, y);
+  doc.text('NUT', x + 96, y);
   doc.text('POSITION', x + 140, y);
   y += 3;
 
   connectors.forEach((c, idx) => {
-    if (y > PAGE_H - 50) return;
+    if (y > PAGE_H - 68) return;
     if (idx % 2 === 1) {
       setFill(doc, SLATE_50);
       doc.rect(x - 1, y - 3.2, w + 2, 5, 'F');
@@ -752,7 +753,7 @@ function drawHeader(doc: jsPDF, headerImg: CachedImage | null, title: string, su
 }
 
 function drawFooter(doc: jsPDF, footerImg: CachedImage | null, page: number, totalPages: number) {
-  const footerHeight = 21;
+  const footerHeight = 30;
   const footerY = PAGE_H - footerHeight;
 
   if (footerImg) {
@@ -771,19 +772,22 @@ function drawFooter(doc: jsPDF, footerImg: CachedImage | null, page: number, tot
   doc.setLineWidth(0.2);
   doc.line(0, footerY, PAGE_W, footerY);
 
-  setText(doc, { r: 57, g: 63, b: 70 }, 6.2, 'normal');
-  const contentWidth = PAGE_W - MARGIN * 2;
-  const columnGap = 6;
-  const columnWidth = (contentWidth - columnGap * 2) / 3;
-  const columnsX = [MARGIN, MARGIN + columnWidth + columnGap, MARGIN + columnWidth * 2 + columnGap * 2];
-  const columnsY = footerY + 6.8;
+  // 4 columns, kleinere Schrift, mehr Innenabstand
+  setText(doc, { r: 57, g: 63, b: 70 }, 5.6, 'normal');
+  const innerPad = 12;
+  const contentWidth = PAGE_W - innerPad * 2;
+  const columnGap = 4;
+  const numColumns = FOOTER_TEXT_COLUMNS.length;
+  const columnWidth = (contentWidth - columnGap * (numColumns - 1)) / numColumns;
+  const columnsY = footerY + 5;
   FOOTER_TEXT_COLUMNS.forEach((lines, index) => {
     const wrapped = lines.flatMap((line) => doc.splitTextToSize(line, columnWidth) as string[]);
-    doc.text(wrapped, columnsX[index], columnsY, { lineHeightFactor: 1.12 });
+    doc.text(wrapped, innerPad + index * (columnWidth + columnGap), columnsY, { lineHeightFactor: 1.05 });
   });
 
-  setText(doc, BRAND_GRAY, 7, 'bold');
-  doc.text(`Seite ${page} / ${totalPages}`, PAGE_W - MARGIN, footerY - 2, { align: 'right' });
+  // Seitenzahl unten zentriert
+  setText(doc, BRAND_GRAY, 6.5, 'bold');
+  doc.text(`Seite ${page} / ${totalPages}`, PAGE_W / 2, PAGE_H - 2.5, { align: 'center' });
 }
 
 function setText(doc: jsPDF, color: { r: number; g: number; b: number }, size: number, style: 'normal' | 'bold' | 'italic') {
