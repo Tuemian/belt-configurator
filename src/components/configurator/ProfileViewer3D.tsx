@@ -62,10 +62,11 @@ function addSlotLeft(s: THREE.Shape, xf: number, cy: number, sw: number, gw: num
 
 function buildProfileShape(section: ProfileSection): THREE.Shape {
   const { w, h, slotWidth: sw, slotDepth: sd, grooveWidth: gw, cornerR, boreRadius, webThickness: wt } = section;
+  const PITCH = getModulePitch(section);
   const hw = w / 2;
   const hh = h / 2;
-  const numW = Math.round(w / MODULE);
-  const numH = Math.round(h / MODULE);
+  const numW = Math.max(1, Math.round(w / PITCH));
+  const numH = Math.max(1, Math.round(h / PITCH));
 
   // Outer rounded rectangle (CCW)
   const shape = new THREE.Shape();
