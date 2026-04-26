@@ -231,10 +231,24 @@ export function getFaceWidth(section: ProfileSection, slot: SlotId): number {
   return slot === 'A' || slot === 'C' ? section.w : section.h;
 }
 
+/** Rastermaß / Modulteilung in mm — 30 für 30er-Reihe, sonst 40 */
+export function getModulePitch(section: ProfileSection): number {
+  return section.modulePitch ?? 40;
+}
+
 /** Bei Mehrfach-Modul-Profilen (z. B. 80×40) liegen mehrere Nuten parallel */
 export function getSlotCountPerFace(section: ProfileSection, slot: SlotId): number {
   const visibleWidth = getFaceWidth(section, slot);
-  return Math.max(1, Math.round(visibleWidth / 40));
+  const pitch = getModulePitch(section);
+  return Math.max(1, Math.round(visibleWidth / pitch));
+}
+
+/** Y-Mitten der Nuten (mm) entlang der sichtbaren Frontalansicht */
+export function getSlotCenters(section: ProfileSection, slot: SlotId): number[] {
+  const fw = getFaceWidth(section, slot);
+  const pitch = getModulePitch(section);
+  const n = Math.max(1, Math.round(fw / pitch));
+  return Array.from({ length: n }, (_, i) => pitch * (i + 0.5));
 }
 
 // ---------------------------------------------------------------------------
