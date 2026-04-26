@@ -321,7 +321,7 @@ export default function ProfileConfigurator() {
             <div>
               <SectionDivider label="Stirnseitenbearbeitung" />
               <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Klicke in der 2D-Werkbank auf <span className="font-medium text-foreground">„Stirn Anfang"</span> bzw. <span className="font-medium text-foreground">„Stirn Ende"</span>, um Kernzug-Gewinde direkt auf den blauen Nummern auszuwählen.
+                Die Stirnseiten Anfang/Ende werden rechts neben der Profilansicht permanent angezeigt. Klick auf einen Kernzug setzt dort ein M8-Gewinde (markiert mit ×).
               </p>
               <div className="mt-3 space-y-2">
                 {(['endStart', 'endEnd'] as const).map((endKey) => {
