@@ -25,6 +25,8 @@ interface Props {
   showLabels?: boolean;
   /** Querschnitt um 90° im Uhrzeigersinn drehen (kompakter wenn Profil hoch ist) */
   rotate90?: boolean;
+  /** Seitenkürzel A/B/C/D außen am Profil anzeigen */
+  showSideLabels?: boolean;
 }
 
 export function slotKey(slot: SlotId, moduleIndex: number) {
