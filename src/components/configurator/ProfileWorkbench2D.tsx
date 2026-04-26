@@ -659,19 +659,24 @@ function SideRow({
   const VB_W = length + PAD_X * 2;
   const VB_H = PAD_Y * 2 + RULER_H + ROW_PIX_HEIGHT;
 
-  // Schrägschnitt
+  // EU 1st-angle Konvention: Anfang (z=0) zeigt RECHTS, Ende (z=length) zeigt LINKS.
+  // dx() bildet eine z-Position (mm) auf die Display-X-Koordinate ab.
+  const dx = useCallback((z: number) => length - z, [length]);
+
+  // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const cutS = ROW_PIX_HEIGHT * tanS;
   const cutE = ROW_PIX_HEIGHT * tanE;
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
-  const profilePath = `M ${cutS} ${top} L ${length - cutE} ${top} L ${length} ${bot} L 0 ${bot} Z`;
+  // links = Ende, rechts = Anfang. Schräge oben: links cutE rein, rechts cutS rein.
+  const profilePath = `M ${cutE} ${top} L ${length - cutS} ${top} L ${length} ${bot} L 0 ${bot} Z`;
 
   // y-Position der Nut-Mitte je Lane (oberste Lane = Lane 0)
   const laneCy = (laneIdx: number) => top + LANE_PIX_HEIGHT * (laneIdx + 0.5);
 
-  // Mausmapping → (moduleIndex, zMm)
+  // Mausmapping → (moduleIndex, zMm). Beachte X-Spiegelung.
   const screenToLocal = useCallback((clientX: number, clientY: number): { mi: number; z: number } | null => {
     const svg = svgRef.current;
     if (!svg) return null;
@@ -680,11 +685,12 @@ function SideRow({
     const ctm = svg.getScreenCTM();
     if (!ctm) return null;
     const local = pt.matrixTransform(ctm.inverse());
-    const z = local.x - PAD_X;
+    const xInBody = local.x - PAD_X;
+    const z = length - xInBody;        // gespiegelt
     const yRel = local.y - top;
     const laneIdx = Math.max(0, Math.min(side.lanes.length - 1, Math.floor(yRel / LANE_PIX_HEIGHT)));
     return { mi: side.lanes[laneIdx].moduleIndex, z };
-  }, [side.lanes]);
+  }, [side.lanes, length]);
 
   const handleMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const loc = screenToLocal(e.clientX, e.clientY);
@@ -701,13 +707,14 @@ function SideRow({
     onClick(loc.mi, loc.z, e.shiftKey || e.metaKey || e.ctrlKey);
   };
 
-  // Ruler
+  // Ruler — Labels zeigen z-Wert, aber an gespiegelter X-Position
   const rulerStep = length <= 500 ? 50 : length <= 1500 ? 100 : length <= 3000 ? 250 : 500;
   const ticks: { z: number; major: boolean; label: string | null }[] = [];
   for (let z = 0; z <= length; z += rulerStep / 5) {
     const major = z % rulerStep === 0;
     ticks.push({ z, major, label: major ? `${z}` : null });
   }
+
 
   const showConnectorMagnets = tool === 'connector' || draggingId !== null;
   const cursor = tool === 'hole' || tool === 'connector' ? 'crosshair' : 'default';
