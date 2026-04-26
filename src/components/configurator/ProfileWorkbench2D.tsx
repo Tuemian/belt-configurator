@@ -178,28 +178,19 @@ export function ProfileWorkbench2D({
     if (m.z >= 0 && m.z <= length) setHoverZ(m.z); else setHoverZ(null);
 
     if (draggingId) {
-      // Compute nearest slot track for multi-module profiles
-      const nearestModuleIndex = (() => {
-        if (slotCenters.length <= 1) return 0;
-        let best = 0;
-        let bestDist = Infinity;
-        slotCenters.forEach((c, i) => {
-          const d = Math.abs(m.y - c);
-          if (d < bestDist) { bestDist = d; best = i; }
-        });
-        return best;
-      })();
+      // Wir editieren eine konkrete Nut – Spur bleibt fix bei activeModuleIndex
+      const targetModuleIndex = activeModuleIndex;
 
-      // Connector? Snap to nearest end + nearest track
+      // Connector? Snap to nearest end + active track
       const conn = connectors.find((c) => c.id === draggingId);
       if (conn) {
         const newEnd: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-        if (conn.end !== newEnd || (conn.moduleIndex ?? 0) !== nearestModuleIndex) {
-          onUpdateConnectors(connectors.map((c) => c.id === draggingId ? { ...c, end: newEnd, moduleIndex: nearestModuleIndex } : c));
+        if (conn.end !== newEnd || (conn.moduleIndex ?? 0) !== targetModuleIndex) {
+          onUpdateConnectors(connectors.map((c) => c.id === draggingId ? { ...c, end: newEnd, moduleIndex: targetModuleIndex } : c));
         }
         return;
       }
-      // Hole — free positioning + nearest track
+      // Hole — free positioning along z, fixed track
       const hole = holes.find((h) => h.id === draggingId);
       if (hole) {
         const z = snapValue(
@@ -208,7 +199,7 @@ export function ProfileWorkbench2D({
           snapPoints.filter((p) => Math.abs(p - hole.zPosition) > 0.1),
           length,
         );
-        onUpdateHoles(holes.map((h) => h.id === draggingId ? { ...h, zPosition: z, moduleIndex: nearestModuleIndex } : h));
+        onUpdateHoles(holes.map((h) => h.id === draggingId ? { ...h, zPosition: z, moduleIndex: targetModuleIndex } : h));
       }
     }
   };
