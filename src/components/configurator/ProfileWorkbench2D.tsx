@@ -346,7 +346,8 @@ export function ProfileWorkbench2D({
   const cutE = faceDepth * tanE;
   const profilePath = `M 0 ${faceDepth} L ${length} ${faceDepth} L ${length - cutE} 0 L ${cutS} 0 Z`;
 
-  const slotGuides: number[] = slotCenters;
+  // Nur die aktuell ausgewählte Spur als Hauptband visualisieren
+  const slotGuides: number[] = activeCenter !== undefined ? [activeCenter] : [];
 
   const showConnectorMagnets = tool === 'connector' || draggingId !== null;
 
