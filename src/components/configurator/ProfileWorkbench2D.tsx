@@ -907,8 +907,8 @@ function SideRow({
                       {Math.round(h.zPosition)} mm
                     </text>
                   )}
-                  <circle data-role="marker" cx={h.zPosition} cy={cy} r={r + 1.5} fill="white" stroke={isSel ? 'hsl(var(--primary))' : '#cbd5e1'} strokeWidth={isSel ? 1.4 : 0.6} />
-                  <circle data-role="marker" cx={h.zPosition} cy={cy} r={r} fill={color} />
+                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={isSel ? 'hsl(var(--primary))' : '#cbd5e1'} strokeWidth={isSel ? 1.4 : 0.6} />
+                  <circle data-role="marker" cx={hx} cy={cy} r={r} fill={color} />
                 </g>
               );
             })}
