@@ -135,13 +135,15 @@ export function buildProfileInquirySummary(cart: CartItemLike[]): string {
     if (item.config.holes.length) {
       lines.push(`  Bohrungen (${item.config.holes.length}):`);
       item.config.holes.forEach((h) => {
-        lines.push(`    – ${h.label} · ${SLOT_LABEL_DE[h.slot]} @ ${h.zPosition} mm`);
+        const n = getSlotNumber(s, h.slot, h.moduleIndex ?? 0);
+        lines.push(`    – ${h.label} · Nut ${n} (${SLOT_SIDE_DE[h.slot]}) @ ${h.zPosition} mm`);
       });
     }
     if (item.config.connectors.length) {
       lines.push(`  Verbinder (${item.config.connectors.length}):`);
       item.config.connectors.forEach((c) => {
-        lines.push(`    – ${c.label} · ${SLOT_LABEL_DE[c.slot]} · ${c.end === 'start' ? 'Anfang' : 'Ende'}`);
+        const n = getSlotNumber(s, c.slot, c.moduleIndex ?? 0);
+        lines.push(`    – ${c.label} · Nut ${n} (${SLOT_SIDE_DE[c.slot]}) · ${c.end === 'start' ? 'Anfang' : 'Ende'}`);
       });
     }
     lines.push(`  Positionspreis: ${fmtEur.format(item.price.total)}`);
