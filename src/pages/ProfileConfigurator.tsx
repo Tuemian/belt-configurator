@@ -268,12 +268,11 @@ export default function ProfileConfigurator() {
               <SectionDivider label="Menge" />
               <div className="mt-3 flex items-center gap-3">
                 <Label className="text-xs text-muted-foreground shrink-0">Stückzahl</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   min={1}
                   max={9999}
                   value={config.quantity}
-                  onChange={(e) => update({ quantity: Math.max(1, Number(e.target.value)) })}
+                  onCommit={(v) => update({ quantity: v })}
                   className="h-8 w-24 text-right"
                 />
               </div>
