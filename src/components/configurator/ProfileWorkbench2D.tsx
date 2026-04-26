@@ -451,8 +451,10 @@ export function ProfileWorkbench2D({
             <ProfileCrossSection2D
               section={section}
               activeSlot={activeSlot}
-              onSelectSlot={(s) => { setActiveSlot(s); setSelectedId(null); }}
-              size={96}
+              activeModuleIndex={activeModuleIndex}
+              onSelectSlot={(s, mi) => { setActiveSlot(s); setActiveModuleIndex(mi); setSelectedId(null); }}
+              size={108}
+              showLabels
             />
           </div>
 
