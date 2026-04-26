@@ -1,104 +1,136 @@
-## Konfigurator-Analyse (kurz)
+## Ziel
 
-**Stark:**
-- Klarer 5-Schritt-Wizard mit gutem Progress-Indikator und Mobile-Tab-Navigation.
-- Saubere Trennung von Daten (`ConveyorConfig`), 3D-Library (`conveyor-3d-library.ts`) und Render-Schicht (`ConveyorViewer3D.tsx`).
-- Mehrsprachig (DE/EN/IT), STEP-/PDF-Export, Anfrage-Versand und Fallback-Geometrie wenn GLBs fehlen – sehr robust.
-- MOTIS40/MOTIS80-Logik bereits über `frameWidth > 500` integriert und in der Library als Variant-Rules sauber abgebildet.
-
-**Schwächen / Empfehlungen (umgesetzt im Plan unten):**
-1. Direktantrieb rechts ist um 180° verdreht (Motor zeigt nach oben statt unten) – Bug.
-2. Das Band wird aktuell als ein durchgehender Block gerendert. Realistischer wäre, es aus den eigentlichen Aluminium-Seitenprofilen + Querstreben zu bauen, sodass MOTIS40 ↔ MOTIS80 sichtbar wechselt.
-3. Es fehlt eine vierte, in der Praxis sehr nachgefragte Antriebsvariante: **Trommelmotor**.
-4. Es gibt keinen indikativen Preis – Kunden wollen früh eine Hausnummer.
-5. Komponenten-Workflow für eigene STEP-Dateien (Umlenkeinheit, Antriebe usw.) ist unklar dokumentiert.
+Den bestehenden Profil-Konfigurator zu einem visuell und ergonomisch erstklassigen "Profilzuschnitte"-Tool ausbauen — angelehnt an das item24 Machining Tool, aber schlanker, im NOVAMOTIS-Branding und mit dem bereits bestehenden 3D-Viewer.
 
 ---
 
-## Geplante Änderungen
+## Analyse: Was item24 gut macht
 
-### 1. Motorstellung Direktantrieb rechts (180°-Bug)
-In `src/lib/conveyor-3d-library.ts` (Block `if (config.driveType === 'direct')`, ca. Zeile 539-566) wird der zusätzliche `rotateAroundLocalXAxis(finalRot, Math.PI)` für die rechte Seite umgekehrt bzw. entfernt, sodass `motorAngle = 0°` den Motor nach unten zeigt – konsistent mit der linken Seite. Verifizierung mit allen vier Stellungen (0/90/180/270).
+Das item24 Machining Tool setzt auf folgende Kernprinzipien, die wir gezielt übernehmen sollten:
 
-### 2. 3D-Vorschau: Band aus Aluminium-Profilen
-In `ConveyorViewer3D.tsx` wird das einzelne Frame-Box-Paar (Zeile ~961-963) durch eine modulare Konstruktion ersetzt:
-- **Zwei Seitenprofile** (links/rechts) – nutzen die bereits in `library.json` hinterlegten `profiles.sideRails` GLBs (40×40 für `frameWidth ≤ 500`, 80×40 für > 500). Skalierung wird über echte Bounding-Box statt fixem Faktor korrigiert, damit die Länge sauber zur Bandlänge passt.
-- **Querstreben** alle ~500 mm aus dünneren Profilen (parametrisch als `Box`).
-- **Sichtbarer Höhenunterschied** zwischen MOTIS40 (40 mm) und MOTIS80 (80 mm) über die bestehende `usesWideProfile`-Logik, plus Material-Farbe gebürstetes Alu (`#c5cdd6`, metalness 0.7).
-- Fallback (Box) bleibt erhalten, falls GLB nicht lädt.
+1. **2D-Arbeitsfläche im Vordergrund.** Die Hauptbühne ist eine maßstabsgetreue 2D-Seitenansicht des Profils mit einer **Lineal-Leiste** (mm-Skala). Die 3D-Ansicht ist sekundär.
+2. **Klick-zum-Setzen + Drag-zum-Verschieben.** Bohrungen werden direkt auf der Profil-Seitenansicht per Klick erzeugt und per Maus entlang der Profilachse verschoben. Während des Drags zeigt eine **Live-Bemaßungslinie** den Abstand zum Profilstart und/oder zur nächsten Bohrung.
+3. **Snap-Raster.** Standardmäßig snappen Bohrungen auf 1 mm / 5 mm / 10 mm sowie auf logische Punkte (Profilmitte, Endabstand 10/15/20 mm, andere Bohrungen). Snap toggelbar mit `Shift`.
+4. **Face-Wahl per Tab.** Oben/Unten/Links/Rechts werden als Tabs über der 2D-Ansicht gewählt — das gewählte Face wird sichtbar (alle vier Faces als 4 separate Strips übereinander).
+5. **Inline-Properties.** Klick auf eine Bohrung öffnet ein kleines Popover direkt am Element: Typ, Position, Durchmesser, Löschen. Kein Wechseln in eine separate Liste nötig.
+6. **Symmetrie-/Pattern-Tools.** Einzelne Bohrungen, Reihen (n-fach mit Abstand) und Spiegelung über Profilmitte mit einem Klick.
+7. **Klar getrennte Schritte oben:** Profil wählen → Länge → Bearbeitung → Verbinder → Zusammenfassung. Aber alles auf einer Seite, nicht als Wizard.
 
-### 3. Trommelmotor als 4. Antriebsart
-- `ConveyorConfig.driveType` erweitern: `'direct' | 'indirect' | 'center' | 'drum'`.
-- `StepDrive.tsx`: vierte Karte „Trommelmotor / Motore a tamburo / Drum motor" mit Beschreibung „Antrieb integriert in Umlenktrommel".
-- Bei `driveType === 'drum'`:
-  - Motorstellung-Block ausblenden (gibt es nicht).
-  - Stattdessen neuer Block **„Kabelausgang"** mit zwei Optionen: Links / Rechts (mappt auf `motorPosition`).
-- 3D-Render: `ParametricDrumMotor` zeigt eine größere, dunklere Umlenktrommel am Bandende mit kleinem Kabelstummel auf der gewählten Seite. Sobald GLB vorhanden, lädt die Library `motors.drum.<left|right>` analog zu Direktantrieb.
-- `library.json` und `defaultLibrary` bekommen `motors.drum: { left: [...], right: [...] }` mit Pfad `/models/motors/drum-motor.glb`.
-- STEP-Wireframe (`api/_lib/step-wireframe.ts`) und `step-solid-service` ergänzen `'drum'` so, dass kein Außen-Motor exportiert wird.
-- i18n: neue Keys `driveDrum`, `driveDrumDesc`, `cableExit`, `cableLeft`, `cableRight` in DE/EN/IT.
+---
 
-### 4. Einzelne STEP-Komponenten reinladen (Drop-Ordner)
-Wir legen folgende Struktur an:
+## Was wir umsetzen
+
+### 1. Rebranding "Aluminium-Profile" → "Profilzuschnitte"
+
+- `i18n.ts`: alle drei Sprachen anpassen
+  - DE: `Profilzuschnitte`
+  - EN: `Profile Cuts`
+  - IT: `Tagli di profilo`
+- Kachel auf `Index.tsx` und Header-Untertitel in `ProfileConfigurator.tsx` aktualisieren.
+- Beschreibung leicht schärfen ("Maßgeschneiderte Profilzuschnitte mit Bohrungen, Gewinden und Verbindern …").
+
+### 2. Neue 2D Drag-&-Drop Arbeitsfläche (`ProfileWorkbench2D.tsx`)
+
+Ersetzt die aktuellen Bohrungs-/Verbinder-Formulare in der Sidebar durch eine interaktive Bühne im Hauptbereich.
+
+**Layout-Umbau** (`ProfileConfigurator.tsx`):
 
 ```text
-public/models/
-├── components/
-│   ├── deflection-unit/      (Umlenkeinheit)
-│   ├── direct-drive/
-│   ├── indirect-drive/
-│   ├── center-drive/
-│   ├── drum-motor/
-│   └── README.md             (Anleitung + Naming-Konvention)
-└── library.json              (verweist auf neue Pfade)
+┌──────────────────────────────────────────────────────────────────┐
+│  Header (Logo · Profilzuschnitte · Warenkorb)                    │
+├─────────────┬────────────────────────────────────────────────────┤
+│             │  ┌─ Tabs: Oben | Unten | Links | Rechts ─────┐    │
+│  Sidebar    │  │                                            │    │
+│  (verschlankt)│ │  2D Workbench — maßstabsgetreu             │    │
+│             │  │  ┌──────────────────────────────────┐      │    │
+│  Profil     │  │  │ Lineal 0 ───── 250 ───── 500 mm  │      │    │
+│  Länge      │  │  │ ┌──────────────────────────────┐ │      │    │
+│  Schräg-    │  │  │ │  Profil-Side-View            │ │      │    │
+│  schnitte   │  │  │ │  ●----●         ●            │ │      │    │
+│  Stirnseiten│  │  │ │  D5,5 D8,5      M8           │ │      │    │
+│  Verbinder- │  │  │ └──────────────────────────────┘ │      │    │
+│  Palette    │  │  └──────────────────────────────────┘      │    │
+│             │  │  Tools: + Bohrung  ⇆ Spiegel  ⇲ Reihe     │    │
+│             │  └────────────────────────────────────────────┘    │
+│             │  3D-Vorschau (kollabierbar, ½ Höhe)                 │
+├─────────────┴────────────────────────────────────────────────────┤
+│  Preisleiste · In den Warenkorb                                   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-- README erklärt: Datei als `.step/.stp` ablegen → `npm run convert:step <ordner>` ausführen → erzeugt `.glb` mit gleichem Basisnamen → Eintrag in `library.json` ergänzen (Beispiel-Snippet im README).
-- Konvertierungs-Script `scripts/convert-step-components.cjs` als generalisierter Wrapper um das vorhandene `scripts/convert-step-floor-elements.cjs`.
-- Library erhält ein neues optionales Feld `components.deflectionUnit` und Variants pro Antriebsart, sodass deine STEP-Dateien sofort platziert werden können. Bis dahin greift der Fallback auf die parametrische Trommel/den Box-Motor.
-- Workflow für dich: STEP-Datei in den passenden Ordner kopieren, einmal Konvertierung laufen lassen, Pfad in `library.json` eintragen – fertig.
+**Interaktionen:**
+- **Hovern** über Profil zeigt Cursor-Linie + Live-mm-Wert.
+- **Klick** mit aktivem Bohrungstyp setzt eine Bohrung an Hover-Position (auf Snap gerundet).
+- **Drag** auf bestehender Bohrung verschiebt entlang der Profilachse, mit Live-Bemaßung zu Start/Ende/Nachbar-Bohrung.
+- **Klick** auf Bohrung öffnet Popover (Typ ändern, Position numerisch, Duplizieren, Spiegeln, Löschen).
+- **Doppelklick** auf Lineal: Bohrung exakt an Klickposition.
+- **Snap-Toggle** (Buttons 1/5/10 mm + "Aus"); Snap-Punkte: Profil-Mitte, 10/15/20 mm Endabstand, andere Bohrungen ±0.
+- **Pattern-Tool**: ausgewählte Bohrung n-fach im Abstand X kopieren.
+- **Spiegel-Tool**: Bohrung um Profilmitte spiegeln.
+- **Verbinder** werden auf gleicher Bühne gesetzt — als andersfarbige Marker (silber statt blau).
 
-### 5. Indikativer Preis aus Excel – mit „Preis auf Anfrage"-Fallback
+### 3. Visuelle Aufwertung
 
-**Excel-Datei** `public/pricing/price-list.xlsx`, Tabellenblatt „Components". Spalten: `key`, `label_de`, `label_en`, `label_it`, `price_eur`, `unit` (z.B. `per_meter`, `per_unit`, `per_m2`, `per_mm_width`).
+- **Profil-Seitenansicht** als saubere SVG-Darstellung (graue Aluminiumfläche, T-Nut-Schraffur erkennbar, Schrägschnitte als geschnittene Kanten).
+- **Bohrungs-Marker** mit Farbcodierung: Standard = dunkelgrau, Gewinde = gold, Stufenbohrung = blau, Kernloch = hellgrau (gleiche Farben wie 3D-Viewer für Konsistenz).
+- **Lineal** mit Major/Minor-Ticks, automatisch skaliert je Profil-Länge.
+- **Hover-Tooltip** mit Bohrungs-Label & Position.
+- **Stirnseiten-Bearbeitung** (Gewinde/Kernloch) als kleine Symbole an den Profil-Enden direkt sichtbar.
+- **Schrägschnitt** wird in 2D durch geneigte End-Kanten dargestellt (entspricht dem 3D-Modell).
+- 3D-Viewer bleibt erhalten, aber kompakter unter der 2D-Bühne (kollabierbar via Toggle).
+- Sidebar wird schlanker: nur noch Profil/Länge/Stirnseiten/Schrägschnitte/Menge — Bohrungen & Verbinder wandern in die Workbench.
 
-Beispiel-Keys, die wir erwarten:
-- `frame_motis40`, `frame_motis80`
-- `belt_standard`, `belt_grip`, `belt_heavy_grip`, `belt_food_safe`
-- `drive_direct`, `drive_indirect`, `drive_center`, `drive_drum`
-- `stand_basic`, `feet_set`, `castor_set`, `floor_bolt_set`, `height_adjust`
-- `side_guide`
+### 4. UX-Politur
 
-**Lade-Layer** `src/lib/pricing.ts`:
-- Liest die Excel beim ersten Aufruf via `xlsx`-Lib (Browser, kein Backend), cached im Memory.
-- Bietet `calculatePrice(config): { status: 'complete' | 'partial' | 'unavailable', total?: number, breakdown: PriceItem[], missingKeys: string[] }`.
-- Logik:
-  - Für jede aktive Komponente in der Konfiguration wird geprüft, ob in der Excel ein gültiger Preis (> 0, nicht leer) hinterlegt ist.
-  - **Alle Preise vorhanden** → `status: 'complete'`, voller Betrag wird angezeigt.
-  - **Mindestens ein Preis fehlt** → `status: 'partial'`, **kein Gesamtpreis** wird gezeigt; stattdessen Hinweisbox „Für diese Konfiguration liegt noch kein vollständiger Richtpreis vor – bitte Anfrage senden."
-  - **Excel nicht ladbar / leer** → `status: 'unavailable'`, gleicher „Preis auf Anfrage"-Hinweis ohne Liste.
-- Komponenten ohne Preis erscheinen im Breakdown mit Badge „auf Anfrage" statt einer Zahl, damit du auf einen Blick siehst, welche Position fehlt.
-
-**UI in `StepSummary.tsx`** – neue Card „Indikativer Preis":
-- `complete`: große Summe + ausklappbare Aufstellung + Disclaimer „unverbindlich, finaler Preis nach Anfrageprüfung".
-- `partial`: keine Summe, gut sichtbarer Hinweis (Icon + Text) „Preis auf Anfrage – einzelne Komponenten noch nicht hinterlegt", optional Aufstellung mit den bekannten Positionen + „auf Anfrage"-Markierung für die fehlenden.
-- `unavailable`: schlichter Hinweis „Preis auf Anfrage" mit CTA-Verweis auf den Anfrage-Button.
-- Der Anfrage-Button bleibt in allen Fällen prominent.
-
-**Aktualisierung der Preise:** Du tauschst einfach `public/pricing/price-list.xlsx` aus (kein Code-Deploy nötig). Sobald du eine Zelle füllst, schaltet die UI automatisch von „auf Anfrage" auf den konkreten Preis um. README in `public/pricing/` erklärt Schema und verfügbare Keys.
-
-**i18n-Keys:** `priceIndicative`, `priceTotal`, `priceBreakdown`, `priceDisclaimer`, `priceOnRequest`, `priceOnRequestHint`, `priceItemOnRequest`.
+- Tastenkürzel: `B` = Bohrungs-Tool, `V` = Verbinder, `Esc` = Auswahl aufheben, `Del` = ausgewählte Bohrung löschen, `Ctrl+D` = duplizieren, `Ctrl+Z` = Undo (einfache History).
+- Mini-Hilfe-Overlay (Fragezeichen-Button) mit den wichtigsten Aktionen.
+- Bohrungstypen als visuelle Palette (Buttons mit Symbol + Label) statt Dropdown.
 
 ---
 
-## Technische Hinweise
+## Technische Umsetzung
 
-- Neue Dependency: `xlsx` (SheetJS) für das Lesen der Preisliste im Browser.
-- Keine Cloud/Backend-Änderung nötig – alles bleibt clientseitig bzw. nutzt die bestehenden Vercel-Funktionen.
-- Bestehende Tests laufen weiter; Unit-Tests für Preisberechnung in `src/test/pricing.test.ts` (insbesondere `complete` / `partial` / `unavailable`-Pfade).
-- Migration `driveType: 'drum'` ist additiv und bricht keine alten Anfragen.
+**Neue Dateien:**
+- `src/components/configurator/ProfileWorkbench2D.tsx` — SVG-basierte 2D-Bühne mit Lineal, Face-Tabs, Drag-&-Drop, Snap, Popover.
+- `src/components/configurator/HoleEditPopover.tsx` — Inline-Editor für selektierte Bohrung.
+- `src/hooks/use-profile-history.ts` — kleine Undo/Redo-State-Maschine (Stack der `ProfileConfig`).
 
-## Zu klären nach Approval
+**Geänderte Dateien:**
+- `src/pages/ProfileConfigurator.tsx`
+  - Neuer Layout-Aufbau (siehe ASCII oben).
+  - Bohrungs- & Verbinder-Formulare in der Sidebar entfernen, stattdessen nur Werkzeug-Palette.
+  - Workbench eingebunden, 3D-Viewer kollabierbar.
+- `src/lib/profile-configurator-types.ts`
+  - `ProfileHole` um optionales `pattern?: { count: number; spacing: number }` erweitern (für Reihen).
+  - Snap-Konstanten (`SNAP_OPTIONS = [1, 5, 10]`).
+- `src/lib/i18n.ts`
+  - Rebrand-Keys: `hubToolProfileTitle`, `hubToolProfileDesc`, neue Workbench-Strings (Snap, Spiegeln, Reihe, Tools, Tabs).
+- `src/pages/Index.tsx` — Übersetzungs-Keys werden automatisch aktualisiert (kein Strukturwechsel).
+- `src/components/configurator/ProfileViewer3D.tsx` — kleinere Container-Anpassung für die kompaktere Höhe.
 
-- Excel-Preisliste befüllst du selbst (Vorlage wird mit allen Keys bereitgestellt, leere Zellen → automatisch „auf Anfrage").
-- STEP-Dateien für Trommelmotor / Komponenten kannst du nach Approval direkt in die neuen Ordner legen.
+**SVG-Workbench Details:**
+- ViewBox skaliert automatisch: `viewBox="0 0 ${length+padding} ${profileHeight+padding}"` mit `preserveAspectRatio="xMidYMid meet"`.
+- Pointer-Events: `onPointerDown` auf Bohrung → drag-State; `onPointerMove` auf SVG → Position berechnen über `getScreenCTM().inverse()`; `onPointerUp` → fixieren.
+- Snap-Logik: `Math.round(rawMm / snap) * snap`, danach Snap-Punkte (Mitte, Endabstände, andere Bohrungen) mit Toleranz < 3 mm überschreiben.
+- Performance unkritisch (max. ~50 Bohrungen, einfaches SVG).
+
+**Was unverändert bleibt:**
+- Preislogik (`calculateProfilePrice`)
+- 3D-Viewer-Engine
+- Warenkorb / Anfrage-Mail
+- Konfiguratorrouten
+
+---
+
+## Lieferung in zwei Etappen
+
+**Etappe A (dieser Lauf):**
+1. Rebrand "Profilzuschnitte" überall.
+2. Neue 2D-Workbench mit Face-Tabs, Lineal, Klick-zum-Setzen, Drag-zum-Verschieben, Snap, Inline-Popover.
+3. Sidebar verschlankt, 3D-Viewer kollabierbar darunter.
+4. Verbinder als Marker auf gleicher Bühne.
+
+**Etappe B (folgender Lauf nach Freigabe von A):**
+5. Pattern-Tool (Reihe), Spiegel-Tool, Tastenkürzel, Undo/Redo, Hilfe-Overlay.
+
+So bekommst du nach Etappe A schnell das Kern-Erlebnis und kannst entscheiden, ob Etappe B noch Politur braucht oder anders priorisiert werden soll.
