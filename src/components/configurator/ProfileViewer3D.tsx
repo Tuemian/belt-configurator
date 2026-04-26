@@ -2,7 +2,17 @@ import { useRef, useMemo, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import type { ProfileSection, ProfileHole, ProfileConnector } from '@/lib/profile-configurator-types';
+import type { ProfileSection, ProfileHole, ProfileConnector, SlotId } from '@/lib/profile-configurator-types';
+
+// Slot direction vectors in cross-section space (X right, Y up).
+// Slot A=top, B=right, C=bottom, D=left. We need both an outward normal
+// (where the slot opens) and the through-axis used for drilling holes.
+const SLOT_DIR: Record<SlotId, { nx: number; ny: number }> = {
+  A: { nx:  0, ny:  1 },
+  B: { nx:  1, ny:  0 },
+  C: { nx:  0, ny: -1 },
+  D: { nx: -1, ny:  0 },
+};
 
 // ---------------------------------------------------------------------------
 // T-slot path helpers — all produce CW paths (negative signed area = hole)
@@ -149,42 +159,65 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
     return geo;
   }, [section, length, angleStart, angleEnd]);
 
-  // Bore / hole cylinders — thread=gold, step=blue, plain=dark
+  // Bore / hole cylinders — drilled THROUGH the profile from the chosen slot.
+  // The hole orientation depends on which slot it sits on:
+  //   A/C → drilled vertically (Y axis), positioned along width (X)
+  //   B/D → drilled horizontally (X axis), positioned along height (Y)
   const holeMeshes = useMemo(() => {
+    const { w, h } = section;
+    const hw = w / 2;
+    const hh = h / 2;
     return holes.map((hole, idx) => {
       const r = hole.diameter / 2;
-      const cylGeo = new THREE.CylinderGeometry(r, r, section.h + 4, 24);
-      const isThread = hole.type === 'm6-thread' || hole.type === 'm8-thread';
-      const isStep   = hole.type === 'step-m6'   || hole.type === 'step-m8';
+      const slot: SlotId = hole.slot ?? 'A';
+      const dir = SLOT_DIR[slot];
+      // Through-length: depends on which axis we drill along
+      const through = (Math.abs(dir.nx) > 0 ? w : h) + 4;
+      const cylGeo = new THREE.CylinderGeometry(r, r, through, 24);
+      const isThread = hole.type === 'm8-thread';
+      const isStep   = hole.type === 'step-m6' || hole.type === 'step-m8';
       const color = isThread ? '#a07830' : isStep ? '#4a6fa5' : '#1e293b';
       const mat = new THREE.MeshStandardMaterial({ color, roughness: isThread ? 0.45 : 0.7, metalness: isThread ? 0.7 : 0.1 });
+
+      // Position the hole on the chosen slot. For multi-module profiles
+      // (e.g. 80×40), slot A/C sits on the wider face — choose the module
+      // closest to the cross-section center for now.
+      const cx = (slot === 'A' || slot === 'C') ? 0 : dir.nx * (hw - r * 0.1);
+      const cy = (slot === 'A' || slot === 'C') ? dir.ny * (hh - r * 0.1) : 0;
       const m = new THREE.Mesh(cylGeo, mat);
-      m.position.set(0, 0, Math.max(0, Math.min(length, hole.zPosition)));
+      m.position.set(cx, cy, Math.max(0, Math.min(length, hole.zPosition)));
+      // Rotate cylinder so its axis is normal to the chosen slot
+      if (slot === 'A' || slot === 'C') {
+        // axis = Y, default cylinder axis is Y → no rotation needed
+      } else {
+        // axis = X
+        m.rotation.z = Math.PI / 2;
+      }
       return <primitive key={idx} object={m} />;
     });
   }, [holes, section, length]);
 
-  // Connector (T-nut) meshes — silver blocks seated inside the T-slot
+  // Connector (T-nut) meshes — silver blocks seated inside the T-slot at one of the two ends
   const connectorMeshes = useMemo(() => {
     const { w, h, slotWidth: sw, slotDepth: sd } = section;
     const hw = w / 2;
     const hh = h / 2;
     return connectors.map((conn, idx) => {
-      const tW = sw * 0.88;   // fits in slot opening
-      const tD = sd * 0.80;   // depth into slot
-      const tL = 22;           // length along extrusion axis
-      const z = Math.max(tL / 2, Math.min(length - tL / 2, conn.zPosition));
+      const tW = sw * 0.88;
+      const tD = sd * 0.80;
+      const tL = 22;
+      const z = conn.end === 'start' ? tL / 2 : length - tL / 2;
+      const slot: SlotId = conn.slot ?? 'A';
+      const dir = SLOT_DIR[slot];
 
       let pos: [number, number, number];
       let rot: [number, number, number] = [0, 0, 0];
-      if (conn.face === 'top' || conn.face === 'bottom') {
-        const cx = -hw + MODULE * (conn.module + 0.5);
-        const yOff = conn.face === 'top' ? hh - tD / 2 : -hh + tD / 2;
-        pos = [cx, yOff, z];
+      if (slot === 'A' || slot === 'C') {
+        const yOff = dir.ny * (hh - tD / 2);
+        pos = [0, yOff, z];
       } else {
-        const cy = -hh + MODULE * (conn.module + 0.5);
-        const xOff = conn.face === 'right' ? hw - tD / 2 : -hw + tD / 2;
-        pos = [xOff, cy, z];
+        const xOff = dir.nx * (hw - tD / 2);
+        pos = [xOff, 0, z];
         rot = [0, 0, Math.PI / 2];
       }
       return (
