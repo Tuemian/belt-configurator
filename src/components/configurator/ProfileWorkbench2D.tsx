@@ -849,25 +849,26 @@ function SideRow({
               const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === hoverInfo.moduleIndex);
               if (laneIdx < 0) return null;
               const cy = laneCy(laneIdx);
+              const hx = dx(hoverInfo.z);
               return (
                 <g pointerEvents="none">
-                  <line x1={hoverInfo.z} y1={cy - LANE_PIX_HEIGHT / 2} x2={hoverInfo.z} y2={cy + LANE_PIX_HEIGHT / 2} stroke="hsl(var(--primary))" strokeWidth="0.5" strokeDasharray="2 2" />
-                  <rect x={hoverInfo.z - 16} y={cy - LANE_PIX_HEIGHT / 2 - 11} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
-                  <text x={hoverInfo.z} y={cy - LANE_PIX_HEIGHT / 2 - 3} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
+                  <line x1={hx} y1={cy - LANE_PIX_HEIGHT / 2} x2={hx} y2={cy + LANE_PIX_HEIGHT / 2} stroke="hsl(var(--primary))" strokeWidth="0.5" strokeDasharray="2 2" />
+                  <rect x={hx - 16} y={cy - LANE_PIX_HEIGHT / 2 - 11} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
+                  <text x={hx} y={cy - LANE_PIX_HEIGHT / 2 - 3} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
                     {Math.round(hoverInfo.z)} mm
                   </text>
                 </g>
               );
             })()}
 
-            {/* Connectors */}
+            {/* Connectors — start (Anfang) jetzt RECHTS, end (Ende) LINKS */}
             {connectors.map((c) => {
               const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (c.moduleIndex ?? 0));
               if (laneIdx < 0) return null;
               const cy = laneCy(laneIdx);
               const isSel = selectedId === c.id;
               const w = CONNECTOR_FOOTPRINT;
-              const x = c.end === 'start' ? 0 : length - w;
+              const x = c.end === 'start' ? length - w : 0;
               return (
                 <g
                   key={c.id}
@@ -892,6 +893,7 @@ function SideRow({
               const isSel = selectedId === h.id;
               const r = Math.max(3, Math.min(8, h.diameter * 0.6));
               const color = holeColor(h.type);
+              const hx = dx(h.zPosition);
               return (
                 <g
                   key={h.id}
@@ -901,7 +903,7 @@ function SideRow({
                   style={{ cursor: 'grab' }}
                 >
                   {(isSel || draggingId === h.id) && (
-                    <text x={h.zPosition} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill="hsl(var(--primary))" fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
+                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill="hsl(var(--primary))" fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
                       {Math.round(h.zPosition)} mm
                     </text>
                   )}
