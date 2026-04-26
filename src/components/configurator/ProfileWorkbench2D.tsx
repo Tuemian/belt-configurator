@@ -8,12 +8,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import {
   HOLE_TYPES,
   CONNECTOR_TYPES,
-  SLOT_IDS,
   SLOT_LABEL_DE,
+  SLOT_SIDE_DE,
   getFaceWidth,
   getModulePitch,
-  getSlotCountPerFace,
   getSlotCenters,
+  getAllSlots,
+  getSlotNumber,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
@@ -97,6 +98,7 @@ export function ProfileWorkbench2D({
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeSlot, setActiveSlot] = useState<SlotId>('A');
+  const [activeModuleIndex, setActiveModuleIndex] = useState<number>(0);
   const [tool, setTool] = useState<Tool>('hole');
   const snap = SNAP_FINE;
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
@@ -107,12 +109,27 @@ export function ProfileWorkbench2D({
 
   const faceDepth = getFaceWidth(section, activeSlot);
   const MODULE = getModulePitch(section);
-  const numModulesOnFace = Math.max(1, Math.round(faceDepth / MODULE));
   const slotCenters = getSlotCenters(section, activeSlot);
+  const allSlots = useMemo(() => getAllSlots(section), [section]);
 
-  // Filter visible items by slot (with backwards compat)
-  const visibleHoles = useMemo(() => holes.filter((h) => ensureSlot(h) === activeSlot), [holes, activeSlot]);
-  const visibleConnectors = useMemo(() => connectors.filter((c) => c.slot === activeSlot), [connectors, activeSlot]);
+  // Wenn Profilwechsel den moduleIndex ungültig macht, korrigieren
+  useEffect(() => {
+    if (activeModuleIndex >= slotCenters.length) setActiveModuleIndex(0);
+  }, [activeModuleIndex, slotCenters.length]);
+
+  // Aktive Spur (für Visualisierung der einen aktiven Nut)
+  const activeCenter = slotCenters[Math.min(activeModuleIndex, slotCenters.length - 1)] ?? slotCenters[0];
+  const activeSlotNumber = getSlotNumber(section, activeSlot, activeModuleIndex);
+
+  // Filter visible items by slot + moduleIndex (with backwards compat)
+  const visibleHoles = useMemo(
+    () => holes.filter((h) => ensureSlot(h) === activeSlot && (h.moduleIndex ?? 0) === activeModuleIndex),
+    [holes, activeSlot, activeModuleIndex],
+  );
+  const visibleConnectors = useMemo(
+    () => connectors.filter((c) => c.slot === activeSlot && (c.moduleIndex ?? 0) === activeModuleIndex),
+    [connectors, activeSlot, activeModuleIndex],
+  );
 
   // Overlap detection (warning only, not blocking)
   const overlapWarning = useMemo(() => {
@@ -161,28 +178,19 @@ export function ProfileWorkbench2D({
     if (m.z >= 0 && m.z <= length) setHoverZ(m.z); else setHoverZ(null);
 
     if (draggingId) {
-      // Compute nearest slot track for multi-module profiles
-      const nearestModuleIndex = (() => {
-        if (slotCenters.length <= 1) return 0;
-        let best = 0;
-        let bestDist = Infinity;
-        slotCenters.forEach((c, i) => {
-          const d = Math.abs(m.y - c);
-          if (d < bestDist) { bestDist = d; best = i; }
-        });
-        return best;
-      })();
+      // Wir editieren eine konkrete Nut – Spur bleibt fix bei activeModuleIndex
+      const targetModuleIndex = activeModuleIndex;
 
-      // Connector? Snap to nearest end + nearest track
+      // Connector? Snap to nearest end + active track
       const conn = connectors.find((c) => c.id === draggingId);
       if (conn) {
         const newEnd: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-        if (conn.end !== newEnd || (conn.moduleIndex ?? 0) !== nearestModuleIndex) {
-          onUpdateConnectors(connectors.map((c) => c.id === draggingId ? { ...c, end: newEnd, moduleIndex: nearestModuleIndex } : c));
+        if (conn.end !== newEnd || (conn.moduleIndex ?? 0) !== targetModuleIndex) {
+          onUpdateConnectors(connectors.map((c) => c.id === draggingId ? { ...c, end: newEnd, moduleIndex: targetModuleIndex } : c));
         }
         return;
       }
-      // Hole — free positioning + nearest track
+      // Hole — free positioning along z, fixed track
       const hole = holes.find((h) => h.id === draggingId);
       if (hole) {
         const z = snapValue(
@@ -191,7 +199,7 @@ export function ProfileWorkbench2D({
           snapPoints.filter((p) => Math.abs(p - hole.zPosition) > 0.1),
           length,
         );
-        onUpdateHoles(holes.map((h) => h.id === draggingId ? { ...h, zPosition: z, moduleIndex: nearestModuleIndex } : h));
+        onUpdateHoles(holes.map((h) => h.id === draggingId ? { ...h, zPosition: z, moduleIndex: targetModuleIndex } : h));
       }
     }
   };
@@ -208,17 +216,8 @@ export function ProfileWorkbench2D({
       return;
     }
 
-    // Determine which slot track the click belongs to (multi-module profiles)
-    const nearestModuleIndex = (() => {
-      if (slotCenters.length <= 1) return 0;
-      let best = 0;
-      let bestDist = Infinity;
-      slotCenters.forEach((c, i) => {
-        const d = Math.abs((m.y ?? faceDepth / 2) - c);
-        if (d < bestDist) { bestDist = d; best = i; }
-      });
-      return best;
-    })();
+    // Aktuelle Spur ist durch den Tab vorgegeben – alle neuen Items landen dort
+    const targetModuleIndex = activeModuleIndex;
 
     if (tool === 'hole') {
       const z = snapValue(m.z, snap, snapPoints, length);
@@ -228,7 +227,7 @@ export function ProfileWorkbench2D({
         zPosition: z,
         diameter: typeDef.diameter,
         slot: activeSlot,
-        moduleIndex: nearestModuleIndex,
+        moduleIndex: targetModuleIndex,
         type: holeType,
         label: typeDef.label,
       };
@@ -237,7 +236,7 @@ export function ProfileWorkbench2D({
     } else if (tool === 'connector') {
       // Only one connector per end per slot per module
       const end: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === nearestModuleIndex);
+      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === targetModuleIndex);
       if (taken) {
         setSelectedId(null);
         return;
@@ -248,7 +247,7 @@ export function ProfileWorkbench2D({
         type: connType,
         end,
         slot: activeSlot,
-        moduleIndex: nearestModuleIndex,
+        moduleIndex: targetModuleIndex,
         label: typeDef.label,
       };
       onUpdateConnectors([...connectors, newConn]);
@@ -347,7 +346,8 @@ export function ProfileWorkbench2D({
   const cutE = faceDepth * tanE;
   const profilePath = `M 0 ${faceDepth} L ${length} ${faceDepth} L ${length - cutE} 0 L ${cutS} 0 Z`;
 
-  const slotGuides: number[] = slotCenters;
+  // Nur die aktuell ausgewählte Spur als Hauptband visualisieren
+  const slotGuides: number[] = activeCenter !== undefined ? [activeCenter] : [];
 
   const showConnectorMagnets = tool === 'connector' || draggingId !== null;
 
@@ -357,21 +357,31 @@ export function ProfileWorkbench2D({
       <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50 flex-wrap">
-          {/* Slot tabs A B C D */}
-          <div className="flex items-center gap-1">
-            {SLOT_IDS.map((s) => (
-              <button
-                key={s}
-                onClick={() => { setActiveSlot(s); setSelectedId(null); }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors border ${
-                  activeSlot === s
-                    ? 'bg-white border-primary text-primary shadow-sm font-semibold'
-                    : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-white/60'
-                }`}
-              >
-                {SLOT_LABEL_DE[s]}
-              </button>
-            ))}
+          {/* Nut-Auswahl: pro Nut ein Knopf, Beschriftung mit Alvaris-Nummer */}
+          <div className="flex items-center gap-1 flex-wrap max-w-[60%]">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Nut</span>
+            {allSlots.map((s) => {
+              const isActive = s.slot === activeSlot && s.moduleIndex === activeModuleIndex;
+              return (
+                <Tooltip key={`${s.slot}-${s.moduleIndex}`}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { setActiveSlot(s.slot); setActiveModuleIndex(s.moduleIndex); setSelectedId(null); }}
+                      className={`min-w-[28px] px-2 py-1 text-xs rounded-md transition-colors border font-semibold ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:text-primary'
+                      }`}
+                    >
+                      {s.number}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Nut {s.number} · {SLOT_SIDE_DE[s.slot]}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
 
           {/* Tool palette */}
@@ -441,8 +451,10 @@ export function ProfileWorkbench2D({
             <ProfileCrossSection2D
               section={section}
               activeSlot={activeSlot}
-              onSelectSlot={(s) => { setActiveSlot(s); setSelectedId(null); }}
-              size={96}
+              activeModuleIndex={activeModuleIndex}
+              onSelectSlot={(s, mi) => { setActiveSlot(s); setActiveModuleIndex(mi); setSelectedId(null); }}
+              size={108}
+              showLabels
             />
           </div>
 
@@ -532,11 +544,9 @@ export function ProfileWorkbench2D({
                     strokeDasharray="4 3"
                     opacity="0.55"
                   />
-                  {slotGuides.length > 1 && (
-                    <text x={-6} y={y + 3} textAnchor="end" fontSize="8" fill="#64748b" fontWeight="600">
-                      {i + 1}
-                    </text>
-                  )}
+                  <text x={-6} y={y + 3} textAnchor="end" fontSize="8" fill="hsl(var(--primary))" fontWeight="700">
+                    {activeSlotNumber}
+                  </text>
                 </g>
               ))}
 
@@ -719,7 +729,7 @@ export function ProfileWorkbench2D({
             <div className="absolute top-3 right-3 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-foreground">
-                  {selectedHole ? 'Bohrung' : 'Verbinder'} · {SLOT_LABEL_DE[activeSlot]}
+                  {selectedHole ? 'Bohrung' : 'Verbinder'} · Nut {activeSlotNumber} ({SLOT_SIDE_DE[activeSlot]})
                 </span>
                 <button onClick={() => setSelectedId(null)} className="text-muted-foreground hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
@@ -758,22 +768,7 @@ export function ProfileWorkbench2D({
                       className="h-8 text-xs"
                     />
                   </div>
-                  {slotCenters.length > 1 && (
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground mb-1 block">Nut-Spur</Label>
-                      <Select
-                        value={String(selectedHole.moduleIndex ?? 0)}
-                        onValueChange={(v) => updateHole({ moduleIndex: Number(v) })}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {slotCenters.map((_, i) => (
-                            <SelectItem key={i} value={String(i)} className="text-xs">Spur {i + 1}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  {/* Spur-Auswahl entfällt – jede Nut ist als eigener Tab adressierbar */}
                 </>
               )}
 
@@ -806,22 +801,7 @@ export function ProfileWorkbench2D({
                       </SelectContent>
                     </Select>
                   </div>
-                  {slotCenters.length > 1 && (
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground mb-1 block">Nut-Spur</Label>
-                      <Select
-                        value={String(selectedConn.moduleIndex ?? 0)}
-                        onValueChange={(v) => updateConn({ moduleIndex: Number(v) })}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {slotCenters.map((_, i) => (
-                            <SelectItem key={i} value={String(i)} className="text-xs">Spur {i + 1}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  {/* Spur-Auswahl entfällt – jede Nut ist als eigener Tab adressierbar */}
                 </>
               )}
 
@@ -844,8 +824,8 @@ export function ProfileWorkbench2D({
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-200 rounded-full px-4 py-1.5 text-[11px] text-muted-foreground shadow-sm pointer-events-none">
               <Plus className="h-3 w-3 inline mr-1" />
               {tool === 'connector'
-                ? `Klicke an einen Profilende-Bereich, um einen Verbinder auf ${SLOT_LABEL_DE[activeSlot]} zu setzen`
-                : `Klicke auf das Profil, um eine Bohrung auf ${SLOT_LABEL_DE[activeSlot]} zu setzen`}
+                ? `Klicke an einen Profilende-Bereich, um einen Verbinder auf Nut ${activeSlotNumber} zu setzen`
+                : `Klicke auf das Profil, um eine Bohrung auf Nut ${activeSlotNumber} zu setzen`}
             </div>
           )}
         </div>
@@ -853,7 +833,7 @@ export function ProfileWorkbench2D({
         {/* Status bar */}
         <div className="flex items-center justify-between px-3 py-1.5 border-t border-slate-200 bg-slate-50 text-[10px] text-muted-foreground">
           <div>
-            {visibleHoles.length} Bohrung{visibleHoles.length !== 1 ? 'en' : ''} · {visibleConnectors.length} Verbinder auf {SLOT_LABEL_DE[activeSlot]}
+            {visibleHoles.length} Bohrung{visibleHoles.length !== 1 ? 'en' : ''} · {visibleConnectors.length} Verbinder auf Nut {activeSlotNumber} ({SLOT_SIDE_DE[activeSlot]})
           </div>
           <div className="flex items-center gap-3">
             <span>Raster: Genau (1 mm)</span>

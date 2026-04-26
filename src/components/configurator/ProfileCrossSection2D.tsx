@@ -1,32 +1,47 @@
-import { SLOT_IDS, getModulePitch, type ProfileSection, type SlotId } from '@/lib/profile-configurator-types';
+import {
+  getModulePitch,
+  getSlotCounts,
+  getSlotNumber,
+  getBoreCounts,
+  getBoreNumber,
+  type ProfileSection,
+  type SlotId,
+} from '@/lib/profile-configurator-types';
 
 interface Props {
   section: ProfileSection;
+  /** Aktuelle Auswahl (interne Slot-ID + Spurindex) */
   activeSlot: SlotId;
-  onSelectSlot: (slot: SlotId) => void;
+  activeModuleIndex?: number;
+  onSelectSlot: (slot: SlotId, moduleIndex: number) => void;
   size?: number; // px
+  /** Beschriftung anzeigen (rote Nutnummern, blaue Kernzug-Nummern) */
+  showLabels?: boolean;
 }
 
 /**
- * Compact, clickable cross-section of the profile.
- * Each side renders the actual T-slot openings; clicking a slot zone
- * activates that slot in the workbench.
- *
- * Slot convention (clockwise from top): A=top, B=right, C=bottom, D=left
+ * Querschnitt analog Alvaris-Profilbearbeitungscode:
+ *  – Nuten werden im Uhrzeigersinn fortlaufend rot nummeriert (1..n)
+ *  – Kernzüge (Mittelbohrungen) tragen blaue Zahlen in Kreisen
+ *  – jede einzelne Nut ist klickbar
  */
-export function ProfileCrossSection2D({ section, activeSlot, onSelectSlot, size = 96 }: Props) {
+export function ProfileCrossSection2D({
+  section,
+  activeSlot,
+  activeModuleIndex = 0,
+  onSelectSlot,
+  size = 96,
+  showLabels = true,
+}: Props) {
   const { w, h, slotWidth, slotDepth, cornerR, boreRadius } = section;
   const MODULE = getModulePitch(section);
+  const counts = getSlotCounts(section);
+  const bores = getBoreCounts(section);
 
-  // Layout: viewBox in mm with small padding
-  const PAD = 6;
+  const PAD = 10;
   const VB_W = w + PAD * 2;
   const VB_H = h + PAD * 2;
 
-  const numW = Math.max(1, Math.round(w / MODULE));
-  const numH = Math.max(1, Math.round(h / MODULE));
-
-  // Outer rounded rect path
   const outer = `
     M ${PAD + cornerR} ${PAD}
     L ${PAD + w - cornerR} ${PAD}
@@ -40,40 +55,65 @@ export function ProfileCrossSection2D({ section, activeSlot, onSelectSlot, size 
     Z
   `;
 
-  // T-slot rectangles (cosmetic only, drawn on top of fill)
-  type SlotRect = { id: SlotId; x: number; y: number; w: number; h: number };
-  const slotRects: SlotRect[] = [];
+  // Schriftgröße proportional zum Profil
+  const fs = Math.max(2.4, Math.min(5, MODULE / 8));
+  const boreFs = Math.max(2.2, Math.min(4.5, boreRadius * 1.1));
 
-  // A = top
-  for (let i = 0; i < numW; i++) {
-    const cx = PAD + MODULE * (i + 0.5);
-    slotRects.push({ id: 'A', x: cx - slotWidth / 2, y: PAD, w: slotWidth, h: slotDepth });
-  }
-  // C = bottom
-  for (let i = 0; i < numW; i++) {
-    const cx = PAD + MODULE * (i + 0.5);
-    slotRects.push({ id: 'C', x: cx - slotWidth / 2, y: PAD + h - slotDepth, w: slotWidth, h: slotDepth });
-  }
-  // B = right
-  for (let j = 0; j < numH; j++) {
-    const cy = PAD + MODULE * (j + 0.5);
-    slotRects.push({ id: 'B', x: PAD + w - slotDepth, y: cy - slotWidth / 2, w: slotDepth, h: slotWidth });
-  }
-  // D = left
-  for (let j = 0; j < numH; j++) {
-    const cy = PAD + MODULE * (j + 0.5);
-    slotRects.push({ id: 'D', x: PAD, y: cy - slotWidth / 2, w: slotDepth, h: slotWidth });
-  }
+  type SlotEntry = {
+    slot: SlotId;
+    moduleIndex: number;
+    number: number;
+    rect: { x: number; y: number; w: number; h: number };
+    label: { x: number; y: number };
+    hit: { x: number; y: number; w: number; h: number };
+  };
+  const HIT = 5;
+  const slots: SlotEntry[] = [];
 
-  // Hit zones – wider than the slot itself for easy clicking.
-  // Each zone covers the entire side strip.
-  const HIT = 7;
-  const hitZones: { id: SlotId; x: number; y: number; w: number; h: number; label: string }[] = [
-    { id: 'A', x: PAD, y: PAD - HIT,           w: w,    h: HIT + slotDepth, label: 'A' },
-    { id: 'C', x: PAD, y: PAD + h - slotDepth, w: w,    h: HIT + slotDepth, label: 'C' },
-    { id: 'B', x: PAD + w - slotDepth, y: PAD, w: HIT + slotDepth, h: h,    label: 'B' },
-    { id: 'D', x: PAD - HIT,           y: PAD, w: HIT + slotDepth, h: h,    label: 'D' },
-  ];
+  // A = oben (links → rechts)
+  for (let i = 0; i < counts.A; i++) {
+    const cx = PAD + MODULE * (i + 0.5);
+    slots.push({
+      slot: 'A', moduleIndex: i,
+      number: getSlotNumber(section, 'A', i),
+      rect: { x: cx - slotWidth / 2, y: PAD, w: slotWidth, h: slotDepth },
+      label: { x: cx, y: PAD + slotDepth + fs * 0.9 },
+      hit: { x: cx - MODULE / 2, y: PAD - HIT, w: MODULE, h: HIT + slotDepth + fs * 1.4 },
+    });
+  }
+  // B = rechts (oben → unten)
+  for (let j = 0; j < counts.B; j++) {
+    const cy = PAD + MODULE * (j + 0.5);
+    slots.push({
+      slot: 'B', moduleIndex: j,
+      number: getSlotNumber(section, 'B', j),
+      rect: { x: PAD + w - slotDepth, y: cy - slotWidth / 2, w: slotDepth, h: slotWidth },
+      label: { x: PAD + w - slotDepth - fs * 0.7, y: cy + fs * 0.35 },
+      hit: { x: PAD + w - slotDepth - fs * 1.4, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
+    });
+  }
+  // C = unten (rechts → links)
+  for (let i = 0; i < counts.C; i++) {
+    const cx = PAD + MODULE * (i + 0.5);
+    slots.push({
+      slot: 'C', moduleIndex: i,
+      number: getSlotNumber(section, 'C', i),
+      rect: { x: cx - slotWidth / 2, y: PAD + h - slotDepth, w: slotWidth, h: slotDepth },
+      label: { x: cx, y: PAD + h - slotDepth - fs * 0.4 },
+      hit: { x: cx - MODULE / 2, y: PAD + h - slotDepth - fs * 0.4, w: MODULE, h: HIT + slotDepth + fs * 0.6 },
+    });
+  }
+  // D = links (unten → oben)
+  for (let j = 0; j < counts.D; j++) {
+    const cy = PAD + MODULE * (j + 0.5);
+    slots.push({
+      slot: 'D', moduleIndex: j,
+      number: getSlotNumber(section, 'D', j),
+      rect: { x: PAD, y: cy - slotWidth / 2, w: slotDepth, h: slotWidth },
+      label: { x: PAD + slotDepth + fs * 0.7, y: cy + fs * 0.35 },
+      hit: { x: PAD - HIT, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
+    });
+  }
 
   return (
     <svg
@@ -90,59 +130,90 @@ export function ProfileCrossSection2D({ section, activeSlot, onSelectSlot, size 
         </linearGradient>
       </defs>
 
-      {/* Outer profile */}
+      {/* Profilkörper */}
       <path d={outer} fill={`url(#alu-${section.id})`} stroke="#475569" strokeWidth="0.5" />
 
-      {/* Center bores per module */}
-      {Array.from({ length: numW }).map((_, i) =>
-        Array.from({ length: numH }).map((_, j) => (
-          <circle
-            key={`bore-${i}-${j}`}
-            cx={PAD + MODULE * (i + 0.5)}
-            cy={PAD + MODULE * (j + 0.5)}
-            r={boreRadius}
-            fill="#f1f5f9"
-            stroke="#94a3b8"
-            strokeWidth="0.3"
-          />
-        )),
+      {/* Kernzüge (Mittelbohrungen) mit blauen Nummern in Kreisen */}
+      {Array.from({ length: bores.x }).map((_, ix) =>
+        Array.from({ length: bores.y }).map((_, iy) => {
+          const cx = PAD + MODULE * (ix + 0.5);
+          const cy = PAD + MODULE * (iy + 0.5);
+          const num = getBoreNumber(section, ix, iy);
+          const lblR = Math.max(boreRadius, boreFs * 0.95);
+          return (
+            <g key={`bore-${ix}-${iy}`}>
+              <circle cx={cx} cy={cy} r={boreRadius} fill="#f1f5f9" stroke="#94a3b8" strokeWidth="0.3" />
+              {showLabels && (
+                <>
+                  <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#1d4ed8" strokeWidth="0.4" opacity="0.95" />
+                  <text
+                    x={cx}
+                    y={cy + boreFs * 0.36}
+                    textAnchor="middle"
+                    fontSize={boreFs}
+                    fontWeight="700"
+                    fill="#1d4ed8"
+                    fontFamily="ui-sans-serif, system-ui"
+                  >
+                    {num}
+                  </text>
+                </>
+              )}
+            </g>
+          );
+        }),
       )}
 
-      {/* T-slot openings */}
-      {slotRects.map((r, i) => (
-        <rect
-          key={`slot-${i}`}
-          x={r.x}
-          y={r.y}
-          width={r.w}
-          height={r.h}
-          fill={r.id === activeSlot ? 'hsl(var(--primary))' : '#475569'}
-          opacity={r.id === activeSlot ? 0.9 : 0.55}
-        />
-      ))}
-
-      {/* Click hit zones */}
-      {hitZones.map((z) => (
-        <g key={`hit-${z.id}`} onClick={() => onSelectSlot(z.id)} style={{ cursor: 'pointer' }}>
+      {/* Nut-Öffnungen */}
+      {slots.map((s, i) => {
+        const isActive = s.slot === activeSlot && s.moduleIndex === activeModuleIndex;
+        return (
           <rect
-            x={z.x}
-            y={z.y}
-            width={z.w}
-            height={z.h}
-            fill={z.id === activeSlot ? 'hsl(var(--primary))' : 'transparent'}
-            opacity={z.id === activeSlot ? 0.12 : 0}
-            stroke={z.id === activeSlot ? 'hsl(var(--primary))' : 'transparent'}
-            strokeDasharray="2 2"
-            strokeWidth="0.5"
+            key={`slot-${i}`}
+            x={s.rect.x}
+            y={s.rect.y}
+            width={s.rect.w}
+            height={s.rect.h}
+            fill={isActive ? 'hsl(var(--primary))' : '#475569'}
+            opacity={isActive ? 0.95 : 0.6}
           />
-        </g>
-      ))}
+        );
+      })}
 
-      {/* Slot letter labels A/B/C/D in the corners */}
-      <text x={PAD + w / 2} y={PAD - 1.5}      textAnchor="middle" fontSize="4" fontWeight="700" fill={activeSlot === 'A' ? 'hsl(var(--primary))' : '#64748b'}>A</text>
-      <text x={PAD + w + 4} y={PAD + h / 2 + 1.5} textAnchor="middle" fontSize="4" fontWeight="700" fill={activeSlot === 'B' ? 'hsl(var(--primary))' : '#64748b'}>B</text>
-      <text x={PAD + w / 2} y={PAD + h + 4}    textAnchor="middle" fontSize="4" fontWeight="700" fill={activeSlot === 'C' ? 'hsl(var(--primary))' : '#64748b'}>C</text>
-      <text x={PAD - 4}     y={PAD + h / 2 + 1.5} textAnchor="middle" fontSize="4" fontWeight="700" fill={activeSlot === 'D' ? 'hsl(var(--primary))' : '#64748b'}>D</text>
+      {/* Klick-Hitboxen + rote Nut-Nummern */}
+      {slots.map((s) => {
+        const isActive = s.slot === activeSlot && s.moduleIndex === activeModuleIndex;
+        return (
+          <g
+            key={`hit-${s.slot}-${s.moduleIndex}`}
+            onClick={(e) => { e.stopPropagation(); onSelectSlot(s.slot, s.moduleIndex); }}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect
+              x={s.hit.x}
+              y={s.hit.y}
+              width={s.hit.w}
+              height={s.hit.h}
+              fill={isActive ? 'hsl(var(--primary))' : 'transparent'}
+              opacity={isActive ? 0.1 : 0}
+            />
+            {showLabels && (
+              <text
+                x={s.label.x}
+                y={s.label.y}
+                textAnchor="middle"
+                fontSize={fs}
+                fontWeight="700"
+                fill={isActive ? 'hsl(var(--primary))' : '#dc2626'}
+                fontFamily="ui-sans-serif, system-ui"
+                pointerEvents="none"
+              >
+                {s.number}
+              </text>
+            )}
+          </g>
+        );
+      })}
     </svg>
   );
 }

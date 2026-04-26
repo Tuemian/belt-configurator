@@ -7,11 +7,13 @@
 import jsPDF from 'jspdf';
 import {
   PROFILE_SECTIONS,
-  SLOT_LABEL_DE,
+  SLOT_SIDE_DE,
   CONNECTOR_TYPES,
   HOLE_TYPES,
   getModulePitch,
   getSlotCenters,
+  getSlotNumber,
+  getAllSlots,
   calculateProfilePrice,
   type ProfileConfig,
   type ProfileSection,
@@ -133,13 +135,15 @@ export function buildProfileInquirySummary(cart: CartItemLike[]): string {
     if (item.config.holes.length) {
       lines.push(`  Bohrungen (${item.config.holes.length}):`);
       item.config.holes.forEach((h) => {
-        lines.push(`    – ${h.label} · ${SLOT_LABEL_DE[h.slot]} @ ${h.zPosition} mm`);
+        const n = getSlotNumber(s, h.slot, h.moduleIndex ?? 0);
+        lines.push(`    – ${h.label} · Nut ${n} (${SLOT_SIDE_DE[h.slot]}) @ ${h.zPosition} mm`);
       });
     }
     if (item.config.connectors.length) {
       lines.push(`  Verbinder (${item.config.connectors.length}):`);
       item.config.connectors.forEach((c) => {
-        lines.push(`    – ${c.label} · ${SLOT_LABEL_DE[c.slot]} · ${c.end === 'start' ? 'Anfang' : 'Ende'}`);
+        const n = getSlotNumber(s, c.slot, c.moduleIndex ?? 0);
+        lines.push(`    – ${c.label} · Nut ${n} (${SLOT_SIDE_DE[c.slot]}) · ${c.end === 'start' ? 'Anfang' : 'Ende'}`);
       });
     }
     lines.push(`  Positionspreis: ${fmtEur.format(item.price.total)}`);
@@ -320,17 +324,17 @@ function drawProfilePage(
   y += xsH + 6;
 
   // Cuts / end treatments
-  drawCutsBlock(doc, item.config, MARGIN, y, drawAreaW);
+  drawCutsBlock(doc, item.config, s, MARGIN, y, drawAreaW);
   y += 18;
 
   // Holes table
   if (item.config.holes.length > 0) {
-    y = drawHolesTable(doc, item.config.holes, MARGIN, y, drawAreaW);
+    y = drawHolesTable(doc, item.config.holes, s, MARGIN, y, drawAreaW);
   }
 
   // Connectors table
   if (item.config.connectors.length > 0) {
-    y = drawConnectorsTable(doc, item.config.connectors, MARGIN, y, drawAreaW);
+    y = drawConnectorsTable(doc, item.config.connectors, s, MARGIN, y, drawAreaW);
   }
 
   // Price breakdown
@@ -375,16 +379,24 @@ function drawCrossSection(
   const r = Math.min(2, s.cornerR * scale);
   doc.roundedRect(ox, oy, profileW, profileH, r, r, 'FD');
 
-  // Center bores per module
+  // Center bores per module (mit blauer Alvaris-Nummerierung in Kreisen)
   const MODULE = getModulePitch(s);
   const numW = Math.max(1, Math.round(s.w / MODULE));
   const numH = Math.max(1, Math.round(s.h / MODULE));
-  setFill(doc, { r: 255, g: 255, b: 255 });
   for (let i = 0; i < numW; i++) {
     for (let j = 0; j < numH; j++) {
       const cx = ox + (MODULE * (i + 0.5)) * scale;
       const cy = oy + (MODULE * (j + 0.5)) * scale;
+      // Bohrungs-Hintergrund
+      setFill(doc, { r: 255, g: 255, b: 255 });
       doc.circle(cx, cy, s.boreRadius * scale, 'F');
+      // Blauer Kreis mit Nummer
+      const lblR = Math.max(s.boreRadius * scale, 1.6);
+      setStroke(doc, { r: 29, g: 78, b: 216 });
+      doc.setLineWidth(0.2);
+      doc.circle(cx, cy, lblR, 'S');
+      setText(doc, { r: 29, g: 78, b: 216 }, 4.5, 'bold');
+      doc.text(String(j * numW + i + 1), cx, cy + 1.4, { align: 'center' });
     }
   }
 
@@ -403,20 +415,40 @@ function drawCrossSection(
     doc.rect(ox + profileW - slotD, cy - slotW / 2, slotD, slotW, 'F'); // B
   }
 
-  // Slot labels A / B / C / D
-  setText(doc, SLATE_900, 6, 'bold');
-  doc.text('A', ox + profileW / 2, oy - 1, { align: 'center' });
-  doc.text('C', ox + profileW / 2, oy + profileH + 4, { align: 'center' });
-  doc.text('B', ox + profileW + 3, oy + profileH / 2 + 1.5);
-  doc.text('D', ox - 3, oy + profileH / 2 + 1.5, { align: 'right' });
+  // Rote Alvaris-Nutnummern an jeder Nut
+  setText(doc, { r: 220, g: 38, b: 38 }, 4.5, 'bold');
+  // A (oben, links→rechts)
+  for (let i = 0; i < numW; i++) {
+    const cx = ox + (MODULE * (i + 0.5)) * scale;
+    const num = getSlotNumber(s, 'A', i);
+    doc.text(String(num), cx, oy + slotD + 3.5, { align: 'center' });
+  }
+  // B (rechts, oben→unten)
+  for (let j = 0; j < numH; j++) {
+    const cy = oy + (MODULE * (j + 0.5)) * scale;
+    const num = getSlotNumber(s, 'B', j);
+    doc.text(String(num), ox + profileW - slotD - 1.5, cy + 1.4, { align: 'right' });
+  }
+  // C (unten, rechts→links)
+  for (let i = 0; i < numW; i++) {
+    const cx = ox + (MODULE * (i + 0.5)) * scale;
+    const num = getSlotNumber(s, 'C', i);
+    doc.text(String(num), cx, oy + profileH - slotD - 1.5, { align: 'center' });
+  }
+  // D (links, unten→oben)
+  for (let j = 0; j < numH; j++) {
+    const cy = oy + (MODULE * (j + 0.5)) * scale;
+    const num = getSlotNumber(s, 'D', j);
+    doc.text(String(num), ox + slotD + 1.5, cy + 1.4, { align: 'left' });
+  }
 
   // Annotate which slots have features
-  const usedSlots = new Set<SlotId>();
-  holes.forEach((hh) => usedSlots.add(hh.slot));
-  connectors.forEach((cc) => usedSlots.add(cc.slot));
-  if (usedSlots.size) {
+  const usedSlotNums = new Set<number>();
+  holes.forEach((hh) => usedSlotNums.add(getSlotNumber(s, hh.slot, hh.moduleIndex ?? 0)));
+  connectors.forEach((cc) => usedSlotNums.add(getSlotNumber(s, cc.slot, cc.moduleIndex ?? 0)));
+  if (usedSlotNums.size) {
     setText(doc, BRAND, 6, 'bold');
-    doc.text(`Bearbeitet: ${[...usedSlots].sort().join(', ')}`, x + 2, y + h - 2);
+    doc.text(`Bearbeitete Nuten: ${[...usedSlotNums].sort((a, b) => a - b).join(', ')}`, x + 2, y + h - 2);
   }
 }
 
@@ -546,7 +578,7 @@ function holePdfColor(type: ProfileHole['type']) {
 // Tables
 // ---------------------------------------------------------------------------
 
-function drawCutsBlock(doc: jsPDF, config: ProfileConfig, x: number, y: number, w: number) {
+function drawCutsBlock(doc: jsPDF, config: ProfileConfig, section: ProfileSection, x: number, y: number, w: number) {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text('SCHRÄGSCHNITTE & STIRNSEITEN', x, y);
   setFill(doc, SLATE_200);
@@ -556,25 +588,28 @@ function drawCutsBlock(doc: jsPDF, config: ProfileConfig, x: number, y: number, 
   const partsRight: string[] = [];
   partsLeft.push(`Anfang: ${config.angleStart === 0 ? '90° (gerade)' : `${config.angleStart}°`}`);
   partsRight.push(`Ende: ${config.angleEnd === 0 ? '90° (gerade)' : `${config.angleEnd}°`}`);
-  if (config.endStart.thread) partsLeft.push(`Gewinde M8 · ${scopeLabel(config.endStart.scope)}`);
-  if (config.endEnd.thread)   partsRight.push(`Gewinde M8 · ${scopeLabel(config.endEnd.scope)}`);
+  if (config.endStart.thread) partsLeft.push(`Gewinde M8 · ${scopeLabel(config.endStart.scope, section)}`);
+  if (config.endEnd.thread)   partsRight.push(`Gewinde M8 · ${scopeLabel(config.endEnd.scope, section)}`);
   doc.text(partsLeft.join('   ·   '),  x, y + 7);
   doc.text(partsRight.join('   ·   '), x + w / 2, y + 7);
 }
 
-function scopeLabel(scope: string | undefined): string {
+function scopeLabel(scope: string | undefined, section: ProfileSection): string {
   switch (scope) {
     case 'all':    return 'alle Kernzüge';
     case 'center': return 'Zentrum';
-    case 'A':      return 'Nut A';
-    case 'B':      return 'Nut B';
-    case 'C':      return 'Nut C';
-    case 'D':      return 'Nut D';
+    case 'A':
+    case 'B':
+    case 'C':
+    case 'D': {
+      const n = getSlotNumber(section, scope as SlotId, 0);
+      return `Nut ${n}`;
+    }
     default:       return 'alle Kernzüge';
   }
 }
 
-function drawHolesTable(doc: jsPDF, holes: ProfileHole[], x: number, y: number, w: number): number {
+function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSection, x: number, y: number, w: number): number {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text(`BOHRUNGEN (${holes.length})`, x, y);
   y += 2;
@@ -587,8 +622,7 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], x: number, y: number, 
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
   doc.text('Ø', x + 70, y);
-  doc.text('NUT', x + 84, y);
-  doc.text('SPUR', x + 110, y);
+  doc.text('NUT (ALVARIS)', x + 90, y);
   doc.text('POSITION', x + 130, y);
   doc.text('VOM ENDE', x + 162, y);
   y += 3;
@@ -603,15 +637,15 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], x: number, y: number, 
     doc.text(String(idx + 1), x, y);
     doc.text(truncate(HOLE_TYPES.find((t) => t.id === h.type)?.label ?? h.label, 36), x + 12, y);
     doc.text(`${h.diameter} mm`, x + 70, y);
-    doc.text(SLOT_LABEL_DE[h.slot].split(' ')[1] ?? h.slot, x + 84, y);
-    doc.text(String((h.moduleIndex ?? 0) + 1), x + 110, y);
+    const slotN = getSlotNumber(section, h.slot, h.moduleIndex ?? 0);
+    doc.text(`Nut ${slotN} (${SLOT_SIDE_DE[h.slot]})`, x + 90, y);
     doc.text(`${h.zPosition} mm`, x + 130, y);
     y += 5;
   });
   return y + 4;
 }
 
-function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], x: number, y: number, w: number): number {
+function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section: ProfileSection, x: number, y: number, w: number): number {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text(`VERBINDER (${connectors.length})`, x, y);
   y += 2;
@@ -622,8 +656,7 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], x: numb
   setText(doc, SLATE_500, 7, 'bold');
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
-  doc.text('NUT', x + 90, y);
-  doc.text('SPUR', x + 116, y);
+  doc.text('NUT (ALVARIS)', x + 96, y);
   doc.text('POSITION', x + 140, y);
   y += 3;
 
@@ -637,8 +670,8 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], x: numb
     setText(doc, SLATE_900, 8.5, 'normal');
     doc.text(String(idx + 1), x, y);
     doc.text(truncate(def?.label ?? c.label, 40), x + 12, y);
-    doc.text(SLOT_LABEL_DE[c.slot].split(' ')[1] ?? c.slot, x + 90, y);
-    doc.text(String((c.moduleIndex ?? 0) + 1), x + 116, y);
+    const slotN = getSlotNumber(section, c.slot, c.moduleIndex ?? 0);
+    doc.text(`Nut ${slotN} (${SLOT_SIDE_DE[c.slot]})`, x + 96, y);
     doc.text(c.end === 'start' ? 'Anfang' : 'Ende', x + 140, y);
     y += 5;
   });

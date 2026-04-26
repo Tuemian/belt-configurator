@@ -15,11 +15,20 @@ export type SlotId = 'A' | 'B' | 'C' | 'D';
 
 export const SLOT_IDS: SlotId[] = ['A', 'B', 'C', 'D'];
 
+/** Backwards-compat: Buchstaben-Bezeichnungen (intern weiter verwendet, im UI durch Alvaris-Nummern ersetzt) */
 export const SLOT_LABEL_DE: Record<SlotId, string> = {
-  A: 'Nut A (oben)',
-  B: 'Nut B (rechts)',
-  C: 'Nut C (unten)',
-  D: 'Nut D (links)',
+  A: 'Oben',
+  B: 'Rechts',
+  C: 'Unten',
+  D: 'Links',
+};
+
+/** Klartext der Seite (für Tooltips / PDF) */
+export const SLOT_SIDE_DE: Record<SlotId, string> = {
+  A: 'oben',
+  B: 'rechts',
+  C: 'unten',
+  D: 'links',
 };
 
 export interface ProfileSize {
@@ -258,6 +267,72 @@ export function getSlotCenters(section: ProfileSection, slot: SlotId): number[] 
   const pitch = getModulePitch(section);
   const n = Math.max(1, Math.round(fw / pitch));
   return Array.from({ length: n }, (_, i) => pitch * (i + 0.5));
+}
+
+// ---------------------------------------------------------------------------
+// Alvaris-Nummerierung (Profilbearbeitungscode 10404-11-0000-00)
+// ---------------------------------------------------------------------------
+//
+// Nuten (rote Zahlen, im Uhrzeigersinn beginnend oben links):
+//   Seite A (oben):   1 .. nA           (links → rechts)
+//   Seite B (rechts): nA+1 .. nA+nB     (oben → unten)
+//   Seite C (unten):  nA+nB+1 .. ...    (rechts → links)
+//   Seite D (links):  ... bis n_total   (unten → oben)
+//
+// Kernzüge / Mittelbohrungen (blaue Zahlen in Kreisen):
+//   zeilenweise von oben-links nach unten-rechts (Spalte i, Zeile j)
+
+/** Anzahl Nuten je Seite (basierend auf modulePitch) */
+export function getSlotCounts(section: ProfileSection): { A: number; B: number; C: number; D: number } {
+  const pitch = getModulePitch(section);
+  const nW = Math.max(1, Math.round(section.w / pitch));
+  const nH = Math.max(1, Math.round(section.h / pitch));
+  return { A: nW, B: nH, C: nW, D: nH };
+}
+
+/** Liefert die fortlaufende Alvaris-Nutnummer (1-basiert) */
+export function getSlotNumber(section: ProfileSection, slot: SlotId, moduleIndex = 0): number {
+  const counts = getSlotCounts(section);
+  const idx = Math.max(0, Math.min(moduleIndex, counts[slot] - 1));
+  switch (slot) {
+    case 'A': return 1 + idx;                                              // links → rechts
+    case 'B': return counts.A + 1 + idx;                                   // oben → unten
+    case 'C': return counts.A + counts.B + 1 + (counts.C - 1 - idx);       // rechts → links
+    case 'D': return counts.A + counts.B + counts.C + 1 + (counts.D - 1 - idx); // unten → oben
+  }
+}
+
+/** Gesamtanzahl Nuten am Profil */
+export function getTotalSlotCount(section: ProfileSection): number {
+  const c = getSlotCounts(section);
+  return c.A + c.B + c.C + c.D;
+}
+
+/** Alle Nuten in Alvaris-Reihenfolge (für Auswahl-Listen) */
+export function getAllSlots(section: ProfileSection): { slot: SlotId; moduleIndex: number; number: number }[] {
+  const counts = getSlotCounts(section);
+  const out: { slot: SlotId; moduleIndex: number; number: number }[] = [];
+  (['A', 'B', 'C', 'D'] as SlotId[]).forEach((slot) => {
+    for (let i = 0; i < counts[slot]; i++) {
+      out.push({ slot, moduleIndex: i, number: getSlotNumber(section, slot, i) });
+    }
+  });
+  return out.sort((a, b) => a.number - b.number);
+}
+
+/** Anzahl Kernzüge (Bohrungsspur in der Profilmitte) je Achse */
+export function getBoreCounts(section: ProfileSection): { x: number; y: number } {
+  const pitch = getModulePitch(section);
+  return {
+    x: Math.max(1, Math.round(section.w / pitch)),
+    y: Math.max(1, Math.round(section.h / pitch)),
+  };
+}
+
+/** Fortlaufende Kernzug-Nummer (links → rechts, dann oben → unten), 1-basiert */
+export function getBoreNumber(section: ProfileSection, ix: number, iy: number): number {
+  const { x } = getBoreCounts(section);
+  return iy * x + ix + 1;
 }
 
 // ---------------------------------------------------------------------------
