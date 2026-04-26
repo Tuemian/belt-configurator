@@ -1,9 +1,12 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   HOLE_TYPES,
   CONNECTOR_TYPES,
@@ -118,8 +121,9 @@ export function ProfileWorkbench2D({
   const counts = useMemo(() => getSlotCounts(section), [section]);
   const MODULE = getModulePitch(section);
 
-  // Zoom für lange Profile
-  const [zoom, setZoom] = useState(1);
+  // View modes & dialogs
+  const [detailView, setDetailView] = useState(false);  // false = Anpassen, true = Detail (1mm ≈ 0.6px, scrollbar)
+  const [listDialogOpen, setListDialogOpen] = useState(false);
 
   /** Eine Reihe pro Profilseite (A/B/C/D); jede Reihe hat 1..n Nut-Spuren */
   const sideRows = useMemo(() => {
@@ -379,22 +383,32 @@ export function ProfileWorkbench2D({
             )}
 
             {/* Zoom */}
-            <div className="flex items-center gap-1.5 bg-white rounded-md border border-slate-200 px-2 py-1">
-              <span className="text-[10px] text-muted-foreground">Zoom</span>
-              <input
-                type="range"
-                min={1}
-                max={4}
-                step={0.25}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-24 accent-primary"
-              />
-              <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{zoom.toFixed(2)}×</span>
-              {zoom !== 1 && (
-                <button onClick={() => setZoom(1)} className="text-[10px] text-primary hover:underline">reset</button>
-              )}
+            {/* View mode toggle: Anpassen vs. Detail */}
+            <div className="flex items-center bg-white rounded-md border border-slate-200 p-0.5">
+              <button
+                onClick={() => setDetailView(false)}
+                className={`px-2 py-1 text-xs rounded ${!detailView ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                title="Profil auf Fensterbreite anpassen"
+              >
+                Anpassen
+              </button>
+              <button
+                onClick={() => setDetailView(true)}
+                className={`px-2 py-1 text-xs rounded ${detailView ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                title="1 mm ≈ 0,6 px – horizontal scrollen für lange Profile"
+              >
+                Detail
+              </button>
             </div>
+
+            {/* Bohrungen als Liste eingeben */}
+            <button
+              onClick={() => setListDialogOpen(true)}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-slate-200 bg-white hover:bg-primary/5 hover:border-primary/40 text-foreground"
+              title="Bohrungspositionen als Liste eingeben"
+            >
+              <Keyboard className="h-3 w-3" /> Liste
+            </button>
           </div>
         </div>
 
@@ -431,7 +445,10 @@ export function ProfileWorkbench2D({
               </div>
             )}
 
-            <div style={{ width: `${zoom * 100}%`, minWidth: '100%' }} className="space-y-2">
+            <div
+              style={detailView ? { minWidth: `${Math.max(800, length * 0.6 + 80)}px` } : undefined}
+              className="space-y-2"
+            >
             {sideRows.map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
@@ -608,6 +625,20 @@ export function ProfileWorkbench2D({
             Shift-Klick = mehrere Nuten
           </div>
         </div>
+
+        {/* Bulk-Eingabe-Dialog */}
+        <BulkHolesDialog
+          open={listDialogOpen}
+          onOpenChange={setListDialogOpen}
+          section={section}
+          length={length}
+          activeKey={activeKey}
+          defaultType={holeType}
+          onApply={(newHoles) => {
+            onUpdateHoles([...holes, ...newHoles]);
+            setListDialogOpen(false);
+          }}
+        />
       </div>
     </TooltipProvider>
   );
@@ -1000,5 +1031,221 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
         {t.thread ? `M8 in ${activeBores.size}/${allBoreNums.length}` : 'kein Gewinde'}
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Bulk-Holes Dialog: Bohrungen als Liste eingeben
+// ---------------------------------------------------------------------------
+
+interface BulkHolesDialogProps {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  section: ProfileSection;
+  length: number;
+  activeKey: SlotKey;
+  defaultType: ProfileHole['type'];
+  onApply: (newHoles: ProfileHole[]) => void;
+}
+
+/**
+ * Parst eine Eingabe wie:
+ *   "100, 200, 300"
+ *   "100\n200\n300"
+ *   "100-500/100"   (Range mit Schrittweite: 100, 200, 300, 400, 500)
+ *   "100..500/50"   (alternative Schreibweise)
+ * Liefert sortierte, deduplizierte Positionen im gültigen Bereich.
+ */
+function parsePositions(input: string, length: number): { positions: number[]; errors: string[] } {
+  const errors: string[] = [];
+  const out = new Set<number>();
+  // Trenner: Komma, Semikolon, Zeilenumbruch
+  const tokens = input.split(/[,;\n]+/).map((t) => t.trim()).filter(Boolean);
+  for (const tok of tokens) {
+    // Range: a-b/step  oder  a..b/step
+    const rangeMatch = tok.match(/^(-?\d+(?:[.,]\d+)?)\s*(?:-|\.\.)\s*(-?\d+(?:[.,]\d+)?)\s*(?:\/\s*(\d+(?:[.,]\d+)?))?$/);
+    if (rangeMatch) {
+      const a = parseFloat(rangeMatch[1].replace(',', '.'));
+      const b = parseFloat(rangeMatch[2].replace(',', '.'));
+      const step = rangeMatch[3] ? parseFloat(rangeMatch[3].replace(',', '.')) : 50;
+      if (!isFinite(a) || !isFinite(b) || !isFinite(step) || step <= 0) { errors.push(`Ungültiger Bereich: "${tok}"`); continue; }
+      const lo = Math.min(a, b), hi = Math.max(a, b);
+      for (let v = lo; v <= hi + 1e-6; v += step) {
+        const z = Math.round(v);
+        if (z >= 1 && z <= length - 1) out.add(z);
+      }
+      continue;
+    }
+    const num = parseFloat(tok.replace(',', '.'));
+    if (!isFinite(num)) { errors.push(`Ungültige Zahl: "${tok}"`); continue; }
+    const z = Math.round(num);
+    if (z < 1 || z > length - 1) { errors.push(`Außerhalb 1–${length - 1} mm: ${z}`); continue; }
+    out.add(z);
+  }
+  return { positions: Array.from(out).sort((a, b) => a - b), errors };
+}
+
+function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defaultType, onApply }: BulkHolesDialogProps) {
+  const [text, setText] = useState('');
+  const [type, setType] = useState<ProfileHole['type']>(defaultType);
+  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(() => new Set([keyOf(activeKey.slot, activeKey.moduleIndex)]));
+
+  // Reset, wenn Dialog frisch geöffnet wird
+  useEffect(() => {
+    if (open) {
+      setType(defaultType);
+      setSelectedSlots(new Set([keyOf(activeKey.slot, activeKey.moduleIndex)]));
+    }
+  }, [open, defaultType, activeKey]);
+
+  const allSlots = useMemo(() => {
+    const counts = getSlotCounts(section);
+    const list: { key: string; slot: SlotId; moduleIndex: number; number: number }[] = [];
+    SLOT_ORDER.forEach((slot) => {
+      for (let mi = 0; mi < counts[slot]; mi++) {
+        list.push({ key: keyOf(slot, mi), slot, moduleIndex: mi, number: getSlotNumber(section, slot, mi) });
+      }
+    });
+    return list;
+  }, [section]);
+
+  const parsed = useMemo(() => parsePositions(text, length), [text, length]);
+  const totalCount = parsed.positions.length * selectedSlots.size;
+  const typeDef = HOLE_TYPES.find((t) => t.id === type)!;
+
+  const toggleSlot = (k: string) => {
+    setSelectedSlots((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+
+  const handleApply = () => {
+    if (parsed.positions.length === 0 || selectedSlots.size === 0) return;
+    const newHoles: ProfileHole[] = [];
+    selectedSlots.forEach((k) => {
+      const [s, mi] = k.split(':');
+      parsed.positions.forEach((z) => {
+        newHoles.push({
+          id: crypto.randomUUID(),
+          zPosition: z,
+          diameter: typeDef.diameter,
+          slot: s as SlotId,
+          moduleIndex: Number(mi),
+          type,
+          label: typeDef.label,
+        });
+      });
+    });
+    onApply(newHoles);
+    setText('');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Bohrungen als Liste eingeben</DialogTitle>
+          <DialogDescription>
+            Tippe Positionen (mm vom Anfang) ein – getrennt durch Komma, Strichpunkt oder Zeilenumbruch.
+            Bereiche mit Schrittweite sind möglich, z.&nbsp;B. <code className="px-1 bg-slate-100 rounded">100-500/50</code>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Linke Spalte: Eingabe */}
+          <div className="space-y-2">
+            <Label className="text-xs">Positionen (1 – {length - 1} mm)</Label>
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={8}
+              placeholder={'z.B.\n100, 200, 300\n500\n800-2000/100'}
+              className="font-mono text-xs"
+            />
+            <div className="text-[10px] text-muted-foreground">
+              {parsed.positions.length > 0
+                ? `${parsed.positions.length} gültige Position${parsed.positions.length === 1 ? '' : 'en'}: ${parsed.positions.slice(0, 12).join(', ')}${parsed.positions.length > 12 ? ', …' : ''}`
+                : 'Noch keine gültigen Positionen.'}
+            </div>
+            {parsed.errors.length > 0 && (
+              <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                {parsed.errors.slice(0, 3).map((e, i) => <div key={i}>⚠ {e}</div>)}
+                {parsed.errors.length > 3 && <div>… und {parsed.errors.length - 3} weitere</div>}
+              </div>
+            )}
+          </div>
+
+          {/* Rechte Spalte: Typ + Nutwahl */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Bohrungstyp</Label>
+              <Select value={type} onValueChange={(v) => setType(v as ProfileHole['type'])}>
+                <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {HOLE_TYPES.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <Label className="text-xs">Nuten ({selectedSlots.size} ausgewählt)</Label>
+                <div className="flex gap-2 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSlots(new Set(allSlots.map((s) => s.key)))}
+                    className="text-primary hover:underline"
+                  >
+                    alle
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSlots(new Set())}
+                    className="text-muted-foreground hover:underline"
+                  >
+                    keine
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-1 max-h-44 overflow-y-auto p-2 rounded border border-slate-200 bg-slate-50">
+                {allSlots.map((s) => {
+                  const checked = selectedSlots.has(s.key);
+                  return (
+                    <label
+                      key={s.key}
+                      className={`flex items-center gap-1 px-1.5 py-1 rounded text-[11px] cursor-pointer ${checked ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-white'}`}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleSlot(s.key)}
+                        className="h-3 w-3"
+                      />
+                      <span>Nut {s.number}</span>
+                      <span className="text-[9px] text-muted-foreground ml-auto">{s.slot}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-between items-center gap-2">
+          <div className="text-xs text-muted-foreground">
+            {totalCount > 0
+              ? <>Es werden <span className="font-semibold text-foreground">{totalCount}</span> Bohrung{totalCount === 1 ? '' : 'en'} erzeugt ({parsed.positions.length} × {selectedSlots.size} Nut{selectedSlots.size === 1 ? '' : 'en'}).</>
+              : 'Bitte Positionen und mind. eine Nut wählen.'}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button>
+            <Button onClick={handleApply} disabled={totalCount === 0}>Hinzufügen</Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
