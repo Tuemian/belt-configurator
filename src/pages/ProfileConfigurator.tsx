@@ -424,8 +424,12 @@ export default function ProfileConfigurator() {
               angleEnd={config.angleEnd}
               holes={config.holes}
               connectors={config.connectors}
+              endStart={config.endStart}
+              endEnd={config.endEnd}
               onUpdateHoles={setHoles}
               onUpdateConnectors={setConnectors}
+              onUpdateEndStart={(e) => update({ endStart: e })}
+              onUpdateEndEnd={(e) => update({ endEnd: e })}
             />
           </div>
 
