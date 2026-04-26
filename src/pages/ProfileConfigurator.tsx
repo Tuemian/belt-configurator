@@ -78,58 +78,21 @@ export default function ProfileConfigurator() {
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [newHoleZ, setNewHoleZ] = useState(250);
-  const [newHoleType, setNewHoleType] = useState<ProfileHole['type']>('d55');
-  const [newConnectorType, setNewConnectorType] = useState<ConnectorType>('tnut-m8');
-  const [newConnectorFace, setNewConnectorFace] = useState<ProfileConnector['face']>('top');
-  const [newConnectorModule, setNewConnectorModule] = useState(0);
-  const [newConnectorZ, setNewConnectorZ] = useState(50);
+  const [show3D, setShow3D] = useState(true);
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
-  const numModulesW = Math.round(section.w / 40);
-  const numModulesH = Math.round(section.h / 40);
-  const numModulesOnFace = (newConnectorFace === 'top' || newConnectorFace === 'bottom') ? numModulesW : numModulesH;
 
   const update = useCallback((partial: Partial<ProfileConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // Holes
-  const addHole = () => {
-    const typeDef = HOLE_TYPES.find((t) => t.id === newHoleType)!;
-    const hole: ProfileHole = {
-      id: crypto.randomUUID(),
-      zPosition: Math.min(config.length - 5, Math.max(5, newHoleZ)),
-      diameter: typeDef.diameter,
-      face: 'top',
-      type: newHoleType,
-      label: typeDef.label,
-    };
-    update({ holes: [...config.holes, hole] });
-  };
-
-  const removeHole = (id: string) => {
-    update({ holes: config.holes.filter((h) => h.id !== id) });
-  };
-
-  // Connectors
-  const addConnector = () => {
-    const typeDef = CONNECTOR_TYPES.find((t) => t.id === newConnectorType)!;
-    const module = Math.min(newConnectorModule, numModulesOnFace - 1);
-    const connector: ProfileConnector = {
-      id: crypto.randomUUID(),
-      type: newConnectorType,
-      zPosition: Math.min(config.length - 5, Math.max(5, newConnectorZ)),
-      face: newConnectorFace,
-      module,
-      label: typeDef.label,
-    };
-    update({ connectors: [...config.connectors, connector] });
-  };
-  const removeConnector = (id: string) => {
-    update({ connectors: config.connectors.filter((c) => c.id !== id) });
-  };
+  const setHoles = useCallback((holes: ProfileHole[]) => {
+    setConfig((prev) => ({ ...prev, holes }));
+  }, []);
+  const setConnectors = useCallback((connectors: ProfileConnector[]) => {
+    setConfig((prev) => ({ ...prev, connectors }));
+  }, []);
 
   // Cart
   const addToCart = () => {
