@@ -227,7 +227,7 @@ export function ProfileWorkbench2D({
         zPosition: z,
         diameter: typeDef.diameter,
         slot: activeSlot,
-        moduleIndex: nearestModuleIndex,
+        moduleIndex: targetModuleIndex,
         type: holeType,
         label: typeDef.label,
       };
@@ -236,7 +236,7 @@ export function ProfileWorkbench2D({
     } else if (tool === 'connector') {
       // Only one connector per end per slot per module
       const end: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === nearestModuleIndex);
+      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === targetModuleIndex);
       if (taken) {
         setSelectedId(null);
         return;
@@ -247,7 +247,7 @@ export function ProfileWorkbench2D({
         type: connType,
         end,
         slot: activeSlot,
-        moduleIndex: nearestModuleIndex,
+        moduleIndex: targetModuleIndex,
         label: typeDef.label,
       };
       onUpdateConnectors([...connectors, newConn]);
