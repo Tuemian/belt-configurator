@@ -923,6 +923,23 @@ function SideRow({
               );
             })}
 
+            {/* Geister-Bohrungen von der gegenüberliegenden Seite (durchsichtig, gestrichelt) */}
+            {ghostHoles.map((h) => {
+              // Gleiche Spur (modulIndex), gleiche z-Position
+              const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
+              if (laneIdx < 0) return null;
+              const cy = laneCy(laneIdx);
+              const r = Math.max(3, Math.min(8, h.diameter * 0.6));
+              const color = holeColor(h.type);
+              const hx = dx(h.zPosition);
+              return (
+                <g key={`ghost-${h.id}`} pointerEvents="none" opacity={0.55}>
+                  <circle cx={hx} cy={cy} r={r + 1} fill="none" stroke={color} strokeWidth="0.8" strokeDasharray="2 1.5" />
+                  <line x1={hx - r * 0.7} y1={cy - r * 0.7} x2={hx + r * 0.7} y2={cy + r * 0.7} stroke={color} strokeWidth="0.6" strokeDasharray="1 1" />
+                </g>
+              );
+            })}
+
             {/* Holes */}
             {holes.map((h) => {
               const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
