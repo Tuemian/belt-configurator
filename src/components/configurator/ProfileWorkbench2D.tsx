@@ -537,10 +537,11 @@ export function ProfileWorkbench2D({
 
         {/* SVG stage */}
         <div className="flex-1 relative overflow-auto bg-gradient-to-br from-slate-50 to-slate-100">
-          {/* Mini cross-section overlay (multi-select aware, rotated for tall profiles) */}
-          <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
+          {/* Mini cross-section overlay (multi-select aware, rotated for tall profiles).
+              Positioniert oben-rechts neben der Overlap-Warnung, damit das Profil links frei bleibt. */}
+          <div className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
             <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 text-center">
-              Querschnitt {section.h > section.w && '(↻90°)'}
+              Querschnitt {section.w > section.h && '(↻90°)'}
             </div>
             <ProfileCrossSection2D
               section={section}
