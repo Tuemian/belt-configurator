@@ -371,8 +371,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     let qrDataUrl: string | undefined;
     try {
       qrDataUrl = await toQrDataUrl(qrTargetUrl, {
-        margin: 2,
-        width: 480,
+        margin: 4,
+        width: 720,
         errorCorrectionLevel: 'H',
       });
     } catch (error) {
@@ -531,7 +531,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     }
 
     // ID block always on page 1, right below the 3D image
-    const idBlockHeight = 34;
+    const idBlockHeight = 44;
     const idBlockY = imageY + imageHeight + 10;
 
     pdf.setFillColor(...PANEL_FILL);
@@ -552,10 +552,19 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       idBlockY + 23.5,
     );
     if (qrDataUrl) {
-      const qrSize = 24;
-      const qrX = rightX - qrSize - 4;
-      const qrY = idBlockY + 5;
+      const qrSize = 32;
+      const qrPadding = 2.5;
+      const qrX = rightX - qrSize - qrPadding - 4;
+      const qrY = idBlockY + 4.5;
+
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(qrX - qrPadding, qrY - qrPadding, qrSize + qrPadding * 2, qrSize + qrPadding * 2, 2, 2, 'F');
       pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize, undefined, 'FAST');
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.2);
+      pdf.setTextColor(...BRAND_GRAY);
+      pdf.text(lang === 'de' ? 'Web-Zusammenfassung' : lang === 'it' ? 'Riepilogo web' : 'Web summary', rightX - 4, idBlockY + 39, { align: 'right' });
     }
 
     drawFooter();
