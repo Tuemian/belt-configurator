@@ -448,14 +448,45 @@ export function ProfileWorkbench2D({
                 </Tooltip>
               );
             })}
-            {multiSelected.size > 0 && (
-              <button
-                onClick={() => setMultiSelected(new Set())}
-                className="ml-1 text-[10px] text-muted-foreground hover:text-foreground underline"
-              >
-                Mehrfach aufheben ({multiSelected.size + 1})
-              </button>
-            )}
+            {/* Quick-Buttons: gegenüberliegende Nut, alle Nuten der gleichen Achse */}
+            <div className="ml-2 flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      // Gegenüberliegende Seite (A↔C, B↔D), gleicher moduleIndex
+                      const opposite: Record<SlotId, SlotId> = { A: 'C', C: 'A', B: 'D', D: 'B' };
+                      const oppSlot = opposite[activeSlot];
+                      const k = slotKey(oppSlot, activeModuleIndex);
+                      setMultiSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(k)) next.delete(k); else next.add(k);
+                        next.delete(slotKey(activeSlot, activeModuleIndex));
+                        return next;
+                      });
+                    }}
+                    className={`px-2 py-1 text-[10px] rounded border font-medium transition-colors ${
+                      multiSelected.has(slotKey(({ A: 'C', C: 'A', B: 'D', D: 'B' } as Record<SlotId, SlotId>)[activeSlot], activeModuleIndex))
+                        ? 'bg-primary/15 border-primary/50 text-primary'
+                        : 'bg-white border-slate-200 text-muted-foreground hover:border-primary/50 hover:text-primary'
+                    }`}
+                  >
+                    + Gegenüber
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Gegenüberliegende Nut zusätzlich auswählen (z. B. Oben + Unten gleichzeitig bohren)
+                </TooltipContent>
+              </Tooltip>
+              {multiSelected.size > 0 && (
+                <button
+                  onClick={() => setMultiSelected(new Set())}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline px-1"
+                >
+                  Aufheben ({multiSelected.size + 1})
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Tool palette */}
