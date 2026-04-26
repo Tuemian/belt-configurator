@@ -140,6 +140,8 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
         description: 'Vielen Dank! Sie erhalten eine Bestätigung per E-Mail. Eine Kopie geht an office@novamotis.com.',
       });
       setForm({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
+      setDesiredDelivery(undefined);
+      setDeliveryFlexibility('on');
       onSubmitted();
       onOpenChange(false);
     } catch (err) {
