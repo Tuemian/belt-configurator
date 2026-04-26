@@ -461,16 +461,6 @@ export default function ProfileConfigurator() {
             )}
           </div>
 
-          {/* Profile info overlay */}
-          <div className="absolute top-4 left-4 pointer-events-none">
-            <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-lg px-3 py-2 text-xs space-y-0.5">
-              <div className="font-semibold text-foreground">{section.label}</div>
-              <div className="text-muted-foreground">{config.length} mm Länge</div>
-              {config.angleStart !== 0 && <div className="text-amber-600">Schrägschnitt Start {config.angleStart}°</div>}
-              {config.angleEnd !== 0   && <div className="text-amber-600">Schrägschnitt Ende {config.angleEnd}°</div>}
-              {config.holes.length > 0 && <div className="text-muted-foreground">{config.holes.length} Bohrung{config.holes.length !== 1 ? 'en' : ''}</div>}
-            </div>
-          </div>
 
           {/* Price bar */}
           <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-6">
