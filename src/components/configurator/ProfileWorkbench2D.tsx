@@ -1006,3 +1006,97 @@ export function ProfileWorkbench2D({
     </TooltipProvider>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Stirnseiten-Overlay: Querschnitt groß, Klick auf Kernzug = Gewinde toggeln
+// ---------------------------------------------------------------------------
+
+interface EndFaceOverlayProps {
+  section: ProfileSection;
+  endLabel: 'Anfang' | 'Ende';
+  treatment?: EndTreatment;
+  onChange: (t: EndTreatment) => void;
+  onClose: () => void;
+}
+
+function EndFaceOverlay({ section, endLabel, treatment, onChange, onClose }: EndFaceOverlayProps) {
+  const t: EndTreatment = treatment ?? { thread: false, scope: 'all' };
+  const bores = getBoreCounts(section);
+  const allBoreNums = useMemo(() => {
+    const out: number[] = [];
+    for (let iy = 0; iy < bores.y; iy++) {
+      for (let ix = 0; ix < bores.x; ix++) {
+        out.push(getBoreNumber(section, ix, iy));
+      }
+    }
+    return out;
+  }, [section, bores.x, bores.y]);
+
+  const activeBores = useMemo(() => {
+    if (!t.thread) return new Set<number>();
+    if (t.scope === 'all' || t.scope === undefined) return new Set(allBoreNums);
+    if (t.scope === 'center') {
+      const mid = Math.ceil(allBoreNums.length / 2);
+      return new Set([mid]);
+    }
+    return new Set(allBoreNums);
+  }, [t.thread, t.scope, allBoreNums]);
+
+  const toggleBore = (num: number) => {
+    const next = new Set(activeBores);
+    if (next.has(num)) next.delete(num); else next.add(num);
+    if (next.size === 0) onChange({ ...t, thread: false });
+    else if (next.size === allBoreNums.length) onChange({ ...t, thread: true, scope: 'all' });
+    else if (next.size === 1) onChange({ ...t, thread: true, scope: 'center' });
+    else onChange({ ...t, thread: true, scope: 'all' });
+  };
+
+  return (
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Stirnseite {endLabel}</h3>
+            <p className="text-[11px] text-muted-foreground">Klicke auf einen Kernzug, um dort ein M8-Gewinde zu setzen.</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center bg-slate-50 rounded-lg p-4 border border-slate-200">
+          <ProfileCrossSection2D
+            section={section}
+            activeSlot="A"
+            activeModuleIndex={0}
+            onSelectSlot={() => { /* keine Nutwahl im Stirnseitenmodus */ }}
+            onSelectBore={toggleBore}
+            activeBores={activeBores}
+            size={260}
+            showLabels
+          />
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+          <div className="text-muted-foreground">
+            {t.thread ? `Aktiv: ${activeBores.size} von ${allBoreNums.length} Kernzügen` : 'Kein Gewinde gesetzt'}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onChange({ thread: true, scope: 'all' })}
+              className="px-2 py-1 rounded border border-slate-200 hover:border-primary/50 hover:text-primary"
+            >
+              Alle
+            </button>
+            <button
+              onClick={() => onChange({ thread: false })}
+              className="px-2 py-1 rounded border border-slate-200 hover:border-red-300 hover:text-red-600"
+            >
+              Keine
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
