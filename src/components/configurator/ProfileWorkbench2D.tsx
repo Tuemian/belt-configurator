@@ -69,7 +69,7 @@ function snapValue(raw: number, snap: number, snapPoints: number[], length: numb
   const v = Math.round(raw / snap) * snap;
   return Math.max(snap, Math.min(Math.floor((length - 1) / snap) * snap, v));
 }
-}
+
 
 /** Backwards-compat: Bohrungen aus alten Configs ohne 'slot' migrieren */
 function ensureSlot(h: ProfileHole): SlotId {
