@@ -404,10 +404,10 @@ export function ProfileWorkbench2D({
             {/* Bohrungen als Liste eingeben */}
             <button
               onClick={() => setListDialogOpen(true)}
-              className="px-2 py-1 text-xs rounded border border-slate-200 bg-white hover:bg-primary/5 hover:border-primary/40 text-foreground"
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-slate-200 bg-white hover:bg-primary/5 hover:border-primary/40 text-foreground"
               title="Bohrungspositionen als Liste eingeben"
             >
-              ⌨ Liste
+              <Keyboard className="h-3 w-3" /> Liste
             </button>
           </div>
         </div>
