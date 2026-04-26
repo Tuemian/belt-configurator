@@ -664,6 +664,8 @@ interface SideRowProps {
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
+  /** Bohrungen der gegenüberliegenden Seite – nur als Geister-Markierung anzeigen */
+  ghostHoles?: ProfileHole[];
   connectors: ProfileConnector[];
   tool: Tool;
   activeModuleIndex: number | null;
