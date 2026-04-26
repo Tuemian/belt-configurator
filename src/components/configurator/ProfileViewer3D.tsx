@@ -2,25 +2,62 @@ import { useRef, useMemo, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import type { ProfileSection, ProfileHole } from '@/lib/profile-configurator-types';
+import type { ProfileSection, ProfileHole, ProfileConnector } from '@/lib/profile-configurator-types';
+
+// ---------------------------------------------------------------------------
+// T-slot path helpers — all produce CW paths (negative signed area = hole)
+// Profil 8 system: neck depth 1.5 mm fixed
+// ---------------------------------------------------------------------------
+
+const MODULE = 40;    // ITEM Nut 8 module pitch (mm)
+const NECK = 1.5;     // distance from face to T-expansion
+
+function addSlotTop(s: THREE.Shape, cx: number, yf: number, sw: number, gw: number, sd: number) {
+  const p = new THREE.Path();
+  p.moveTo(cx + sw / 2, yf);          p.lineTo(cx + sw / 2, yf - NECK);
+  p.lineTo(cx + gw / 2, yf - NECK);   p.lineTo(cx + gw / 2, yf - sd);
+  p.lineTo(cx - gw / 2, yf - sd);     p.lineTo(cx - gw / 2, yf - NECK);
+  p.lineTo(cx - sw / 2, yf - NECK);   p.lineTo(cx - sw / 2, yf);
+  p.closePath(); s.holes.push(p);
+}
+function addSlotBottom(s: THREE.Shape, cx: number, yf: number, sw: number, gw: number, sd: number) {
+  const p = new THREE.Path();
+  p.moveTo(cx - sw / 2, yf);          p.lineTo(cx - sw / 2, yf + NECK);
+  p.lineTo(cx - gw / 2, yf + NECK);   p.lineTo(cx - gw / 2, yf + sd);
+  p.lineTo(cx + gw / 2, yf + sd);     p.lineTo(cx + gw / 2, yf + NECK);
+  p.lineTo(cx + sw / 2, yf + NECK);   p.lineTo(cx + sw / 2, yf);
+  p.closePath(); s.holes.push(p);
+}
+function addSlotRight(s: THREE.Shape, xf: number, cy: number, sw: number, gw: number, sd: number) {
+  const p = new THREE.Path();
+  p.moveTo(xf, cy - sw / 2);          p.lineTo(xf - NECK, cy - sw / 2);
+  p.lineTo(xf - NECK, cy - gw / 2);   p.lineTo(xf - sd, cy - gw / 2);
+  p.lineTo(xf - sd, cy + gw / 2);     p.lineTo(xf - NECK, cy + gw / 2);
+  p.lineTo(xf - NECK, cy + sw / 2);   p.lineTo(xf, cy + sw / 2);
+  p.closePath(); s.holes.push(p);
+}
+function addSlotLeft(s: THREE.Shape, xf: number, cy: number, sw: number, gw: number, sd: number) {
+  const p = new THREE.Path();
+  p.moveTo(xf, cy + sw / 2);          p.lineTo(xf + NECK, cy + sw / 2);
+  p.lineTo(xf + NECK, cy + gw / 2);   p.lineTo(xf + sd, cy + gw / 2);
+  p.lineTo(xf + sd, cy - gw / 2);     p.lineTo(xf + NECK, cy - gw / 2);
+  p.lineTo(xf + NECK, cy - sw / 2);   p.lineTo(xf, cy - sw / 2);
+  p.closePath(); s.holes.push(p);
+}
 
 // ---------------------------------------------------------------------------
 // Profile cross-section shape builder
-// Produces an accurate T-slot aluminum profile cross-section.
-// All hole paths are CW (negative signed area) so Three.js treats them as
-// subtractions from the CCW outer shape.
+// Multi-module: 80×40 → numW=2/numH=1 → 2 slots on wide face, 1 on narrow
 // ---------------------------------------------------------------------------
 
 function buildProfileShape(section: ProfileSection): THREE.Shape {
-  const { w, h, slotDepth: sd, slotWidth: sw, cornerR, webThickness: wt } = section;
+  const { w, h, slotWidth: sw, slotDepth: sd, grooveWidth: gw, cornerR, boreRadius, webThickness: wt } = section;
   const hw = w / 2;
   const hh = h / 2;
-  // T-groove is wider than the slot opening (the "T" expansion)
-  const gw = sw * 1.72;
-  // Neck depth: narrow channel before the T expands
-  const nk = Math.min(1.8, sd * 0.28);
+  const numW = Math.round(w / MODULE);
+  const numH = Math.round(h / MODULE);
 
-  // ---- Outer rounded rectangle (CCW) ------------------------------------
+  // Outer rounded rectangle (CCW)
   const shape = new THREE.Shape();
   shape.moveTo(-hw + cornerR, -hh);
   shape.lineTo( hw - cornerR, -hh);
@@ -32,89 +69,49 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
   shape.lineTo(-hw, -hh + cornerR);
   shape.quadraticCurveTo(-hw, -hh, -hw + cornerR, -hh);
 
-  // ---- T-slot hole helper (all produce CW paths = negative signed area) --
-  // Top slot: opens at y=+hh, extends downward
-  const top = new THREE.Path();
-  top.moveTo( sw/2,  hh);
-  top.lineTo( sw/2,  hh - nk);
-  top.lineTo( gw/2,  hh - nk);
-  top.lineTo( gw/2,  hh - sd);
-  top.lineTo(-gw/2,  hh - sd);
-  top.lineTo(-gw/2,  hh - nk);
-  top.lineTo(-sw/2,  hh - nk);
-  top.lineTo(-sw/2,  hh);
-  top.closePath();
-  shape.holes.push(top);
+  // T-slots: one per module on each face
+  for (let i = 0; i < numW; i++) {
+    const cx = -hw + MODULE * (i + 0.5);
+    addSlotTop(shape, cx, hh, sw, gw, sd);
+    addSlotBottom(shape, cx, -hh, sw, gw, sd);
+  }
+  for (let j = 0; j < numH; j++) {
+    const cy = -hh + MODULE * (j + 0.5);
+    addSlotRight(shape, hw, cy, sw, gw, sd);
+    addSlotLeft(shape, -hw, cy, sw, gw, sd);
+  }
 
-  // Bottom slot: 180° rotation of top (preserves CW orientation)
-  const bot = new THREE.Path();
-  bot.moveTo(-sw/2, -hh);
-  bot.lineTo(-sw/2, -(hh - nk));
-  bot.lineTo(-gw/2, -(hh - nk));
-  bot.lineTo(-gw/2, -(hh - sd));
-  bot.lineTo( gw/2, -(hh - sd));
-  bot.lineTo( gw/2, -(hh - nk));
-  bot.lineTo( sw/2, -(hh - nk));
-  bot.lineTo( sw/2, -hh);
-  bot.closePath();
-  shape.holes.push(bot);
+  // Center bore + inner hollow per module cell
+  for (let i = 0; i < numW; i++) {
+    for (let j = 0; j < numH; j++) {
+      const cx = -hw + MODULE * (i + 0.5);
+      const cy = -hh + MODULE * (j + 0.5);
 
-  // Right slot: 90° CW rotation of top (using hw)
-  const rgt = new THREE.Path();
-  rgt.moveTo( hw,  -sw/2);
-  rgt.lineTo( hw - nk, -sw/2);
-  rgt.lineTo( hw - nk, -gw/2);
-  rgt.lineTo( hw - sd, -gw/2);
-  rgt.lineTo( hw - sd,  gw/2);
-  rgt.lineTo( hw - nk,  gw/2);
-  rgt.lineTo( hw - nk,  sw/2);
-  rgt.lineTo( hw,       sw/2);
-  rgt.closePath();
-  shape.holes.push(rgt);
+      // Center bore (CW arc = hole)
+      const bore = new THREE.Path();
+      bore.absarc(cx, cy, boreRadius, 0, Math.PI * 2, true);
+      shape.holes.push(bore);
 
-  // Left slot: 270° CW rotation of top (using hw)
-  const lft = new THREE.Path();
-  lft.moveTo(-hw,       sw/2);
-  lft.lineTo(-hw + nk,  sw/2);
-  lft.lineTo(-hw + nk,  gw/2);
-  lft.lineTo(-hw + sd,  gw/2);
-  lft.lineTo(-hw + sd, -gw/2);
-  lft.lineTo(-hw + nk, -gw/2);
-  lft.lineTo(-hw + nk, -sw/2);
-  lft.lineTo(-hw,      -sw/2);
-  lft.closePath();
-  shape.holes.push(lft);
-
-  // Center bore (CW arc)
-  const boreR = Math.min(hw, hh) * 0.22;
-  const bore = new THREE.Path();
-  bore.absarc(0, 0, boreR, 0, Math.PI * 2, true); // true = CW
-  shape.holes.push(bore);
-
-  // Inner hollow connecting T-slot backs (shows hollow web structure)
-  // Octagon fits between the T-slot back faces, reversed to be CW
-  const ie = Math.min(hw, hh) - sd - wt * 0.3;
-  if (ie > boreR + 3) {
-    const ic = ie * 0.72;
-    const inn = new THREE.Path();
-    // CW octagon (reversed CCW order):
-    inn.moveTo( ie, -ic);
-    inn.lineTo( ic, -ie);
-    inn.lineTo(-ic, -ie);
-    inn.lineTo(-ie, -ic);
-    inn.lineTo(-ie,  ic);
-    inn.lineTo(-ic,  ie);
-    inn.lineTo( ic,  ie);
-    inn.lineTo( ie,  ic);
-    inn.closePath();
-    shape.holes.push(inn);
+      // Inner hollow octagon (CW) — represents the hollow web structure
+      const ie = MODULE / 2 - sd - wt * 0.3;
+      if (ie > boreRadius + 2.5) {
+        const ic = ie * 0.72;
+        const inn = new THREE.Path();
+        inn.moveTo(cx + ie, cy - ic); inn.lineTo(cx + ic, cy - ie);
+        inn.lineTo(cx - ic, cy - ie); inn.lineTo(cx - ie, cy - ic);
+        inn.lineTo(cx - ie, cy + ic); inn.lineTo(cx - ic, cy + ie);
+        inn.lineTo(cx + ic, cy + ie); inn.lineTo(cx + ie, cy + ic);
+        inn.closePath();
+        shape.holes.push(inn);
+      }
+    }
   }
 
   return shape;
 }
 
 // ---------------------------------------------------------------------------
-// Profile Mesh with miter cuts
+// Profile Mesh
 // ---------------------------------------------------------------------------
 
 interface ProfileMeshProps {
@@ -123,9 +120,10 @@ interface ProfileMeshProps {
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
+  connectors: ProfileConnector[];
 }
 
-function ProfileMesh({ section, length, angleStart, angleEnd, holes }: ProfileMeshProps) {
+function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors }: ProfileMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const geometry = useMemo(() => {
@@ -151,18 +149,52 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes }: ProfileMe
     return geo;
   }, [section, length, angleStart, angleEnd]);
 
-  // Hole markers: dark cylinders on the top face
+  // Bore / hole cylinders — thread=gold, step=blue, plain=dark
   const holeMeshes = useMemo(() => {
     return holes.map((hole, idx) => {
       const r = hole.diameter / 2;
-      const cylGeo = new THREE.CylinderGeometry(r, r, section.w * 2, 20);
-      const mat = new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.85, metalness: 0.05 });
+      const cylGeo = new THREE.CylinderGeometry(r, r, section.h + 4, 24);
+      const isThread = hole.type === 'm6-thread' || hole.type === 'm8-thread';
+      const isStep   = hole.type === 'step-m6'   || hole.type === 'step-m8';
+      const color = isThread ? '#a07830' : isStep ? '#4a6fa5' : '#1e293b';
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: isThread ? 0.45 : 0.7, metalness: isThread ? 0.7 : 0.1 });
       const m = new THREE.Mesh(cylGeo, mat);
-      m.rotation.z = Math.PI / 2;
-      m.position.set(0, section.h / 2, Math.max(0, Math.min(length, hole.zPosition)));
+      m.position.set(0, 0, Math.max(0, Math.min(length, hole.zPosition)));
       return <primitive key={idx} object={m} />;
     });
   }, [holes, section, length]);
+
+  // Connector (T-nut) meshes — silver blocks seated inside the T-slot
+  const connectorMeshes = useMemo(() => {
+    const { w, h, slotWidth: sw, slotDepth: sd } = section;
+    const hw = w / 2;
+    const hh = h / 2;
+    return connectors.map((conn, idx) => {
+      const tW = sw * 0.88;   // fits in slot opening
+      const tD = sd * 0.80;   // depth into slot
+      const tL = 22;           // length along extrusion axis
+      const z = Math.max(tL / 2, Math.min(length - tL / 2, conn.zPosition));
+
+      let pos: [number, number, number];
+      let rot: [number, number, number] = [0, 0, 0];
+      if (conn.face === 'top' || conn.face === 'bottom') {
+        const cx = -hw + MODULE * (conn.module + 0.5);
+        const yOff = conn.face === 'top' ? hh - tD / 2 : -hh + tD / 2;
+        pos = [cx, yOff, z];
+      } else {
+        const cy = -hh + MODULE * (conn.module + 0.5);
+        const xOff = conn.face === 'right' ? hw - tD / 2 : -hw + tD / 2;
+        pos = [xOff, cy, z];
+        rot = [0, 0, Math.PI / 2];
+      }
+      return (
+        <mesh key={idx} position={pos} rotation={rot}>
+          <boxGeometry args={[tW, tD, tL]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.85} roughness={0.2} />
+        </mesh>
+      );
+    });
+  }, [connectors, section, length]);
 
   return (
     <group position={[0, 0, -length / 2]}>
@@ -170,6 +202,7 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes }: ProfileMe
         <meshStandardMaterial color="#b8c8d8" metalness={0.88} roughness={0.15} envMapIntensity={1.4} />
       </mesh>
       {holeMeshes}
+      {connectorMeshes}
     </group>
   );
 }
@@ -184,9 +217,10 @@ interface SceneProps {
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
+  connectors: ProfileConnector[];
 }
 
-function Scene({ section, length, angleStart, angleEnd, holes }: SceneProps) {
+function Scene({ section, length, angleStart, angleEnd, holes, connectors }: SceneProps) {
   const maxDim = Math.max(section.w, section.h, length);
   return (
     <>
@@ -202,6 +236,7 @@ function Scene({ section, length, angleStart, angleEnd, holes }: SceneProps) {
         angleStart={angleStart}
         angleEnd={angleEnd}
         holes={holes}
+        connectors={connectors}
       />
 
       <OrbitControls
@@ -223,13 +258,14 @@ export interface ProfileViewer3DProps {
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
+  connectors: ProfileConnector[];
 }
 
-export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes }: ProfileViewer3DProps) {
+export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes, connectors }: ProfileViewer3DProps) {
   return (
     <Canvas
       shadows
-      camera={{ position: [length * 0.9, length * 0.55, length * 1.3], fov: 38 }}
+      camera={{ position: [length * 0.9, length * 0.55, length * 1.3], fov: 38, near: 0.5, far: length * 30 }}
       style={{ background: 'linear-gradient(160deg, #f0f4f8 0%, #e2e8f0 100%)' }}
     >
       <Suspense fallback={null}>
@@ -239,6 +275,7 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes }
           angleStart={angleStart}
           angleEnd={angleEnd}
           holes={holes}
+          connectors={connectors}
         />
       </Suspense>
     </Canvas>

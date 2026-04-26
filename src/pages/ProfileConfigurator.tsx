@@ -14,11 +14,15 @@ import {
   PROFILE_SECTIONS,
   PROFILE_SIZES,
   HOLE_TYPES,
+  CONNECTOR_TYPES,
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
+  PRICE_CONNECTOR,
   type ProfileConfig,
   type ProfileHole,
+  type ProfileConnector,
+  type ConnectorType,
 } from '@/lib/profile-configurator-types';
 
 const ProfileViewer3D = lazy(() =>
@@ -37,6 +41,7 @@ const DEFAULT_CONFIG: ProfileConfig = {
   endStart: { thread: false, coreHole: false },
   endEnd: { thread: false, coreHole: false },
   holes: [],
+  connectors: [],
   quantity: 1,
 };
 
@@ -79,9 +84,16 @@ export default function ProfileConfigurator() {
   const [cartOpen, setCartOpen] = useState(false);
   const [newHoleZ, setNewHoleZ] = useState(250);
   const [newHoleType, setNewHoleType] = useState<ProfileHole['type']>('d55');
+  const [newConnectorType, setNewConnectorType] = useState<ConnectorType>('tnut-m8');
+  const [newConnectorFace, setNewConnectorFace] = useState<ProfileConnector['face']>('top');
+  const [newConnectorModule, setNewConnectorModule] = useState(0);
+  const [newConnectorZ, setNewConnectorZ] = useState(50);
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
+  const numModulesW = Math.round(section.w / 40);
+  const numModulesH = Math.round(section.h / 40);
+  const numModulesOnFace = (newConnectorFace === 'top' || newConnectorFace === 'bottom') ? numModulesW : numModulesH;
 
   const update = useCallback((partial: Partial<ProfileConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
@@ -103,6 +115,24 @@ export default function ProfileConfigurator() {
 
   const removeHole = (id: string) => {
     update({ holes: config.holes.filter((h) => h.id !== id) });
+  };
+
+  // Connectors
+  const addConnector = () => {
+    const typeDef = CONNECTOR_TYPES.find((t) => t.id === newConnectorType)!;
+    const module = Math.min(newConnectorModule, numModulesOnFace - 1);
+    const connector: ProfileConnector = {
+      id: crypto.randomUUID(),
+      type: newConnectorType,
+      zPosition: Math.min(config.length - 5, Math.max(5, newConnectorZ)),
+      face: newConnectorFace,
+      module,
+      label: typeDef.label,
+    };
+    update({ connectors: [...config.connectors, connector] });
+  };
+  const removeConnector = (id: string) => {
+    update({ connectors: config.connectors.filter((c) => c.id !== id) });
   };
 
   // Cart
@@ -434,6 +464,89 @@ export default function ProfileConfigurator() {
                 )}
               </div>
             </div>
+
+            {/* Connectors */}
+            <div>
+              <SectionDivider label="Verbinder" />
+              <div className="mt-3 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Typ</Label>
+                    <Select value={newConnectorType} onValueChange={(v) => setNewConnectorType(v as ConnectorType)}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONNECTOR_TYPES.map((t) => (
+                          <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Seite</Label>
+                    <Select value={newConnectorFace} onValueChange={(v) => { setNewConnectorFace(v as ProfileConnector['face']); setNewConnectorModule(0); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top" className="text-xs">Oben</SelectItem>
+                        <SelectItem value="bottom" className="text-xs">Unten</SelectItem>
+                        <SelectItem value="left" className="text-xs">Links</SelectItem>
+                        <SelectItem value="right" className="text-xs">Rechts</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {numModulesOnFace > 1 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Nut-Position</Label>
+                      <Select value={String(newConnectorModule)} onValueChange={(v) => setNewConnectorModule(Number(v))}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: numModulesOnFace }, (_, i) => (
+                            <SelectItem key={i} value={String(i)} className="text-xs">Nut {i + 1}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className={numModulesOnFace > 1 ? '' : 'col-span-2'}>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Position (mm)</Label>
+                    <Input
+                      type="number"
+                      min={5}
+                      max={config.length - 5}
+                      step={5}
+                      value={newConnectorZ}
+                      onChange={(e) => setNewConnectorZ(Number(e.target.value))}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <Button size="sm" variant="outline" onClick={addConnector} className="w-full gap-2 text-xs">
+                  <Plus className="h-3.5 w-3.5" />
+                  Verbinder einsetzen
+                  <span className="text-amber-600 font-medium ml-auto">+{fmt.format(PRICE_CONNECTOR)}</span>
+                </Button>
+                {config.connectors.length > 0 && (
+                  <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                    {config.connectors.map((conn) => (
+                      <div key={conn.id} className="flex items-center justify-between bg-slate-50 rounded border border-slate-100 px-2 py-1 text-xs">
+                        <span className="text-foreground truncate">{conn.label}</span>
+                        <span className="text-muted-foreground ml-2 shrink-0">{conn.face} @ {conn.zPosition} mm</span>
+                        <button onClick={() => removeConnector(conn.id)} className="ml-2 text-muted-foreground hover:text-red-500">
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Reset */}
@@ -466,6 +579,7 @@ export default function ProfileConfigurator() {
                 angleStart={config.angleStart}
                 angleEnd={config.angleEnd}
                 holes={config.holes}
+                connectors={config.connectors}
               />
             </Suspense>
           </div>
@@ -483,7 +597,7 @@ export default function ProfileConfigurator() {
 
           {/* Price bar */}
           <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-6">
-            <div className="grid grid-cols-3 gap-6 text-xs">
+            <div className="grid grid-cols-4 gap-6 text-xs">
               <div>
                 <div className="text-muted-foreground">Material</div>
                 <div className="text-foreground font-medium">{fmt.format(price.material)}</div>
@@ -495,6 +609,10 @@ export default function ProfileConfigurator() {
               <div>
                 <div className="text-muted-foreground">Bohrungen / Gewinde</div>
                 <div className="text-foreground font-medium">{fmt.format(price.holes)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Verbinder</div>
+                <div className="text-foreground font-medium">{fmt.format(price.connectors)}</div>
               </div>
             </div>
 

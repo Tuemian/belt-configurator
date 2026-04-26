@@ -620,13 +620,13 @@ function ParametricDirectMotor({
   const motorZ = side * (width / 2 + motorDepth / 2 + 12);
   const motorX = length / 2 - motorWidth * 0.3;
   const directAngleDeg = motorPosition === 'right'
-    ? (270 - motorAngle + 360) % 360
+    ? (270 - motorAngle + 180) % 360
     : (motorAngle + 270) % 360;
   const directAngleRad = directAngleDeg * (Math.PI / 180);
 
   return (
     <group position={[motorX, 0, motorZ]}>
-      <group rotation={[0, 0, directAngleRad]}>
+      <group rotation={[0, motorPosition === 'right' ? Math.PI : 0, directAngleRad]}>
         <Box pos={[0, 0, 0]} size={[motorWidth, motorHeight, motorDepth]} color={C.motor} metalness={0.15} roughness={0.88} />
         <Cyl
           pos={[0, 0, side * (motorDepth / 2 + motorCylinderHeight / 2 + 8)]}

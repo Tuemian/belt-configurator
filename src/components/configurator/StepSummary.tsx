@@ -7,13 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileDown, Send, RotateCcw } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
 import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
-import { ConveyorViewer3D } from '@/components/configurator/ConveyorViewer3D';
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from '@/lib/pricing';
+
+const ConveyorViewer3D = lazy(() =>
+  import('@/components/configurator/ConveyorViewer3D').then((m) => ({ default: m.ConveyorViewer3D }))
+);
 
 interface Props {
   config: ConveyorConfig;
@@ -541,11 +544,13 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
   return (
     <>
       <div className="pointer-events-none fixed -left-[200vw] top-0 h-[360px] w-[720px] overflow-hidden rounded-xl opacity-0">
-        <ConveyorViewer3D
-          config={config}
-          snapshotRequest={snapshotRequest}
-          onSnapshotReady={handleSnapshotReady}
-        />
+        <Suspense fallback={null}>
+          <ConveyorViewer3D
+            config={config}
+            snapshotRequest={snapshotRequest}
+            onSnapshotReady={handleSnapshotReady}
+          />
+        </Suspense>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -633,7 +638,15 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       {/* Contact Form */}
       <div className="space-y-4">
         <div className="rounded-xl overflow-hidden border" style={{ height: '280px' }}>
-          <ConveyorViewer3D config={config} />
+          <Suspense
+            fallback={
+              <div className="flex h-full w-full items-center justify-center bg-muted/40 text-sm text-muted-foreground">
+                3D-Vorschau wird geladen...
+              </div>
+            }
+          >
+            <ConveyorViewer3D config={config} />
+          </Suspense>
         </div>
 
         <Card className="border">

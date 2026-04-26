@@ -210,7 +210,7 @@ const Index = () => {
               return (
                 <Card
                   key={tool.slug}
-                  className="group relative overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_50px_rgba(15,52,74,0.08)] backdrop-blur transition-transform duration-200 hover:-translate-y-1"
+                  className="group relative overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_50px_rgba(15,52,74,0.08)] backdrop-blur transition-transform duration-200 hover:-translate-y-1 flex flex-col"
                 >
                   <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-sky-400 to-cyan-300" />
                   <CardHeader className="space-y-4">
@@ -239,7 +239,7 @@ const Index = () => {
                       </CardDescription>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="mt-auto">
                     {tool.available ? (
                       <Button asChild className="w-full justify-between">
                         <Link to={`/${tool.slug}`}>
