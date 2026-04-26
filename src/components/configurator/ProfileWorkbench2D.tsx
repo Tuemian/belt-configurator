@@ -11,6 +11,9 @@ import {
   SLOT_IDS,
   SLOT_LABEL_DE,
   getFaceWidth,
+  getModulePitch,
+  getSlotCountPerFace,
+  getSlotCenters,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
@@ -46,7 +49,6 @@ const SNAP_OPTIONS: { value: number; label: string; tooltip: string }[] = [
   { value: 10, label: 'Grob',   tooltip: 'Position rastet auf 10-mm-Raster' },
 ];
 
-const MODULE = 40;
 const CONNECTOR_FOOTPRINT = 22; // mm – Länge des Verbinder-Blocks im Profil
 
 function holeColor(type: ProfileHole['type']): string {
@@ -100,7 +102,9 @@ export function ProfileWorkbench2D({
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const faceDepth = getFaceWidth(section, activeSlot);
+  const MODULE = getModulePitch(section);
   const numModulesOnFace = Math.max(1, Math.round(faceDepth / MODULE));
+  const slotCenters = getSlotCenters(section, activeSlot);
 
   // Filter visible items by slot (with backwards compat)
   const visibleHoles = useMemo(() => holes.filter((h) => ensureSlot(h) === activeSlot), [holes, activeSlot]);
@@ -153,16 +157,28 @@ export function ProfileWorkbench2D({
     if (m.z >= 0 && m.z <= length) setHoverZ(m.z); else setHoverZ(null);
 
     if (draggingId) {
-      // Connector? Snap to nearest end (only two valid positions)
+      // Compute nearest slot track for multi-module profiles
+      const nearestModuleIndex = (() => {
+        if (slotCenters.length <= 1) return 0;
+        let best = 0;
+        let bestDist = Infinity;
+        slotCenters.forEach((c, i) => {
+          const d = Math.abs(m.y - c);
+          if (d < bestDist) { bestDist = d; best = i; }
+        });
+        return best;
+      })();
+
+      // Connector? Snap to nearest end + nearest track
       const conn = connectors.find((c) => c.id === draggingId);
       if (conn) {
         const newEnd: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-        if (conn.end !== newEnd) {
-          onUpdateConnectors(connectors.map((c) => c.id === draggingId ? { ...c, end: newEnd } : c));
+        if (conn.end !== newEnd || (conn.moduleIndex ?? 0) !== nearestModuleIndex) {
+          onUpdateConnectors(connectors.map((c) => c.id === draggingId ? { ...c, end: newEnd, moduleIndex: nearestModuleIndex } : c));
         }
         return;
       }
-      // Hole — free positioning
+      // Hole — free positioning + nearest track
       const hole = holes.find((h) => h.id === draggingId);
       if (hole) {
         const z = snapValue(
@@ -171,7 +187,7 @@ export function ProfileWorkbench2D({
           snapPoints.filter((p) => Math.abs(p - hole.zPosition) > 0.1),
           length,
         );
-        onUpdateHoles(holes.map((h) => h.id === draggingId ? { ...h, zPosition: z } : h));
+        onUpdateHoles(holes.map((h) => h.id === draggingId ? { ...h, zPosition: z, moduleIndex: nearestModuleIndex } : h));
       }
     }
   };
@@ -188,6 +204,18 @@ export function ProfileWorkbench2D({
       return;
     }
 
+    // Determine which slot track the click belongs to (multi-module profiles)
+    const nearestModuleIndex = (() => {
+      if (slotCenters.length <= 1) return 0;
+      let best = 0;
+      let bestDist = Infinity;
+      slotCenters.forEach((c, i) => {
+        const d = Math.abs((m.y ?? faceDepth / 2) - c);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      return best;
+    })();
+
     if (tool === 'hole') {
       const z = snapValue(m.z, snap, snapPoints, length);
       const typeDef = HOLE_TYPES.find((t) => t.id === holeType)!;
@@ -196,15 +224,16 @@ export function ProfileWorkbench2D({
         zPosition: z,
         diameter: typeDef.diameter,
         slot: activeSlot,
+        moduleIndex: nearestModuleIndex,
         type: holeType,
         label: typeDef.label,
       };
       onUpdateHoles([...holes, newHole]);
       setSelectedId(newHole.id);
     } else if (tool === 'connector') {
-      // Only one connector per end per slot
+      // Only one connector per end per slot per module
       const end: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end);
+      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === nearestModuleIndex);
       if (taken) {
         setSelectedId(null);
         return;
@@ -215,6 +244,7 @@ export function ProfileWorkbench2D({
         type: connType,
         end,
         slot: activeSlot,
+        moduleIndex: nearestModuleIndex,
         label: typeDef.label,
       };
       onUpdateConnectors([...connectors, newConn]);
@@ -313,10 +343,7 @@ export function ProfileWorkbench2D({
   const cutE = faceDepth * tanE;
   const profilePath = `M 0 ${faceDepth} L ${length} ${faceDepth} L ${length - cutE} 0 L ${cutS} 0 Z`;
 
-  const slotGuides: number[] = [];
-  for (let i = 0; i < numModulesOnFace; i++) {
-    slotGuides.push(MODULE * (i + 0.5));
-  }
+  const slotGuides: number[] = slotCenters;
 
   const showConnectorMagnets = tool === 'connector' || draggingId !== null;
 
@@ -494,18 +521,33 @@ export function ProfileWorkbench2D({
               <path d={profilePath} fill="url(#alu)" stroke="#475569" strokeWidth="0.8" />
               <path d={profilePath} fill="url(#slotHatch)" />
 
+              {/* Slot tracks (highlighted bands so it's obvious where holes/connectors sit) */}
               {slotGuides.map((y, i) => (
-                <line
-                  key={i}
-                  x1="0"
-                  y1={y}
-                  x2={length}
-                  y2={y}
-                  stroke="#64748b"
-                  strokeWidth="0.4"
-                  strokeDasharray="3 3"
-                  opacity="0.4"
-                />
+                <g key={i}>
+                  <rect
+                    x={0}
+                    y={y - 6}
+                    width={length}
+                    height={12}
+                    fill="hsl(var(--primary))"
+                    opacity={0.06}
+                  />
+                  <line
+                    x1="0"
+                    y1={y}
+                    x2={length}
+                    y2={y}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="0.5"
+                    strokeDasharray="4 3"
+                    opacity="0.55"
+                  />
+                  {slotGuides.length > 1 && (
+                    <text x={-6} y={y + 3} textAnchor="end" fontSize="8" fill="#64748b" fontWeight="600">
+                      {i + 1}
+                    </text>
+                  )}
+                </g>
               ))}
 
               <line
@@ -545,7 +587,7 @@ export function ProfileWorkbench2D({
                     strokeWidth="0.6"
                   />
                   <text x={CONNECTOR_FOOTPRINT / 2} y={-3} textAnchor="middle" fontSize="8" fill="hsl(var(--primary))" fontWeight="600">
-                    Start
+                    Anfang
                   </text>
                   <text x={length - CONNECTOR_FOOTPRINT / 2} y={-3} textAnchor="middle" fontSize="8" fill="hsl(var(--primary))" fontWeight="600">
                     Ende
@@ -588,10 +630,11 @@ export function ProfileWorkbench2D({
                 </g>
               )}
 
-              {/* Connectors as silver squares anchored at the relevant end */}
+              {/* Connectors as silver squares anchored at the relevant end, on the chosen slot track */}
               {visibleConnectors.map((c) => {
                 const isSel = selectedId === c.id;
-                const cy = faceDepth / 2;
+                const idx = Math.min(slotCenters.length - 1, c.moduleIndex ?? 0);
+                const cy = slotCenters[idx];
                 const w = CONNECTOR_FOOTPRINT;
                 const x = c.end === 'start' ? 0 : length - w;
                 return (
@@ -632,7 +675,8 @@ export function ProfileWorkbench2D({
               {/* Holes as colored circles */}
               {visibleHoles.map((h) => {
                 const isSel = selectedId === h.id;
-                const cy = faceDepth / 2;
+                const idx = Math.min(slotCenters.length - 1, h.moduleIndex ?? 0);
+                const cy = slotCenters[idx];
                 const r = Math.max(3, Math.min(10, h.diameter * 0.7));
                 const color = holeColor(h.type);
                 return (
@@ -676,7 +720,7 @@ export function ProfileWorkbench2D({
               })}
             </g>
 
-            <text x={PAD_X} y={VB_H - 4} fontSize="9" fill="#94a3b8">Start</text>
+            <text x={PAD_X} y={VB_H - 4} fontSize="9" fill="#94a3b8">Anfang</text>
             <text x={PAD_X + length} y={VB_H - 4} textAnchor="end" fontSize="9" fill="#94a3b8">Ende ({length} mm)</text>
           </svg>
 
@@ -712,7 +756,7 @@ export function ProfileWorkbench2D({
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground mb-1 block">Position (mm vom Start)</Label>
+                    <Label className="text-[10px] text-muted-foreground mb-1 block">Position (mm vom Anfang)</Label>
                     <Input
                       type="number"
                       min={1}
@@ -726,6 +770,22 @@ export function ProfileWorkbench2D({
                       className="h-8 text-xs"
                     />
                   </div>
+                  {slotCenters.length > 1 && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground mb-1 block">Nut-Spur</Label>
+                      <Select
+                        value={String(selectedHole.moduleIndex ?? 0)}
+                        onValueChange={(v) => updateHole({ moduleIndex: Number(v) })}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {slotCenters.map((_, i) => (
+                            <SelectItem key={i} value={String(i)} className="text-xs">Spur {i + 1}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -753,11 +813,27 @@ export function ProfileWorkbench2D({
                     <Select value={selectedConn.end} onValueChange={(v) => updateConn({ end: v as 'start' | 'end' })}>
                       <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="start" className="text-xs">Profilanfang (Start)</SelectItem>
-                        <SelectItem value="end" className="text-xs">Profilende (Ende)</SelectItem>
+                        <SelectItem value="start" className="text-xs">Profilanfang</SelectItem>
+                        <SelectItem value="end" className="text-xs">Profilende</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  {slotCenters.length > 1 && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground mb-1 block">Nut-Spur</Label>
+                      <Select
+                        value={String(selectedConn.moduleIndex ?? 0)}
+                        onValueChange={(v) => updateConn({ moduleIndex: Number(v) })}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {slotCenters.map((_, i) => (
+                            <SelectItem key={i} value={String(i)} className="text-xs">Spur {i + 1}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </>
               )}
 

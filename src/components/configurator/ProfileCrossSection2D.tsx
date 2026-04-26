@@ -1,4 +1,4 @@
-import { SLOT_IDS, type ProfileSection, type SlotId } from '@/lib/profile-configurator-types';
+import { SLOT_IDS, getModulePitch, type ProfileSection, type SlotId } from '@/lib/profile-configurator-types';
 
 interface Props {
   section: ProfileSection;
@@ -6,8 +6,6 @@ interface Props {
   onSelectSlot: (slot: SlotId) => void;
   size?: number; // px
 }
-
-const MODULE = 40;
 
 /**
  * Compact, clickable cross-section of the profile.
@@ -17,7 +15,8 @@ const MODULE = 40;
  * Slot convention (clockwise from top): A=top, B=right, C=bottom, D=left
  */
 export function ProfileCrossSection2D({ section, activeSlot, onSelectSlot, size = 96 }: Props) {
-  const { w, h, slotWidth, slotDepth, grooveWidth, cornerR, boreRadius, webThickness } = section;
+  const { w, h, slotWidth, slotDepth, cornerR, boreRadius } = section;
+  const MODULE = getModulePitch(section);
 
   // Layout: viewBox in mm with small padding
   const PAD = 6;

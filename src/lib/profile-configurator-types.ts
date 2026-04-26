@@ -48,16 +48,20 @@ export interface ProfileSection {
   orderCode?: string;
   /** Massenpro-Meter (kg/m) – für PDF, Statik, Versand */
   massPerMeter?: number;
+  /** Rastermaß / Modulteilung (mm). 30er-Reihe = 30, sonst 40. */
+  modulePitch?: number;
 }
 
 export interface ProfileHole {
   id: string;
-  zPosition: number;          // mm vom Start
+  zPosition: number;          // mm vom Anfang
   diameter: number;
   /** Backwards-compat: ältere Configs hatten 'face' (top|bottom|left|right) */
   face?: 'top' | 'bottom' | 'left' | 'right';
   /** Neu: Nut, auf der die Bohrung sitzt */
   slot: SlotId;
+  /** Bei Multi-Modul-Profilen (z. B. 80×40 hat 2 Nuten auf A/C): welche Spur (0..n-1). Default 0. */
+  moduleIndex?: number;
   type: 'd55' | 'd85' | 'm6-thread' | 'm8-thread' | 'step-m6' | 'step-m8';
   label: string;
 }
@@ -70,11 +74,18 @@ export interface ProfileConnector {
   /** Entweder 'start' oder 'end' – Verbinder sitzen nur an Profilenden */
   end: 'start' | 'end';
   slot: SlotId;
+  /** Bei Multi-Modul-Profilen: Spur-Index (0..n-1). Default 0. */
+  moduleIndex?: number;
   label: string;
 }
 
+/** Auswahl, wo das Stirnseiten-Gewinde sitzen soll. */
+export type EndThreadScope = 'all' | 'center' | SlotId;
+
 export interface EndTreatment {
   thread: boolean;
+  /** Wo das Gewinde gesetzt wird: 'all' (alle Kernzüge), 'center' oder Nut A/B/C/D. Default 'all'. */
+  scope?: EndThreadScope;
   /** Kernloch wird im UI nicht mehr angeboten, Feld bleibt für Backwards-Compat */
   coreHole?: boolean;
 }
@@ -122,12 +133,12 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   // 30 × 30
   { id: '30x30-leicht', sizeKey: '30x30', variant: 'leicht', label: '30 × 30 · Leicht',
     w: 30, h: 30, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 5.40,
-    orderCode: '0.0.026.43', massPerMeter: 0.81 },
+    orderCode: '0.0.026.43', massPerMeter: 0.81, modulePitch: 30 },
 
   // 30 × 60
   { id: '30x60-leicht', sizeKey: '30x60', variant: 'leicht', label: '30 × 60 · Leicht',
     w: 30, h: 60, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 9.10,
-    orderCode: '0.0.026.44', massPerMeter: 1.45 },
+    orderCode: '0.0.026.44', massPerMeter: 1.45, modulePitch: 30 },
 
   // 40 × 40
   { id: '40x40-eco',    sizeKey: '40x40', variant: 'eco',    label: '40 × 40 · ECO',
@@ -229,10 +240,24 @@ export function getFaceWidth(section: ProfileSection, slot: SlotId): number {
   return slot === 'A' || slot === 'C' ? section.w : section.h;
 }
 
+/** Rastermaß / Modulteilung in mm — 30 für 30er-Reihe, sonst 40 */
+export function getModulePitch(section: ProfileSection): number {
+  return section.modulePitch ?? 40;
+}
+
 /** Bei Mehrfach-Modul-Profilen (z. B. 80×40) liegen mehrere Nuten parallel */
 export function getSlotCountPerFace(section: ProfileSection, slot: SlotId): number {
   const visibleWidth = getFaceWidth(section, slot);
-  return Math.max(1, Math.round(visibleWidth / 40));
+  const pitch = getModulePitch(section);
+  return Math.max(1, Math.round(visibleWidth / pitch));
+}
+
+/** Y-Mitten der Nuten (mm) entlang der sichtbaren Frontalansicht */
+export function getSlotCenters(section: ProfileSection, slot: SlotId): number[] {
+  const fw = getFaceWidth(section, slot);
+  const pitch = getModulePitch(section);
+  const n = Math.max(1, Math.round(fw / pitch));
+  return Array.from({ length: n }, (_, i) => pitch * (i + 0.5));
 }
 
 // ---------------------------------------------------------------------------
