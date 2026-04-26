@@ -210,6 +210,8 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
     const { w, h, slotWidth: sw, slotDepth: sd } = section;
     const hw = w / 2;
     const hh = h / 2;
+    const numW = Math.round(w / MODULE);
+    const numH = Math.round(h / MODULE);
     return connectors.map((conn, idx) => {
       const tW = sw * 0.88;
       const tD = sd * 0.80;
@@ -217,15 +219,20 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
       const z = conn.end === 'start' ? tL / 2 : length - tL / 2;
       const slot: SlotId = conn.slot ?? 'A';
       const dir = SLOT_DIR[slot];
+      const mi = conn.moduleIndex ?? 0;
 
       let pos: [number, number, number];
       let rot: [number, number, number] = [0, 0, 0];
       if (slot === 'A' || slot === 'C') {
+        const idxM = Math.min(mi, numW - 1);
+        const xOff = -hw + MODULE * (idxM + 0.5);
         const yOff = dir.ny * (hh - tD / 2);
-        pos = [0, yOff, z];
+        pos = [xOff, yOff, z];
       } else {
+        const idxM = Math.min(mi, numH - 1);
+        const yOff = -hh + MODULE * (idxM + 0.5);
         const xOff = dir.nx * (hw - tD / 2);
-        pos = [xOff, 0, z];
+        pos = [xOff, yOff, z];
         rot = [0, 0, Math.PI / 2];
       }
       return (
