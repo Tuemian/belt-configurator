@@ -53,7 +53,7 @@ export interface ProfileSection {
   boreRadius: number;
   webThickness: number;
   pricePerMeter: number;
-  /** Bestellcode analog item24 (z. B. 0.0.026.03 für 40×40 Nut 8) */
+  /** NOVAMOTIS-Artikelnummer (Schema NM-PRO-{Größe}-{Variante}) */
   orderCode?: string;
   /** Massenpro-Meter (kg/m) – für PDF, Statik, Versand */
   massPerMeter?: number;
