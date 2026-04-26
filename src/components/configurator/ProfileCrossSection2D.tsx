@@ -25,6 +25,8 @@ interface Props {
   showLabels?: boolean;
   /** Querschnitt um 90° im Uhrzeigersinn drehen (kompakter wenn Profil hoch ist) */
   rotate90?: boolean;
+  /** Seitenkürzel A/B/C/D außen am Profil anzeigen */
+  showSideLabels?: boolean;
 }
 
 export function slotKey(slot: SlotId, moduleIndex: number) {
@@ -48,6 +50,7 @@ export function ProfileCrossSection2D({
   size = 96,
   showLabels = true,
   rotate90 = false,
+  showSideLabels = false,
 }: Props) {
   const { w, h, slotWidth, slotDepth, cornerR, boreRadius } = section;
   const MODULE = getModulePitch(section);
@@ -253,6 +256,33 @@ export function ProfileCrossSection2D({
             </g>
           );
         })}
+
+        {/* Seiten-Kürzel A/B/C/D außen */}
+        {showSideLabels && (() => {
+          const sfs = Math.max(3.5, Math.min(7, MODULE / 5));
+          const off = sfs * 0.6;
+          const sides: { txt: string; x: number; y: number; anchor: 'middle' | 'start' | 'end' }[] = [
+            { txt: 'A', x: PAD + w / 2, y: PAD - off, anchor: 'middle' },
+            { txt: 'B', x: PAD + w + off + sfs * 0.5, y: PAD + h / 2 + sfs * 0.35, anchor: 'middle' },
+            { txt: 'C', x: PAD + w / 2, y: PAD + h + off + sfs * 0.9, anchor: 'middle' },
+            { txt: 'D', x: PAD - off - sfs * 0.5, y: PAD + h / 2 + sfs * 0.35, anchor: 'middle' },
+          ];
+          return sides.map((s) => (
+            <text
+              key={`side-${s.txt}`}
+              x={s.x}
+              y={s.y}
+              textAnchor={s.anchor}
+              fontSize={sfs}
+              fontWeight="800"
+              fill="#0f172a"
+              fontFamily="ui-sans-serif, system-ui"
+              pointerEvents="none"
+            >
+              {s.txt}
+            </text>
+          ));
+        })()}
       </g>
     </svg>
   );

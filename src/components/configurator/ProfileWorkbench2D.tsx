@@ -452,6 +452,10 @@ export function ProfileWorkbench2D({
             {sideRows.map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
+              // Bohrungen von der gegenüberliegenden Seite (A↔C, B↔D) als Geister-Marker
+              const oppositeSlot: SlotId =
+                side.slot === 'A' ? 'C' : side.slot === 'C' ? 'A' : side.slot === 'B' ? 'D' : 'B';
+              const ghostHoles = holes.filter((h) => ensureSlot(h) === oppositeSlot);
               const isActiveSide = side.slot === activeKey.slot;
               const isMultiSide = side.lanes.some((l) => multiSelected.has(keyOf(side.slot, l.moduleIndex)));
               return (
@@ -463,6 +467,7 @@ export function ProfileWorkbench2D({
                   angleStart={angleStart}
                   angleEnd={angleEnd}
                   holes={sideHoles}
+                  ghostHoles={ghostHoles}
                   connectors={sideConns}
                   tool={tool}
                   activeModuleIndex={isActiveSide ? activeKey.moduleIndex : null}
@@ -659,6 +664,8 @@ interface SideRowProps {
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
+  /** Bohrungen der gegenüberliegenden Seite – nur als Geister-Markierung anzeigen */
+  ghostHoles?: ProfileHole[];
   connectors: ProfileConnector[];
   tool: Tool;
   activeModuleIndex: number | null;
@@ -675,7 +682,7 @@ interface SideRowProps {
 }
 
 function SideRow({
-  section, side, length, angleStart, angleEnd, holes, connectors, tool,
+  section, side, length, angleStart, angleEnd, holes, ghostHoles = [], connectors, tool,
   activeModuleIndex, multiSelected, selectedId, draggingId, hoverInfo,
   onHover, onClick, onDragStart, onDragMove, onDragEnd, onSelectMarker,
 }: SideRowProps) {
@@ -916,6 +923,23 @@ function SideRow({
               );
             })}
 
+            {/* Geister-Bohrungen von der gegenüberliegenden Seite (durchsichtig, gestrichelt) */}
+            {ghostHoles.map((h) => {
+              // Gleiche Spur (modulIndex), gleiche z-Position
+              const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
+              if (laneIdx < 0) return null;
+              const cy = laneCy(laneIdx);
+              const r = Math.max(3, Math.min(8, h.diameter * 0.6));
+              const color = holeColor(h.type);
+              const hx = dx(h.zPosition);
+              return (
+                <g key={`ghost-${h.id}`} pointerEvents="none" opacity={0.55}>
+                  <circle cx={hx} cy={cy} r={r + 1} fill="none" stroke={color} strokeWidth="0.8" strokeDasharray="2 1.5" />
+                  <line x1={hx - r * 0.7} y1={cy - r * 0.7} x2={hx + r * 0.7} y2={cy + r * 0.7} stroke={color} strokeWidth="0.6" strokeDasharray="1 1" />
+                </g>
+              );
+            })}
+
             {/* Holes */}
             {holes.map((h) => {
               const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
@@ -1025,6 +1049,7 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
           activeBores={activeBores}
           size={140}
           showLabels
+          showSideLabels
         />
       </div>
       <div className="text-[9px] text-muted-foreground text-center mt-1">
