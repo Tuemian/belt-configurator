@@ -379,7 +379,7 @@ function drawCrossSection(
   const r = Math.min(2, s.cornerR * scale);
   doc.roundedRect(ox, oy, profileW, profileH, r, r, 'FD');
 
-  // Center bores per module (mit blauer Alvaris-Nummerierung in Kreisen)
+  // Center bores per module (mit blauer Nummerierung in Kreisen)
   const MODULE = getModulePitch(s);
   const numW = Math.max(1, Math.round(s.w / MODULE));
   const numH = Math.max(1, Math.round(s.h / MODULE));
@@ -415,7 +415,7 @@ function drawCrossSection(
     doc.rect(ox + profileW - slotD, cy - slotW / 2, slotD, slotW, 'F'); // B
   }
 
-  // Rote Alvaris-Nutnummern an jeder Nut
+  // Rote Nutnummern an jeder Nut
   setText(doc, { r: 220, g: 38, b: 38 }, 4.5, 'bold');
   // A (oben, links→rechts)
   for (let i = 0; i < numW; i++) {
@@ -622,7 +622,7 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSectio
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
   doc.text('Ø', x + 70, y);
-  doc.text('NUT (ALVARIS)', x + 90, y);
+  doc.text('NUT', x + 90, y);
   doc.text('POSITION', x + 130, y);
   doc.text('VOM ENDE', x + 162, y);
   y += 3;
@@ -656,7 +656,7 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section
   setText(doc, SLATE_500, 7, 'bold');
   doc.text('NR.', x, y);
   doc.text('TYP', x + 12, y);
-  doc.text('NUT (ALVARIS)', x + 96, y);
+  doc.text('NUT', x + 96, y);
   doc.text('POSITION', x + 140, y);
   y += 3;
 
