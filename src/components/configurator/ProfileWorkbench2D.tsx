@@ -682,7 +682,7 @@ interface SideRowProps {
 }
 
 function SideRow({
-  section, side, length, angleStart, angleEnd, holes, connectors, tool,
+  section, side, length, angleStart, angleEnd, holes, ghostHoles = [], connectors, tool,
   activeModuleIndex, multiSelected, selectedId, draggingId, hoverInfo,
   onHover, onClick, onDragStart, onDragMove, onDragEnd, onSelectMarker,
 }: SideRowProps) {
