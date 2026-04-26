@@ -118,23 +118,21 @@ export function ProfileWorkbench2D({
   const counts = useMemo(() => getSlotCounts(section), [section]);
   const MODULE = getModulePitch(section);
 
-  /** Liste aller Slot-Reihen, die wir vertikal stapeln */
-  const slotRows = useMemo(() => {
-    const rows: { slot: SlotId; moduleIndex: number; number: number; faceWidth: number; centerOnFace: number }[] = [];
-    SLOT_ORDER.forEach((slot) => {
+  // Zoom für lange Profile
+  const [zoom, setZoom] = useState(1);
+
+  /** Eine Reihe pro Profilseite (A/B/C/D); jede Reihe hat 1..n Nut-Spuren */
+  const sideRows = useMemo(() => {
+    return SLOT_ORDER.map((slot) => {
       const n = counts[slot];
-      // sichtbare Profilbreite, wenn man frontal auf diese Seite schaut
       const faceWidth = (slot === 'A' || slot === 'C') ? section.w : section.h;
-      for (let mi = 0; mi < n; mi++) {
-        rows.push({
-          slot, moduleIndex: mi,
-          number: getSlotNumber(section, slot, mi),
-          faceWidth,
-          centerOnFace: MODULE * (mi + 0.5),
-        });
-      }
+      const lanes = Array.from({ length: n }, (_, mi) => ({
+        moduleIndex: mi,
+        number: getSlotNumber(section, slot, mi),
+        centerOnFace: MODULE * (mi + 0.5),
+      }));
+      return { slot, faceWidth, lanes };
     });
-    return rows;
   }, [section, counts, MODULE]);
 
   /** Liste aller derzeit ausgewählten Slots (immer mind. der aktive) */
