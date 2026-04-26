@@ -180,7 +180,8 @@ export default function ProfileConfigurator() {
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === section.variant) ??
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === 'leicht') ??
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
-                            update({ sectionId: next.id, holes: [] });
+                            // Bearbeitung (Bohrungen / Verbinder) bewusst erhalten – User wechselt oft die Variante
+                            update({ sectionId: next.id });
                           }}
                           className={`rounded-md px-2 py-2 text-xs font-mono border transition-colors ${
                             isActive
@@ -206,7 +207,7 @@ export default function ProfileConfigurator() {
                         <button
                           key={v}
                           disabled={!available}
-                          onClick={() => available && update({ sectionId: available.id, holes: [] })}
+                          onClick={() => available && update({ sectionId: available.id })}
                           className={`rounded-md px-2 py-2.5 text-xs font-semibold border transition-colors ${
                             !available
                               ? 'opacity-30 cursor-not-allowed border-slate-200 text-muted-foreground'
@@ -240,7 +241,7 @@ export default function ProfileConfigurator() {
                   <div className="flex items-center gap-1">
                     <NumericInput
                       min={50}
-                      max={3000}
+                      max={6000}
                       step={5}
                       value={config.length}
                       onCommit={(v) => update({
@@ -254,13 +255,13 @@ export default function ProfileConfigurator() {
                 </div>
                 <Slider
                   min={50}
-                  max={3000}
+                  max={6000}
                   step={5}
                   value={[config.length]}
                   onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>50 mm</span><span>3000 mm</span>
+                  <span>50 mm</span><span>6000 mm</span>
                 </div>
               </div>
             </div>
@@ -423,8 +424,12 @@ export default function ProfileConfigurator() {
               angleEnd={config.angleEnd}
               holes={config.holes}
               connectors={config.connectors}
+              endStart={config.endStart}
+              endEnd={config.endEnd}
               onUpdateHoles={setHoles}
               onUpdateConnectors={setConnectors}
+              onUpdateEndStart={(e) => update({ endStart: e })}
+              onUpdateEndEnd={(e) => update({ endEnd: e })}
             />
           </div>
 
@@ -488,7 +493,7 @@ export default function ProfileConfigurator() {
               <div className="text-right">
                 <div className="text-xs text-muted-foreground">Gesamtpreis (netto)</div>
                 <div className="text-2xl font-bold text-primary">{fmt.format(price.total)}</div>
-                <div className="text-[10px] text-muted-foreground">Richtpreis · {config.quantity} Stk.</div>
+                <div className="text-[10px] text-muted-foreground">Richtpreis · {config.quantity} Stk. · zzgl. Versand &amp; MwSt.</div>
               </div>
               <Button onClick={addToCart} size="lg" className="gap-2 px-6 font-semibold">
                 <ShoppingCart className="h-4 w-4" />
@@ -550,7 +555,7 @@ export default function ProfileConfigurator() {
                   <span className="text-xl font-bold text-primary">{fmt.format(cartTotal)}</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
+                  Unverbindlicher Richtpreis · zzgl. Versandkosten &amp; MwSt. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
                 </p>
                 <Button onClick={openInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />

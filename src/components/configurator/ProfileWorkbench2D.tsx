@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,13 +15,16 @@ import {
   getSlotCenters,
   getAllSlots,
   getSlotNumber,
+  getBoreCounts,
+  getBoreNumber,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
   type ConnectorType,
   type SlotId,
+  type EndTreatment,
 } from '@/lib/profile-configurator-types';
-import { ProfileCrossSection2D } from './ProfileCrossSection2D';
+import { ProfileCrossSection2D, slotKey } from './ProfileCrossSection2D';
 import { NumericInput } from './NumericInput';
 
 // ---------------------------------------------------------------------------
@@ -37,8 +40,12 @@ interface Props {
   angleEnd: number;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
+  endStart?: EndTreatment;
+  endEnd?: EndTreatment;
   onUpdateHoles: (holes: ProfileHole[]) => void;
   onUpdateConnectors: (connectors: ProfileConnector[]) => void;
+  onUpdateEndStart?: (e: EndTreatment) => void;
+  onUpdateEndEnd?: (e: EndTreatment) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,13 +100,21 @@ export function ProfileWorkbench2D({
   angleEnd,
   holes,
   connectors,
+  endStart,
+  endEnd,
   onUpdateHoles,
   onUpdateConnectors,
+  onUpdateEndStart,
+  onUpdateEndEnd,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeSlot, setActiveSlot] = useState<SlotId>('A');
   const [activeModuleIndex, setActiveModuleIndex] = useState<number>(0);
+  /** Multi-Select: zusätzliche Nuten für Batch-Bearbeitung */
+  const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
   const [tool, setTool] = useState<Tool>('hole');
+  /** Stirnseiten-Modus: zeigt Querschnitt groß an, klickbar für Kernzug-Gewinde */
+  const [endFaceMode, setEndFaceMode] = useState<null | 'start' | 'end'>(null);
   const snap = SNAP_FINE;
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
   const [connType, setConnType] = useState<ConnectorType>('tnut-m8');
@@ -111,6 +126,16 @@ export function ProfileWorkbench2D({
   const MODULE = getModulePitch(section);
   const slotCenters = getSlotCenters(section, activeSlot);
   const allSlots = useMemo(() => getAllSlots(section), [section]);
+
+  /** Liste aller derzeit ausgewählten Slots (immer mind. der aktive) */
+  const selectedSlots = useMemo(() => {
+    const set = new Set(multiSelected);
+    set.add(slotKey(activeSlot, activeModuleIndex));
+    return Array.from(set).map((k) => {
+      const [s, mi] = k.split(':');
+      return { slot: s as SlotId, moduleIndex: Number(mi) };
+    });
+  }, [multiSelected, activeSlot, activeModuleIndex]);
 
   // Wenn Profilwechsel den moduleIndex ungültig macht, korrigieren
   useEffect(() => {
@@ -130,6 +155,21 @@ export function ProfileWorkbench2D({
     () => connectors.filter((c) => c.slot === activeSlot && (c.moduleIndex ?? 0) === activeModuleIndex),
     [connectors, activeSlot, activeModuleIndex],
   );
+  /**
+   * Bohrungen aus „gegenüberliegenden" oder anderen Slots, die optisch durch das aktive
+   * Profilfenster sichtbar sind (z. B. Bohrung von Nut C wird auch in Ansicht von Nut A
+   * leicht angedeutet). Wir zeigen sie gedimmt, damit klar ist: die Bohrung geht durch.
+   */
+  const ghostHoles = useMemo(() => {
+    return holes.filter((h) => {
+      const s = ensureSlot(h);
+      // Auf der gleichen Achse (A↔C oder B↔D) und gleichem moduleIndex
+      const sameAxis =
+        (activeSlot === 'A' && s === 'C') || (activeSlot === 'C' && s === 'A') ||
+        (activeSlot === 'B' && s === 'D') || (activeSlot === 'D' && s === 'B');
+      return sameAxis && (h.moduleIndex ?? 0) === activeModuleIndex;
+    });
+  }, [holes, activeSlot, activeModuleIndex]);
 
   // Overlap detection (warning only, not blocking)
   const overlapWarning = useMemo(() => {
@@ -222,36 +262,41 @@ export function ProfileWorkbench2D({
     if (tool === 'hole') {
       const z = snapValue(m.z, snap, snapPoints, length);
       const typeDef = HOLE_TYPES.find((t) => t.id === holeType)!;
-      const newHole: ProfileHole = {
+      // Multi-Slot: für jeden ausgewählten Slot eine Bohrung erstellen
+      const newHoles: ProfileHole[] = selectedSlots.map((s) => ({
         id: crypto.randomUUID(),
         zPosition: z,
         diameter: typeDef.diameter,
-        slot: activeSlot,
-        moduleIndex: targetModuleIndex,
+        slot: s.slot,
+        moduleIndex: s.moduleIndex,
         type: holeType,
         label: typeDef.label,
-      };
-      onUpdateHoles([...holes, newHole]);
-      setSelectedId(newHole.id);
+      }));
+      onUpdateHoles([...holes, ...newHoles]);
+      const primary = newHoles.find((h) => h.slot === activeSlot && h.moduleIndex === activeModuleIndex);
+      setSelectedId(primary?.id ?? newHoles[0]?.id ?? null);
     } else if (tool === 'connector') {
-      // Only one connector per end per slot per module
       const end: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === targetModuleIndex);
-      if (taken) {
-        setSelectedId(null);
-        return;
-      }
       const typeDef = CONNECTOR_TYPES.find((t) => t.id === connType)!;
-      const newConn: ProfileConnector = {
-        id: crypto.randomUUID(),
-        type: connType,
-        end,
-        slot: activeSlot,
-        moduleIndex: targetModuleIndex,
-        label: typeDef.label,
-      };
-      onUpdateConnectors([...connectors, newConn]);
-      setSelectedId(newConn.id);
+      // Multi-Slot: für jeden ausgewählten Slot, sofern noch frei
+      const additions: ProfileConnector[] = [];
+      selectedSlots.forEach((s) => {
+        const taken = connectors.some((c) => c.slot === s.slot && c.end === end && (c.moduleIndex ?? 0) === s.moduleIndex);
+        if (!taken) {
+          additions.push({
+            id: crypto.randomUUID(),
+            type: connType,
+            end,
+            slot: s.slot,
+            moduleIndex: s.moduleIndex,
+            label: typeDef.label,
+          });
+        }
+      });
+      if (additions.length === 0) { setSelectedId(null); return; }
+      onUpdateConnectors([...connectors, ...additions]);
+      const primary = additions.find((c) => c.slot === activeSlot && c.moduleIndex === activeModuleIndex);
+      setSelectedId(primary?.id ?? additions[0].id);
     } else {
       setSelectedId(null);
     }
@@ -361,15 +406,36 @@ export function ProfileWorkbench2D({
           <div className="flex items-center gap-1 flex-wrap max-w-[60%]">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Nut</span>
             {allSlots.map((s) => {
+              const key = slotKey(s.slot, s.moduleIndex);
               const isActive = s.slot === activeSlot && s.moduleIndex === activeModuleIndex;
+              const isMulti = multiSelected.has(key);
+              const isSel = isActive || isMulti;
               return (
-                <Tooltip key={`${s.slot}-${s.moduleIndex}`}>
+                <Tooltip key={key}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => { setActiveSlot(s.slot); setActiveModuleIndex(s.moduleIndex); setSelectedId(null); }}
+                      onClick={(e) => {
+                        if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                          // Multi-Select Toggle (aktive Nut nicht entfernen)
+                          setMultiSelected((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(key)) next.delete(key); else next.add(key);
+                            // Aktive nicht in Multi halten
+                            next.delete(slotKey(activeSlot, activeModuleIndex));
+                            return next;
+                          });
+                        } else {
+                          setActiveSlot(s.slot);
+                          setActiveModuleIndex(s.moduleIndex);
+                          setMultiSelected(new Set());
+                          setSelectedId(null);
+                        }
+                      }}
                       className={`min-w-[28px] px-2 py-1 text-xs rounded-md transition-colors border font-semibold ${
                         isActive
                           ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : isMulti
+                          ? 'bg-primary/15 text-primary border-primary/50'
                           : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:text-primary'
                       }`}
                     >
@@ -377,11 +443,19 @@ export function ProfileWorkbench2D({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">
-                    Nut {s.number} · {SLOT_SIDE_DE[s.slot]}
+                    Nut {s.number} · {SLOT_SIDE_DE[s.slot]}{!isActive && ' · Shift-Klick = Mehrfach'}
                   </TooltipContent>
                 </Tooltip>
               );
             })}
+            {multiSelected.size > 0 && (
+              <button
+                onClick={() => setMultiSelected(new Set())}
+                className="ml-1 text-[10px] text-muted-foreground hover:text-foreground underline"
+              >
+                Mehrfach aufheben ({multiSelected.size + 1})
+              </button>
+            )}
           </div>
 
           {/* Tool palette */}
@@ -432,6 +506,26 @@ export function ProfileWorkbench2D({
             )}
           </div>
 
+          {/* Stirnseiten-Modus */}
+          {(onUpdateEndStart || onUpdateEndEnd) && (
+            <div className="flex items-center gap-1 bg-white rounded-md border border-slate-200 p-0.5">
+              <button
+                onClick={() => setEndFaceMode((m) => m === 'start' ? null : 'start')}
+                title="Stirnseite Anfang – Kernzug-Gewinde wählen"
+                className={`px-2 py-1 text-[11px] rounded flex items-center gap-1 ${endFaceMode === 'start' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Eye className="h-3 w-3" /> Stirn Anfang
+              </button>
+              <button
+                onClick={() => setEndFaceMode((m) => m === 'end' ? null : 'end')}
+                title="Stirnseite Ende – Kernzug-Gewinde wählen"
+                className={`px-2 py-1 text-[11px] rounded flex items-center gap-1 ${endFaceMode === 'end' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Eye className="h-3 w-3" /> Stirn Ende
+              </button>
+            </div>
+          )}
+
           {/* Raster: festes 1-mm-Feinraster */}
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <span>Raster</span>
@@ -443,18 +537,36 @@ export function ProfileWorkbench2D({
 
         {/* SVG stage */}
         <div className="flex-1 relative overflow-auto bg-gradient-to-br from-slate-50 to-slate-100">
-          {/* Mini cross-section overlay */}
+          {/* Mini cross-section overlay (multi-select aware, rotated for tall profiles) */}
           <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
             <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 text-center">
-              Querschnitt
+              Querschnitt {section.h > section.w && '(↻90°)'}
             </div>
             <ProfileCrossSection2D
               section={section}
               activeSlot={activeSlot}
               activeModuleIndex={activeModuleIndex}
-              onSelectSlot={(s, mi) => { setActiveSlot(s); setActiveModuleIndex(mi); setSelectedId(null); }}
-              size={108}
+              selectedKeys={
+                multiSelected.size > 0
+                  ? new Set([...multiSelected, slotKey(activeSlot, activeModuleIndex)])
+                  : undefined
+              }
+              onSelectSlot={(s, mi, additive) => {
+                if (additive) {
+                  setMultiSelected((prev) => {
+                    const k = slotKey(s, mi);
+                    if (s === activeSlot && mi === activeModuleIndex) return prev;
+                    const next = new Set(prev);
+                    if (next.has(k)) next.delete(k); else next.add(k);
+                    return next;
+                  });
+                } else {
+                  setActiveSlot(s); setActiveModuleIndex(mi); setMultiSelected(new Set()); setSelectedId(null);
+                }
+              }}
+              size={120}
               showLabels
+              rotate90={section.h > section.w}
             />
           </div>
 
@@ -464,6 +576,20 @@ export function ProfileWorkbench2D({
               <AlertTriangle className="h-3 w-3" />
               Bohrungen überlappen
             </div>
+          )}
+
+          {/* Stirnseiten-Großansicht (Kernzug-Auswahl) */}
+          {endFaceMode && (
+            <EndFaceOverlay
+              section={section}
+              endLabel={endFaceMode === 'start' ? 'Anfang' : 'Ende'}
+              treatment={endFaceMode === 'start' ? endStart : endEnd}
+              onChange={(t) => {
+                if (endFaceMode === 'start') onUpdateEndStart?.(t);
+                else onUpdateEndEnd?.(t);
+              }}
+              onClose={() => setEndFaceMode(null)}
+            />
           )}
 
           <svg
@@ -672,6 +798,37 @@ export function ProfileWorkbench2D({
                 );
               })}
 
+              {/* Ghost-Bohrungen aus Gegenseite (gestrichelte Outline, kein Klick) */}
+              {ghostHoles.map((h) => {
+                const idx = Math.min(slotCenters.length - 1, h.moduleIndex ?? 0);
+                const cy = slotCenters[idx];
+                const r = Math.max(3, Math.min(10, h.diameter * 0.7));
+                return (
+                  <g key={`ghost-${h.id}`} pointerEvents="none">
+                    <circle
+                      cx={h.zPosition}
+                      cy={cy}
+                      r={r}
+                      fill="none"
+                      stroke="#94a3b8"
+                      strokeWidth="0.8"
+                      strokeDasharray="2 1.5"
+                      opacity="0.7"
+                    />
+                    <text
+                      x={h.zPosition}
+                      y={cy - r - 2}
+                      textAnchor="middle"
+                      fontSize="6"
+                      fill="#64748b"
+                      fontFamily="ui-sans-serif, system-ui"
+                    >
+                      ↻ Nut {getSlotNumber(section, ensureSlot(h), h.moduleIndex ?? 0)}
+                    </text>
+                  </g>
+                );
+              })}
+
               {/* Holes as colored circles */}
               {visibleHoles.map((h) => {
                 const isSel = selectedId === h.id;
@@ -847,5 +1004,99 @@ export function ProfileWorkbench2D({
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stirnseiten-Overlay: Querschnitt groß, Klick auf Kernzug = Gewinde toggeln
+// ---------------------------------------------------------------------------
+
+interface EndFaceOverlayProps {
+  section: ProfileSection;
+  endLabel: 'Anfang' | 'Ende';
+  treatment?: EndTreatment;
+  onChange: (t: EndTreatment) => void;
+  onClose: () => void;
+}
+
+function EndFaceOverlay({ section, endLabel, treatment, onChange, onClose }: EndFaceOverlayProps) {
+  const t: EndTreatment = treatment ?? { thread: false, scope: 'all' };
+  const bores = getBoreCounts(section);
+  const allBoreNums = useMemo(() => {
+    const out: number[] = [];
+    for (let iy = 0; iy < bores.y; iy++) {
+      for (let ix = 0; ix < bores.x; ix++) {
+        out.push(getBoreNumber(section, ix, iy));
+      }
+    }
+    return out;
+  }, [section, bores.x, bores.y]);
+
+  const activeBores = useMemo(() => {
+    if (!t.thread) return new Set<number>();
+    if (t.scope === 'all' || t.scope === undefined) return new Set(allBoreNums);
+    if (t.scope === 'center') {
+      const mid = Math.ceil(allBoreNums.length / 2);
+      return new Set([mid]);
+    }
+    return new Set(allBoreNums);
+  }, [t.thread, t.scope, allBoreNums]);
+
+  const toggleBore = (num: number) => {
+    const next = new Set(activeBores);
+    if (next.has(num)) next.delete(num); else next.add(num);
+    if (next.size === 0) onChange({ ...t, thread: false });
+    else if (next.size === allBoreNums.length) onChange({ ...t, thread: true, scope: 'all' });
+    else if (next.size === 1) onChange({ ...t, thread: true, scope: 'center' });
+    else onChange({ ...t, thread: true, scope: 'all' });
+  };
+
+  return (
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Stirnseite {endLabel}</h3>
+            <p className="text-[11px] text-muted-foreground">Klicke auf einen Kernzug, um dort ein M8-Gewinde zu setzen.</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center bg-slate-50 rounded-lg p-4 border border-slate-200">
+          <ProfileCrossSection2D
+            section={section}
+            activeSlot="A"
+            activeModuleIndex={0}
+            onSelectSlot={() => { /* keine Nutwahl im Stirnseitenmodus */ }}
+            onSelectBore={toggleBore}
+            activeBores={activeBores}
+            size={260}
+            showLabels
+          />
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+          <div className="text-muted-foreground">
+            {t.thread ? `Aktiv: ${activeBores.size} von ${allBoreNums.length} Kernzügen` : 'Kein Gewinde gesetzt'}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onChange({ thread: true, scope: 'all' })}
+              className="px-2 py-1 rounded border border-slate-200 hover:border-primary/50 hover:text-primary"
+            >
+              Alle
+            </button>
+            <button
+              onClick={() => onChange({ thread: false })}
+              className="px-2 py-1 rounded border border-slate-200 hover:border-red-300 hover:text-red-600"
+            >
+              Keine
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
