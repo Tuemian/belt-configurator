@@ -1025,6 +1025,7 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
           activeBores={activeBores}
           size={140}
           showLabels
+          showSideLabels
         />
       </div>
       <div className="text-[9px] text-muted-foreground text-center mt-1">
