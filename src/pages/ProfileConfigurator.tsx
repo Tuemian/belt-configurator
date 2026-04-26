@@ -19,6 +19,8 @@ import {
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
+  getAllSlots,
+  SLOT_SIDE_DE,
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
