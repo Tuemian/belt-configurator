@@ -21,6 +21,7 @@ import {
   type SlotId,
 } from '@/lib/profile-configurator-types';
 import { ProfileCrossSection2D } from './ProfileCrossSection2D';
+import { NumericInput } from './NumericInput';
 
 // ---------------------------------------------------------------------------
 // Types
