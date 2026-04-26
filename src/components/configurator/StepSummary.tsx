@@ -13,7 +13,7 @@ import jsPDF from 'jspdf';
 import { toDataURL as toQrDataUrl } from 'qrcode';
 import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
 import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
-import { buildSharedConfiguratorUrl, getOrCreateCurrentConfiguratorId } from '@/lib/configurator-share';
+import { buildSharedConfiguratorUrl, getOrReserveCurrentConfiguratorId } from '@/lib/configurator-share';
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from '@/lib/pricing';
 
 const ConveyorViewer3D = lazy(() =>
@@ -80,7 +80,7 @@ function normalizeForHash(value: unknown): unknown {
 async function buildConfigurationIdentity(config: ConveyorConfig): Promise<ConfigurationIdentity> {
   const normalized = normalizeForHash(config);
   const payload = JSON.stringify(normalized);
-  const shortId = getOrCreateCurrentConfiguratorId(typeof window !== 'undefined' ? window.location.href : undefined);
+  const shortId = await getOrReserveCurrentConfiguratorId(config, typeof window !== 'undefined' ? window.location.href : undefined);
   let fullHash: string;
 
   if (typeof crypto !== 'undefined' && crypto.subtle) {

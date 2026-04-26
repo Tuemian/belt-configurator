@@ -174,6 +174,58 @@ export function createNewCurrentConfiguratorId(): string {
   return nextId;
 }
 
+export async function reserveNewCurrentConfiguratorId(config?: ConveyorConfig): Promise<string> {
+  if (typeof window === 'undefined') {
+    return createNewCurrentConfiguratorId();
+  }
+
+  try {
+    const response = await fetch('/api/create-configuration', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ config }),
+    });
+
+    if (response.ok) {
+      const payload = await response.json() as { configId?: string };
+      const apiId = typeof payload.configId === 'string' ? payload.configId.trim() : '';
+
+      if (apiId) {
+        window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, apiId);
+        return apiId;
+      }
+    }
+  } catch {
+    // Ignore API errors and use deterministic local fallback.
+  }
+
+  return createNewCurrentConfiguratorId();
+}
+
+export async function getOrReserveCurrentConfiguratorId(config?: ConveyorConfig, currentUrl?: string): Promise<string> {
+  if (typeof window !== 'undefined') {
+    try {
+      const url = new URL(currentUrl ?? window.location.href);
+      const sharedConfigId = url.searchParams.get(CONFIG_ID_PARAM);
+      if (sharedConfigId) {
+        window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, sharedConfigId);
+        return sharedConfigId;
+      }
+
+      const existingId = window.sessionStorage.getItem(CURRENT_CONFIG_ID_STORAGE_KEY);
+      if (existingId) {
+        return existingId;
+      }
+    } catch {
+      // Continue with reservation fallback.
+    }
+  }
+
+  return await reserveNewCurrentConfiguratorId(config);
+}
+
 export function getOrCreateCurrentConfiguratorId(currentUrl?: string): string {
   if (typeof window === 'undefined') {
     return buildNextConfiguratorId();
