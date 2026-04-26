@@ -124,12 +124,12 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   // 30 × 30
   { id: '30x30-leicht', sizeKey: '30x30', variant: 'leicht', label: '30 × 30 · Leicht',
     w: 30, h: 30, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 5.40,
-    orderCode: '0.0.026.43', massPerMeter: 0.81 },
+    orderCode: '0.0.026.43', massPerMeter: 0.81, modulePitch: 30 },
 
   // 30 × 60
   { id: '30x60-leicht', sizeKey: '30x60', variant: 'leicht', label: '30 × 60 · Leicht',
     w: 30, h: 60, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 9.10,
-    orderCode: '0.0.026.44', massPerMeter: 1.45 },
+    orderCode: '0.0.026.44', massPerMeter: 1.45, modulePitch: 30 },
 
   // 40 × 40
   { id: '40x40-eco',    sizeKey: '40x40', variant: 'eco',    label: '40 × 40 · ECO',
