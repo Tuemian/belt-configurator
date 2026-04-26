@@ -798,6 +798,37 @@ export function ProfileWorkbench2D({
                 );
               })}
 
+              {/* Ghost-Bohrungen aus Gegenseite (gestrichelte Outline, kein Klick) */}
+              {ghostHoles.map((h) => {
+                const idx = Math.min(slotCenters.length - 1, h.moduleIndex ?? 0);
+                const cy = slotCenters[idx];
+                const r = Math.max(3, Math.min(10, h.diameter * 0.7));
+                return (
+                  <g key={`ghost-${h.id}`} pointerEvents="none">
+                    <circle
+                      cx={h.zPosition}
+                      cy={cy}
+                      r={r}
+                      fill="none"
+                      stroke="#94a3b8"
+                      strokeWidth="0.8"
+                      strokeDasharray="2 1.5"
+                      opacity="0.7"
+                    />
+                    <text
+                      x={h.zPosition}
+                      y={cy - r - 2}
+                      textAnchor="middle"
+                      fontSize="6"
+                      fill="#64748b"
+                      fontFamily="ui-sans-serif, system-ui"
+                    >
+                      ↻ Nut {getSlotNumber(section, ensureSlot(h), h.moduleIndex ?? 0)}
+                    </text>
+                  </g>
+                );
+              })}
+
               {/* Holes as colored circles */}
               {visibleHoles.map((h) => {
                 const isSel = selectedId === h.id;
