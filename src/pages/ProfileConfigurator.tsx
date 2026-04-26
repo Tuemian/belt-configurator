@@ -119,10 +119,10 @@ export default function ProfileConfigurator() {
         `Position ${idx + 1}: ${s.label}`,
         `  Länge: ${item.config.length} mm`,
         `  Menge: ${item.config.quantity} Stk.`,
-        item.config.angleStart !== 0 ? `  Schrägschnitt Start: ${item.config.angleStart}°` : '',
-        item.config.angleEnd !== 0   ? `  Schrägschnitt Ende:  ${item.config.angleEnd}°` : '',
-        item.config.endStart.thread  ? '  Gewinde Start: M8' : '',
-        item.config.endEnd.thread    ? '  Gewinde Ende: M8' : '',
+        item.config.angleStart !== 0 ? `  Schrägschnitt Anfang: ${item.config.angleStart}°` : '',
+        item.config.angleEnd !== 0   ? `  Schrägschnitt Ende:   ${item.config.angleEnd}°` : '',
+        item.config.endStart.thread  ? `  Gewinde Anfang: M8 (${item.config.endStart.scope ?? 'all'})` : '',
+        item.config.endEnd.thread    ? `  Gewinde Ende:   M8 (${item.config.endEnd.scope ?? 'all'})` : '',
         item.config.holes.length > 0
           ? `  Bohrungen: ${item.config.holes.map((h) => `${h.label} @ ${h.zPosition}mm`).join(', ')}`
           : '',
