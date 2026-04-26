@@ -1,6 +1,6 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -19,15 +19,11 @@ import {
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
-  // getAllSlots / SLOT_SIDE_DE: nicht mehr in der Sidebar gebraucht (Kernzug-Auswahl per Klick im Overlay)
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
 } from '@/lib/profile-configurator-types';
 
-const ProfileViewer3D = lazy(() =>
-  import('@/components/configurator/ProfileViewer3D').then((m) => ({ default: m.ProfileViewer3D }))
-);
 
 // ---------------------------------------------------------------------------
 // Default config
