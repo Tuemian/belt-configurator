@@ -344,28 +344,43 @@ export function getBoreNumber(section: ProfileSection, ix: number, iy: number): 
 export const PRICE_MITER_CUT = 4.50;
 export const PRICE_HOLE = 1.80;
 export const PRICE_CONNECTOR = 3.50;
+/** Preis pro Stirnseiten-Gewinde (M8 in Kernzug) */
+export const PRICE_END_THREAD = 1.90;
+
+/** Liefert die Anzahl tatsächlich gesetzter Kernzug-Gewinde an einer Stirnseite. */
+export function countActiveEndThreads(section: ProfileSection, t: EndTreatment | undefined): number {
+  if (!t || !t.thread) return 0;
+  const bores = getBoreCounts(section);
+  const total = bores.x * bores.y;
+  if (t.scope === 'custom') return t.bores?.length ?? 0;
+  if (t.scope === 'center') return 1;
+  return total;
+}
 
 export function calculateProfilePrice(config: ProfileConfig): {
   material: number;
   miterCuts: number;
   holes: number;
   connectors: number;
+  endThreads: number;
   total: number;
 } {
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const material = (config.length / 1000) * section.pricePerMeter * config.quantity;
   const cuts = (config.angleStart !== 0 ? 1 : 0) + (config.angleEnd !== 0 ? 1 : 0);
-  const treatments =
-    (config.endStart.thread ? 1 : 0) +
-    (config.endEnd.thread ? 1 : 0);
+  const endThreadCount =
+    countActiveEndThreads(section, config.endStart) +
+    countActiveEndThreads(section, config.endEnd);
   const miterCuts = cuts * PRICE_MITER_CUT * config.quantity;
-  const holes = (config.holes.length + treatments) * PRICE_HOLE * config.quantity;
+  const holes = config.holes.length * PRICE_HOLE * config.quantity;
   const connectors = config.connectors.length * PRICE_CONNECTOR * config.quantity;
+  const endThreads = endThreadCount * PRICE_END_THREAD * config.quantity;
   return {
     material: +material.toFixed(2),
     miterCuts: +miterCuts.toFixed(2),
     holes: +holes.toFixed(2),
     connectors: +connectors.toFixed(2),
-    total: +(material + miterCuts + holes + connectors).toFixed(2),
+    endThreads: +endThreads.toFixed(2),
+    total: +(material + miterCuts + holes + connectors + endThreads).toFixed(2),
   };
 }
