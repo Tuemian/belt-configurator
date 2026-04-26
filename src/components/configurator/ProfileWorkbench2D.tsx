@@ -216,17 +216,8 @@ export function ProfileWorkbench2D({
       return;
     }
 
-    // Determine which slot track the click belongs to (multi-module profiles)
-    const nearestModuleIndex = (() => {
-      if (slotCenters.length <= 1) return 0;
-      let best = 0;
-      let bestDist = Infinity;
-      slotCenters.forEach((c, i) => {
-        const d = Math.abs((m.y ?? faceDepth / 2) - c);
-        if (d < bestDist) { bestDist = d; best = i; }
-      });
-      return best;
-    })();
+    // Aktuelle Spur ist durch den Tab vorgegeben – alle neuen Items landen dort
+    const targetModuleIndex = activeModuleIndex;
 
     if (tool === 'hole') {
       const z = snapValue(m.z, snap, snapPoints, length);
