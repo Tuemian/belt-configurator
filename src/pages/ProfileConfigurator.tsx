@@ -545,7 +545,7 @@ export default function ProfileConfigurator() {
                     </CardHeader>
                     <CardContent className="py-2 px-3 text-xs space-y-0.5 text-muted-foreground">
                       <div>{item.config.length} mm · {item.config.quantity} Stk.</div>
-                      {item.config.angleStart !== 0 && <div>Schrägschnitt Start {item.config.angleStart}°</div>}
+                      {item.config.angleStart !== 0 && <div>Schrägschnitt Anfang {item.config.angleStart}°</div>}
                       {item.config.angleEnd !== 0   && <div>Schrägschnitt Ende {item.config.angleEnd}°</div>}
                       {item.config.holes.length > 0 && <div>{item.config.holes.length} Bohrung{item.config.holes.length !== 1 ? 'en' : ''}</div>}
                       <div className="text-primary font-semibold pt-1">{fmt.format(item.price.total)}</div>
