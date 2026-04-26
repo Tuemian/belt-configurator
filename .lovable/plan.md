@@ -1,150 +1,77 @@
-# Profilzuschnitte – Etappe B+C: Nut-Logik, Preise, 3D, Mail & PDF
+## Anpassungen Profilkonfigurator – Plan
 
-Großes Update mit klaren funktionalen Verbesserungen. Aufgeteilt in saubere Bausteine.
+### 1. Querschnitt-Ansicht reparieren (nicht mehr abgeschnitten)
+**Problem**: Der Mini-Querschnitt oben rechts wird bei breiten Profilen (80×40 etc.) noch abgeschnitten, weil das Container-Padding zu klein ist und der gedrehte SVG die viewBox überschreitet.
 
----
+**Lösung**:
+- In `ProfileWorkbench2D.tsx`: Querschnitt-Box vergrößern (`size` dynamisch nach Profilformat: `Math.max(140, Math.min(180, …))`), Container-Padding erhöhen.
+- In `ProfileCrossSection2D.tsx`: PAD von 10 auf 14 erhöhen, damit Beschriftungen (Nutnummern) komplett innerhalb der viewBox liegen.
+- 90°-Drehlogik: nur bei wirklich hohen Profilen (h > w * 1.3).
 
-## 1. Nut-basierte Auswahl statt Face-Tabs (UX-Kern)
+### 2. Alle Ansichten 2D + Bearbeitung direkt darin
+**Aktuell**: Es gibt nur die Seitenansicht (ein Slot zur Zeit) + den kleinen Querschnitt + ein Stirnseiten-Overlay.
 
-Aktuell: Tabs „Top / Bottom / Left / Right". Neu: pro Profil-Querschnitt werden die echten Nuten als anklickbare Zonen visualisiert.
+**Neu**: Im Hauptbereich werden alle 4 Seitenansichten gleichzeitig in einem Tab-/Stack-Layout dargestellt:
+- **Layout** (vertikal gestapelt, jede Reihe ist eine Slot-Ansicht):
+  - „Nut Oben (A)" – komplette Profilbreite, Bohrungen klickbar
+  - „Nut Rechts (B)"
+  - „Nut Unten (C)"
+  - „Nut Links (D)"
+- Jede Reihe ist klickbar → Bohrungen/Verbinder werden direkt in der angeklickten Nut angelegt (vorgewähltes Tool oben).
+- Auf der linken Spalte jeder Reihe: kleine Beschriftung „Nut X" + Side-Indikator.
+- Bei Multi-Modul-Profilen (80×40 → 2 Spuren auf A und C) jede Spur als eigene Sub-Reihe.
+- Die separate Tab-/Knopfleiste „Nut 1, Nut 2, ..." entfällt; die Nut wird durch Klick in der Ansicht ausgewählt.
+- **Stirnseiten** (Anfang & Ende) werden als zwei kleine Querschnitt-Ansichten am rechten Rand permanent dargestellt (statt Overlay). Klick auf einen blauen Kernzug = M8-Gewinde toggeln, mit X-Markierung.
 
-- Im 2D-Workbench wird zusätzlich oben rechts ein **Mini-Querschnitt** des Profils angezeigt (kleines SVG, ca. 90 × 90 px).
-- Die 4 Nuten sind farbig hinterlegt und mit Buchstaben **A / B / C / D** markiert (Konvention: A=oben, im Uhrzeigersinn).
-- Klick auf eine Nut im Mini-Querschnitt → 2D-Workbench springt auf diese Nut.
-- Der Tab-Header wird dadurch ersetzt – die Tabs zeigen jetzt **„Nut A (oben) / Nut B (rechts) / Nut C (unten) / Nut D (links)"** und sind synchronisiert mit dem Mini-Querschnitt.
-- Bohrungen können auf allen 4 Nuten unabhängig gesetzt werden.
-- Bohrungen dürfen sich überschneiden (Validierungs-Block wird entfernt; nur noch eine sanfte Warnung „Bohrungen überlappen" als Info-Badge, nicht blockierend).
+### 3. Schrägschnitt-Eingabe wie vorher
+**Problem**: Die Checkbox-Aktivierung mit Default 15° ist umständlich.
 
-## 2. Einschraubverbinder – Regelwerk
+**Lösung**: Numeric-Input direkt sichtbar (wieder ohne Checkbox), Wert 0 = kein Schnitt, Wertebereich 0–45°. Slider unter dem Input. Beim Slider/Input ist der Standardwert 0; Aktivierung entsteht implizit durch Eingabe > 0.
 
-- Einschraubverbinder können **nur an den beiden Profilenden** gesetzt werden (Position 0 mm oder Profillänge).
-- Pro Nut maximal **2 Verbinder** (einer je Ende).
-- In der Toolbox „Verbinder" wird beim Hinzufügen automatisch ans nächstgelegene Ende gesnapt; ein Verbinder lässt sich nur zwischen den beiden Enden hin- und herziehen, nicht frei.
-- Im 2D-Workbench werden die beiden Enden als „Magnet-Zonen" sichtbar markiert, sobald man einen Verbinder zieht.
-- Die Auswahl **„Kernloch"** wird komplett entfernt (aus dem Bohrungs-Type-Selector und allen Forms).
+### 4. Kernzug-Gewinde mit X markieren
+**Aktuell**: Aktive Kernzüge werden gelb hinterlegt.
 
-## 3. Snap-Buttons umbenennen
+**Neu**: Aktive Kernzüge bekommen ein deutliches **rotes „×"** im Kreis (statt nur Farbumschlag). Funktion bleibt: Klick toggelt das M8-Gewinde an diesem Kernzug. Die Stirnseiten-Querschnitte sind permanent rechts sichtbar (siehe Punkt 2), nicht mehr im Modal.
 
-- `Snap 1` → **Genau** (mm-genau)
-- `Snap 5` → **Mittel** (5 mm Raster)
-- `Snap 10` → **Grob** (10 mm Raster)
-- Mit kleinem Tooltip, der das mm-Raster erklärt.
+### 5. 3D-Ansicht entfernen
+- `ProfileViewer3D` Block in `ProfileConfigurator.tsx` (Zeilen 440-471) entfernen samt `show3D` State, lazy import und Toggle-Button.
+- Frei gewordener Platz wird vom 2D-Bereich genutzt.
 
-## 4. Erweiterter Profilkatalog (item24-Anlehnung)
+### 6. NOVAMOTIS-Artikelnummern statt item24-Codes
+- In `profile-configurator-types.ts`: Feld `orderCode` (z. B. „0.0.026.03") wird durch NOVAMOTIS-Artikelnummern ersetzt. Schema: `NM-PRO-{Größe}-{Variante}` (z. B. `NM-PRO-40x40-L`, `NM-PRO-80x80-S`). Falls eine echte Artikelnummern-Liste vorliegt, kann diese später eingespielt werden – ich frage hier vor dem Coden noch nach.
+- PDF-Spaltenkopf bleibt „Art.-Nr." (zeigt nun NOVAMOTIS-Code).
 
-Aktuell vorhanden + neue Profile (alles Nut-8-Familie, Standard-Aluminium-Strangpressprofile):
+### 7. Alle „Alvaris"-Bezeichnungen entfernen
+**UI**:
+- `ProfileWorkbench2D.tsx`: Tooltip „Alvaris-Nummer" → „Nut-Nummer".
+- Kommentare können bleiben, aber sichtbare Strings nicht.
 
-**Bestehend:** 40×40, 40×80, 80×40, 80×80
-**Neu:** 30×30 (Nut 8), 30×60, 40×120, 40×160, 60×60, 80×120, 80×160, 80×240, 40×40 leicht, 40×80 leicht
+**PDF (`profile-pdf.ts`)**:
+- Tabellenkopf „NUT (ALVARIS)" → „NUT".
+- Kommentar-Strings im Cross-Section-Block.
+- Helper-Beschriftungen.
 
-Total ca. 14 Profile. Jedes Profil bekommt:
-- Echte Querschnitts-Geometrie (Außenmaße, Wandstärke, Nutbreite/-tiefe, Kammern)
-- Massenpro-Meter und Trägheitsmomente (für spätere Statik-Erweiterung)
-- Bestell-Code-Konvention analog item24 (z. B. `0.0.026.03` = 40×40 Nut 8)
+### 8. PDF-Fußzeile überarbeiten (keine Überschneidungen)
+**Problem**: Drei Spalten mit langem Text in 21 mm Höhe – Text läuft in Hintergrundbild und Seitenzahl.
 
-## 5. Excel-basierte Preispflege
+**Lösung**:
+- Footer-Höhe von 21 → 28 mm.
+- Kleinere Schriftgröße (6.2 → 5.8) und reduzierter `lineHeightFactor` (1.12 → 1.0).
+- Spalten neu strukturieren: 4 Spalten statt 3 für bessere Verteilung (Bank | Recht | Geschäftsführung | Kontakt).
+- Seitenzahl in eigene Zeile **unter** den Spalten platzieren (statt rechts oben über dem Footer), zentriert.
+- Padding links/rechts erhöhen (MARGIN → 12 mm im Footer).
 
-Erweiterung der bestehenden `public/pricing/price-list.xlsx`:
+### Technische Details
 
-- Neues Sheet **`Profiles`** mit Spalten:
-  `key | label_de | label_en | label_it | price_eur_per_meter | min_cut_eur | cut_fee_eur`
-- Neues Sheet **`Machining`** mit Spalten:
-  `key | label_de | label_en | label_it | price_eur` (für jede Bohrung-Type, Verbindertyp, Sägeschnitt-Pauschale)
-- Falls eine Position fehlt → Anzeige **„Preis auf Anfrage"** + Hinweis-Badge (gleicher Mechanismus wie aktuell beim Gurtförderer-Konfigurator).
-- Eine **Beispiel-Excel** mit allen Keys wird vorausgefüllt, sodass du nur Preise eintragen musst.
-- Im Repo wird eine `PRICING.md` mit der Key-Liste und Erklärung der Spalten ergänzt.
+**Geänderte Dateien**:
+- `src/components/configurator/ProfileWorkbench2D.tsx` – komplette Restrukturierung des SVG-Bereichs auf Multi-Slot-Stack, Entfernung Tab-Leiste, Stirnseiten-Querschnitte am rechten Rand (statt Modal).
+- `src/components/configurator/ProfileCrossSection2D.tsx` – PAD erhöhen, X-Markierung für aktive Kernzüge.
+- `src/pages/ProfileConfigurator.tsx` – 3D weg, Schrägschnitt-Eingabe ohne Checkbox.
+- `src/lib/profile-configurator-types.ts` – `orderCode` auf NOVAMOTIS-Schema umstellen.
+- `src/lib/profile-pdf.ts` – „Alvaris" raus, Footer-Layout überarbeiten.
 
-## 6. 3D-Vorschau – realistisches Parametric + STEP-Slot
+**Datenmigration**: Bestehende `EndTreatment.bores` und Bohrungen bleiben kompatibel (keine Schema-Änderung).
 
-**Sofort umgesetzt (Parametric v2):**
-- Echte T-Nut-Geometrie (Nutbreite 8 mm, Nuttiefe ~9.4 mm, Hinterschnitt) extrudiert über die Profillänge.
-- Innen-Kammer und Wandkonturen aus den realen item24-Maßen pro Profil.
-- Bohrungen als echte zylindrische Boolean-Subtractions (CSG via three-bvh-csg).
-- Einschraubverbinder als Dummy-Geometrie an den Enden sichtbar.
-- Material: gebürstetes Aluminium (anisotrope Highlights, leichte Reflexion).
-
-**Vorbereitung STEP-Import (nachreichbar):**
-- Neuer Ordner `public/profile-models/` wird angelegt mit README.
-- Konvention: Pro Profil ein `.glb`-File (z. B. `motis-40x40-nut8.glb`). STEP wandelst du via Online-Konverter oder FreeCAD selbst um – ich erkläre den Vorgang in der README.
-- Loader prüft beim Rendern: existiert ein GLB → wird verwendet, Bohrungen werden parametrisch reingerechnet. Existiert keins → Fallback auf Parametric v2.
-- Du kannst also nach Belieben einzelne Profile mit hochwertigen GLB-Modellen austauschen.
-
-## 7. Mail-Versand identisch zum Gurtförderer-Konfigurator
-
-- Bestehender Endpoint `/api/send-inquiry` wird wiederverwendet (Microsoft Graph an `office@novamotis.com` + Bestätigung an Kunde).
-- Validierung, Rate-Limit, Anhang-Limits bleiben unverändert.
-- Im Profilzuschnitte-Konfigurator wird das gleiche Anfrage-Formular eingebaut (Name, Firma, E-Mail, Telefon, Nachricht, Datenschutz-Checkbox).
-- Anhang ist die unter Punkt 8 erzeugte Multi-Page-PDF.
-
-## 8. Saubere Multi-Page-PDF
-
-Aufbau:
-
-```text
-Seite 1:  Inhaltsverzeichnis
-  - Kunden-Header (Name, Firma, Datum, Anfragenummer)
-  - Tabelle aller Positionen mit Pos-Nr, Profilbezeichnung, Länge, Stückzahl, Bearbeitungen, Einzelpreis, Gesamt
-  - Gesamtsumme oder „Preis auf Anfrage"
-
-Seite 2..n:  je 1 Seite pro Position
-  - Header: Pos-Nr, Profilname, Bestell-Code
-  - Oben links:    3D-Render (perspektivisch, ca. 80×60 mm)
-  - Oben rechts:   Querschnitt mit Nut-Beschriftung A/B/C/D
-  - Mitte:         2D-Bemaßungszeichnung der gewählten Nut(en) mit allen Bohrungen
-                   und Verbindern, vermaßt in mm
-  - Tabelle unten: Bohrungsliste (Nut, Position, Typ, Ø, Tiefe, Anmerkung)
-                   + Verbinderliste
-                   + Preis-Zusammenfassung dieser Position
-  - Footer: Seitenzahl X/Y, Anfragenummer
-```
-
-- Nutzt `jspdf` + `html2canvas` (beide schon im Projekt).
-- 3D-Snapshots werden pro Position vor PDF-Erzeugung gerendert (Three.js `gl.domElement.toDataURL`).
-- 2D-Zeichnung wird direkt als SVG → Canvas → PNG eingebettet (saubere Vektorqualität, da SVG vorher gerendert).
-- Brand-konform: NOVAMOTIS-Logo, Farben aus `mem://design/branding`.
-
----
-
-## Technische Umsetzung (für Devs)
-
-### Neue/geänderte Dateien
-
-- `src/lib/profile-catalog.ts` — Erweiterte Profilliste mit Querschnitts-Geometrie, item24-Bestellcodes
-- `src/lib/profile-pricing.ts` — Liest `Profiles` + `Machining` Sheets aus `price-list.xlsx`, gleiche Mechanik wie `pricing.ts`
-- `public/pricing/price-list.xlsx` — Neue Sheets `Profiles` + `Machining` ergänzt (Excel programmatisch erweitert)
-- `public/pricing/PRICING.md` — Dokumentation der Sheet-Struktur und Keys
-- `public/profile-models/README.md` — Anleitung für STEP→GLB-Workflow
-- `src/components/configurator/ProfileCrossSection2D.tsx` — Neuer Mini-Querschnitt mit klickbaren Nuten A/B/C/D
-- `src/components/configurator/ProfileWorkbench2D.tsx` — Tab-Beschriftung auf Nut A–D umstellen, Verbinder-Magnet-Zonen, Kernloch-Type entfernen, Snap-Labels umbenennen, Overlap-Block auf Warning downgraden
-- `src/components/configurator/ProfileViewer3D.tsx` — Neuer Three.js-Viewer mit T-Nut-Extrusion + CSG-Bohrungen + GLB-Loader-Fallback
-- `src/lib/profile-pdf.ts` — Neuer PDF-Builder mit Inhaltsverzeichnis + 1 Seite pro Position
-- `src/pages/ProfileConfigurator.tsx` — Anfrage-Formular einbauen analog StepSummary, Mail-POST an `/api/send-inquiry`
-- `src/lib/i18n.ts` — Neue Keys für „Nut A–D", „Genau/Mittel/Grob", „Preis auf Anfrage", Anfrage-Formular-Labels (DE/EN/IT)
-
-### Pakete
-- Neu: `three-bvh-csg` (für saubere CSG-Bohrungen im 3D)
-- Vorhanden, wiederverwendet: `jspdf`, `html2canvas`, `xlsx`, `three`, `@react-three/fiber`, `@react-three/drei`, `@sentry/node`
-
-### Mail-Endpoint
-Keine Backend-Änderung nötig — `/api/send-inquiry` akzeptiert bereits beliebige PDF-Anhänge bis 8 MB. Der neue Konfigurator schickt einfach im gleichen Schema.
-
----
-
-## Was NICHT in dieser Etappe enthalten ist
-
-- Echte STEP-Geometrie pro Profil (du legst GLB-Files später nach – Slot ist vorbereitet)
-- Statik-Berechnung (Trägheitsmomente werden nur als Daten hinterlegt)
-- Pattern-Tool / Undo-Redo (kann in einer späteren Etappe nachgezogen werden)
-
----
-
-## Reihenfolge der Umsetzung
-
-1. Nut-Tabs + Mini-Querschnitt + Kernloch raus + Snap-Rename + Overlap-Warnung statt Block
-2. Einschraubverbinder-Regel (nur Enden, max 2 pro Nut)
-3. Erweiterte Profilliste + neue Excel-Sheets + Pricing-Loader
-4. 3D-Viewer v2 mit T-Nut + CSG-Bohrungen + GLB-Slot
-5. Anfrage-Formular + Mail-Versand
-6. Multi-Page-PDF mit Inhaltsverzeichnis + Detailseiten
-
-Nach Freigabe wechsle ich in den Build-Mode und arbeite das in dieser Reihenfolge ab.
+### Klärungsfrage vorab
+Bevor ich umsetze, eine Frage zu Punkt 6 (Artikelnummern):
+- Gibt es eine konkrete NOVAMOTIS-Artikelnummern-Liste (z. B. CSV/Excel) oder soll ich vorerst ein generisches Schema `NM-PRO-{Größe}-{Variante}` verwenden, das später ersetzt werden kann?
