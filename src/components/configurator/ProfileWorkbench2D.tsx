@@ -399,9 +399,30 @@ export function ProfileWorkbench2D({
         </div>
 
 
-        {/* Main stage: linke Spalte = stack der 4 Nut-Ansichten, rechte Spalte = Stirnseiten */}
+        {/* Main stage:
+            EU 1st-angle layout:
+              - Stirnseite "Ende"  links der Reihen
+              - 4 Reihen je Profilseite (A/B/C/D), eine pro Seite
+              - Stirnseite "Anfang" rechts der Reihen
+        */}
         <div className="flex-1 min-h-0 flex overflow-hidden">
-          {/* Left: stacked rows */}
+          {/* Left: end face "Ende" */}
+          {onUpdateEndEnd && (
+            <aside className="w-40 shrink-0 border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Ende</div>
+              <EndFacePanel
+                label="Ende"
+                section={section}
+                treatment={endEnd}
+                onChange={(t) => onUpdateEndEnd?.(t)}
+              />
+              <p className="text-[9px] text-muted-foreground leading-tight px-1">
+                Klick auf Kernzug = M8-Gewinde (× = aktiv).
+              </p>
+            </aside>
+          )}
+
+          {/* Center: stacked side rows */}
           <div className="flex-1 min-w-0 overflow-auto p-3 space-y-2 relative">
             {overlapWarning && (
               <div className="sticky top-0 z-10 inline-flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
@@ -410,30 +431,30 @@ export function ProfileWorkbench2D({
               </div>
             )}
 
-            {slotRows.map((row) => {
-              const rowKey = keyOf(row.slot, row.moduleIndex);
-              const isActive = row.slot === activeKey.slot && row.moduleIndex === activeKey.moduleIndex;
-              const isMulti = multiSelected.has(rowKey);
-              const rowHoles = holes.filter((h) => ensureSlot(h) === row.slot && (h.moduleIndex ?? 0) === row.moduleIndex);
-              const rowConns = connectors.filter((c) => c.slot === row.slot && (c.moduleIndex ?? 0) === row.moduleIndex);
+            <div style={{ width: `${zoom * 100}%`, minWidth: '100%' }} className="space-y-2">
+            {sideRows.map((side) => {
+              const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
+              const sideConns = connectors.filter((c) => c.slot === side.slot);
+              const isActiveSide = side.slot === activeKey.slot;
+              const isMultiSide = side.lanes.some((l) => multiSelected.has(keyOf(side.slot, l.moduleIndex)));
               return (
-                <SlotRow
-                  key={rowKey}
+                <SideRow
+                  key={side.slot}
                   section={section}
-                  row={row}
+                  side={side}
                   length={length}
                   angleStart={angleStart}
                   angleEnd={angleEnd}
-                  holes={rowHoles}
-                  connectors={rowConns}
+                  holes={sideHoles}
+                  connectors={sideConns}
                   tool={tool}
-                  isActive={isActive}
-                  isMulti={isMulti}
+                  activeModuleIndex={isActiveSide ? activeKey.moduleIndex : null}
+                  multiSelected={multiSelected}
                   selectedId={selectedId}
                   draggingId={draggingId}
-                  hoverZ={hoverZ?.key === rowKey ? hoverZ.z : null}
-                  onHover={(z) => setHoverZ(z === null ? null : { key: rowKey, z })}
-                  onClick={(zMm, additive) => handleRowClick(row, zMm, additive)}
+                  hoverInfo={hoverZ && hoverZ.key.startsWith(side.slot + ':') ? { moduleIndex: Number(hoverZ.key.split(':')[1]), z: hoverZ.z } : null}
+                  onHover={(mi, z) => setHoverZ(z === null ? null : { key: keyOf(side.slot, mi), z })}
+                  onClick={(mi, zMm, additive) => handleRowClick({ slot: side.slot, moduleIndex: mi }, zMm, additive)}
                   onDragStart={(id) => { setDraggingId(id); setSelectedId(id); }}
                   onDragMove={(id, zMm) => {
                     const conn = connectors.find((c) => c.id === id);
@@ -444,7 +465,8 @@ export function ProfileWorkbench2D({
                     }
                     const hole = holes.find((h) => h.id === id);
                     if (hole) {
-                      const z = snapValue(zMm, SNAP_FINE, snapPointsFor(rowKey).filter((p) => Math.abs(p - hole.zPosition) > 0.1), length);
+                      const rk = keyOf(ensureSlot(hole), hole.moduleIndex ?? 0);
+                      const z = snapValue(zMm, SNAP_FINE, snapPointsFor(rk).filter((p) => Math.abs(p - hole.zPosition) > 0.1), length);
                       onUpdateHoles(holes.map((h) => h.id === id ? { ...h, zPosition: z } : h));
                     }
                   }}
@@ -453,38 +475,34 @@ export function ProfileWorkbench2D({
                 />
               );
             })}
+            </div>
 
             {/* Bottom hint */}
             {holes.length === 0 && connectors.length === 0 && (
               <div className="text-center text-[11px] text-muted-foreground py-3">
                 <Plus className="h-3 w-3 inline mr-1" />
-                Klicke auf eine Nut-Reihe, um eine Bohrung zu setzen. Mit Shift-Klick zusätzliche Nuten gleichzeitig auswählen.
+                Klicke auf eine Nut, um eine Bohrung zu setzen. Mit Shift-Klick zusätzliche Nuten gleichzeitig auswählen.
               </div>
             )}
           </div>
 
-          {/* Right: persistent end-faces (Stirnseiten) */}
-          {(onUpdateEndStart || onUpdateEndEnd) && (
-            <aside className="w-44 shrink-0 border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-3">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseiten</div>
+          {/* Right: end face "Anfang" */}
+          {onUpdateEndStart && (
+            <aside className="w-40 shrink-0 border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Anfang</div>
               <EndFacePanel
                 label="Anfang"
                 section={section}
                 treatment={endStart}
                 onChange={(t) => onUpdateEndStart?.(t)}
               />
-              <EndFacePanel
-                label="Ende"
-                section={section}
-                treatment={endEnd}
-                onChange={(t) => onUpdateEndEnd?.(t)}
-              />
               <p className="text-[9px] text-muted-foreground leading-tight px-1">
-                Klicke auf einen Kernzug, um ein <span className="font-semibold">M8-Gewinde</span> zu setzen (× = aktiv).
+                Klick auf Kernzug = M8-Gewinde (× = aktiv).
               </p>
             </aside>
           )}
         </div>
+
 
         {/* Selected-item floating panel */}
         {(selectedHole || selectedConn) && (
