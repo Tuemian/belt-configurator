@@ -784,19 +784,14 @@ export function ProfileWorkbench2D({
                   </div>
                   <div>
                     <Label className="text-[10px] text-muted-foreground mb-1 block">
-                      Position (mm vom Anfang) · Schritt {snap} mm
+                      Position (mm vom Anfang)
                     </Label>
-                    <Input
-                      type="number"
-                      min={snap}
-                      max={length - 1}
-                      step={snap}
+                    <NumericInput
                       value={selectedHole.zPosition}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value);
-                        const z = Math.max(snap, Math.min(length - 1, Math.round(raw / snap) * snap));
-                        updateHole({ zPosition: z });
-                      }}
+                      min={1}
+                      max={length - 1}
+                      step={1}
+                      onCommit={(z) => updateHole({ zPosition: z })}
                       className="h-8 text-xs"
                     />
                   </div>
