@@ -54,7 +54,7 @@ export function ProfileCrossSection2D({
   const counts = getSlotCounts(section);
   const bores = getBoreCounts(section);
 
-  const PAD = 10;
+  const PAD = 14;
   const VB_W = w + PAD * 2;
   const VB_H = h + PAD * 2;
 
