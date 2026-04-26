@@ -295,9 +295,12 @@ export default function ProfileConfigurator() {
             {/* Miter cuts */}
             <div>
               <SectionDivider label="Schrägschnitte" />
+              <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
+                Negative Werte schneiden in die andere Richtung.
+              </p>
               <div className="mt-3 grid grid-cols-2 gap-4">
-                {(['Start', 'Ende'] as const).map((end) => {
-                  const key = end === 'Start' ? 'angleStart' : 'angleEnd';
+                {(['Anfang', 'Ende'] as const).map((end) => {
+                  const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
                   const val = config[key];
                   return (
                     <div key={end} className="space-y-2">
@@ -305,17 +308,17 @@ export default function ProfileConfigurator() {
                       <div className="flex items-center gap-1">
                         <Input
                           type="number"
-                          min={0}
+                          min={-45}
                           max={45}
                           step={1}
                           value={val}
-                          onChange={(e) => update({ [key]: Math.max(0, Math.min(45, Number(e.target.value))) })}
+                          onChange={(e) => update({ [key]: Math.max(-45, Math.min(45, Number(e.target.value))) })}
                           className="h-8 w-16 text-right text-sm"
                         />
                         <span className="text-muted-foreground text-xs">°</span>
                       </div>
                       <Slider
-                        min={0}
+                        min={-45}
                         max={45}
                         step={1}
                         value={[val]}
@@ -330,25 +333,43 @@ export default function ProfileConfigurator() {
               </div>
             </div>
 
-            {/* End treatments */}
+            {/* End treatments with Kernzug-Auswahl */}
             <div>
               <SectionDivider label="Stirnseitenbearbeitung" />
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 space-y-3">
                 {(['endStart', 'endEnd'] as const).map((endKey) => {
-                  const label = endKey === 'endStart' ? 'Start' : 'Ende';
+                  const label = endKey === 'endStart' ? 'Anfang' : 'Ende';
                   const val = config[endKey];
+                  const scope = val.scope ?? 'all';
                   return (
                     <div key={endKey} className="space-y-1.5">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-                      <div className="flex gap-4 pl-1">
+                      <div className="flex flex-col gap-1.5 pl-1">
                         <label className="flex items-center gap-2 cursor-pointer text-xs text-foreground">
                           <Checkbox
                             checked={val.thread}
-                            onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v } })}
+                            onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v, scope: val.scope ?? 'all' } })}
                           />
                           Gewinde M8
                           {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
                         </label>
+                        {val.thread && (
+                          <div className="pl-6">
+                            <Label className="text-[10px] text-muted-foreground mb-1 block">Kernzug</Label>
+                            <select
+                              value={scope}
+                              onChange={(e) => update({ [endKey]: { ...val, scope: e.target.value as typeof scope } })}
+                              className="h-7 w-full rounded border border-slate-200 bg-white px-2 text-xs text-foreground"
+                            >
+                              <option value="all">Alle Kernzüge</option>
+                              <option value="center">Nur Zentrumsbohrung</option>
+                              <option value="A">Nut A (oben)</option>
+                              <option value="B">Nut B (rechts)</option>
+                              <option value="C">Nut C (unten)</option>
+                              <option value="D">Nut D (links)</option>
+                            </select>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
