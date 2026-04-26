@@ -521,18 +521,33 @@ export function ProfileWorkbench2D({
               <path d={profilePath} fill="url(#alu)" stroke="#475569" strokeWidth="0.8" />
               <path d={profilePath} fill="url(#slotHatch)" />
 
+              {/* Slot tracks (highlighted bands so it's obvious where holes/connectors sit) */}
               {slotGuides.map((y, i) => (
-                <line
-                  key={i}
-                  x1="0"
-                  y1={y}
-                  x2={length}
-                  y2={y}
-                  stroke="#64748b"
-                  strokeWidth="0.4"
-                  strokeDasharray="3 3"
-                  opacity="0.4"
-                />
+                <g key={i}>
+                  <rect
+                    x={0}
+                    y={y - 6}
+                    width={length}
+                    height={12}
+                    fill="hsl(var(--primary))"
+                    opacity={0.06}
+                  />
+                  <line
+                    x1="0"
+                    y1={y}
+                    x2={length}
+                    y2={y}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="0.5"
+                    strokeDasharray="4 3"
+                    opacity="0.55"
+                  />
+                  {slotGuides.length > 1 && (
+                    <text x={-6} y={y + 3} textAnchor="end" fontSize="8" fill="#64748b" fontWeight="600">
+                      {i + 1}
+                    </text>
+                  )}
+                </g>
               ))}
 
               <line
