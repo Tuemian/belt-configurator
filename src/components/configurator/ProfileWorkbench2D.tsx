@@ -377,8 +377,27 @@ export function ProfileWorkbench2D({
                 </SelectContent>
               </Select>
             )}
+
+            {/* Zoom */}
+            <div className="flex items-center gap-1.5 bg-white rounded-md border border-slate-200 px-2 py-1">
+              <span className="text-[10px] text-muted-foreground">Zoom</span>
+              <input
+                type="range"
+                min={1}
+                max={4}
+                step={0.25}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-24 accent-primary"
+              />
+              <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{zoom.toFixed(2)}×</span>
+              {zoom !== 1 && (
+                <button onClick={() => setZoom(1)} className="text-[10px] text-primary hover:underline">reset</button>
+              )}
+            </div>
           </div>
         </div>
+
 
         {/* Main stage: linke Spalte = stack der 4 Nut-Ansichten, rechte Spalte = Stirnseiten */}
         <div className="flex-1 min-h-0 flex overflow-hidden">
