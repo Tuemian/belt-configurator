@@ -58,11 +58,17 @@ function holeColor(type: ProfileHole['type']): string {
 }
 
 function snapValue(raw: number, snap: number, snapPoints: number[], length: number): number {
-  for (const p of snapPoints) {
-    if (Math.abs(raw - p) <= 3) return p;
+  // Bei feinem Raster (1 mm) sollen die "magischen" Punkte (Profilmitte, 10/15/20 mm Abstand)
+  // den Cursor anziehen. Bei Mittel/Grob ist das Raster die führende Größe – wir snappen
+  // strikt darauf, sonst ergibt sich aus der Sicht des Users keine Rasterung.
+  if (snap <= 1) {
+    for (const p of snapPoints) {
+      if (Math.abs(raw - p) <= 2) return Math.round(p);
+    }
   }
   const v = Math.round(raw / snap) * snap;
-  return Math.max(1, Math.min(length - 1, v));
+  return Math.max(snap, Math.min(Math.floor((length - 1) / snap) * snap, v));
+}
 }
 
 /** Backwards-compat: Bohrungen aus alten Configs ohne 'slot' migrieren */
