@@ -860,7 +860,7 @@ export function ProfileWorkbench2D({
             {visibleHoles.length} Bohrung{visibleHoles.length !== 1 ? 'en' : ''} · {visibleConnectors.length} Verbinder auf {SLOT_LABEL_DE[activeSlot]}
           </div>
           <div className="flex items-center gap-3">
-            <span>Raster: {SNAP_OPTIONS.find((o) => o.value === snap)?.label}</span>
+            <span>Raster: Genau (1 mm)</span>
             <span>
               <kbd className="px-1 bg-white border border-slate-200 rounded">B</kbd> Bohrung ·{' '}
               <kbd className="px-1 bg-white border border-slate-200 rounded">V</kbd> Verbinder ·{' '}
