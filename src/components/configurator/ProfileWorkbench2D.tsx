@@ -634,7 +634,8 @@ export function ProfileWorkbench2D({
               {/* Holes as colored circles */}
               {visibleHoles.map((h) => {
                 const isSel = selectedId === h.id;
-                const cy = faceDepth / 2;
+                const idx = Math.min(slotCenters.length - 1, h.moduleIndex ?? 0);
+                const cy = slotCenters[idx];
                 const r = Math.max(3, Math.min(10, h.diameter * 0.7));
                 const color = holeColor(h.type);
                 return (
