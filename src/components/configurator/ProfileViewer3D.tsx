@@ -164,10 +164,11 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
   //   B/D → drilled horizontally (X axis), positioned along height (Y)
   const holeMeshes = useMemo(() => {
     const { w, h } = section;
+    const PITCH = getModulePitch(section);
     const hw = w / 2;
     const hh = h / 2;
-    const numW = Math.round(w / MODULE);
-    const numH = Math.round(h / MODULE);
+    const numW = Math.max(1, Math.round(w / PITCH));
+    const numH = Math.max(1, Math.round(h / PITCH));
     return holes.map((hole, idx) => {
       const r = hole.diameter / 2;
       const slot: SlotId = hole.slot ?? 'A';
@@ -183,14 +184,12 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
       const mi = hole.moduleIndex ?? 0;
       let cx = 0, cy = 0;
       if (slot === 'A' || slot === 'C') {
-        // Modul liegt entlang der Profilbreite (X)
         const idx = Math.min(mi, numW - 1);
-        cx = -hw + MODULE * (idx + 0.5);
+        cx = -hw + PITCH * (idx + 0.5);
         cy = dir.ny * (hh - r * 0.1);
       } else {
-        // Modul liegt entlang der Profilhöhe (Y)
         const idx = Math.min(mi, numH - 1);
-        cy = -hh + MODULE * (idx + 0.5);
+        cy = -hh + PITCH * (idx + 0.5);
         cx = dir.nx * (hw - r * 0.1);
       }
       const m = new THREE.Mesh(cylGeo, mat);
@@ -207,10 +206,11 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
   // Connector (T-nut) meshes — silver blocks seated inside the T-slot at one of the two ends
   const connectorMeshes = useMemo(() => {
     const { w, h, slotWidth: sw, slotDepth: sd } = section;
+    const PITCH = getModulePitch(section);
     const hw = w / 2;
     const hh = h / 2;
-    const numW = Math.round(w / MODULE);
-    const numH = Math.round(h / MODULE);
+    const numW = Math.max(1, Math.round(w / PITCH));
+    const numH = Math.max(1, Math.round(h / PITCH));
     return connectors.map((conn, idx) => {
       const tW = sw * 0.88;
       const tD = sd * 0.80;
@@ -224,12 +224,12 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
       let rot: [number, number, number] = [0, 0, 0];
       if (slot === 'A' || slot === 'C') {
         const idxM = Math.min(mi, numW - 1);
-        const xOff = -hw + MODULE * (idxM + 0.5);
+        const xOff = -hw + PITCH * (idxM + 0.5);
         const yOff = dir.ny * (hh - tD / 2);
         pos = [xOff, yOff, z];
       } else {
         const idxM = Math.min(mi, numH - 1);
-        const yOff = -hh + MODULE * (idxM + 0.5);
+        const yOff = -hh + PITCH * (idxM + 0.5);
         const xOff = dir.nx * (hw - tD / 2);
         pos = [xOff, yOff, z];
         rot = [0, 0, Math.PI / 2];
