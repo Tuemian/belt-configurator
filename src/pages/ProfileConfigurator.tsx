@@ -19,8 +19,7 @@ import {
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
-  getAllSlots,
-  SLOT_SIDE_DE,
+  // getAllSlots / SLOT_SIDE_DE: nicht mehr in der Sidebar gebraucht (Kernzug-Auswahl per Klick im Overlay)
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
