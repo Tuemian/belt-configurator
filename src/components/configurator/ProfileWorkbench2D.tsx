@@ -797,11 +797,27 @@ export function ProfileWorkbench2D({
                     <Select value={selectedConn.end} onValueChange={(v) => updateConn({ end: v as 'start' | 'end' })}>
                       <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="start" className="text-xs">Profilanfang (Start)</SelectItem>
-                        <SelectItem value="end" className="text-xs">Profilende (Ende)</SelectItem>
+                        <SelectItem value="start" className="text-xs">Profilanfang</SelectItem>
+                        <SelectItem value="end" className="text-xs">Profilende</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  {slotCenters.length > 1 && (
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground mb-1 block">Nut-Spur</Label>
+                      <Select
+                        value={String(selectedConn.moduleIndex ?? 0)}
+                        onValueChange={(v) => updateConn({ moduleIndex: Number(v) })}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {slotCenters.map((_, i) => (
+                            <SelectItem key={i} value={String(i)} className="text-xs">Spur {i + 1}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </>
               )}
 
