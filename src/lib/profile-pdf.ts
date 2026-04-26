@@ -336,7 +336,7 @@ function drawProfilePage(
   // Price breakdown
   drawPriceBreakdown(doc, item.price, MARGIN, PAGE_H - 38, drawAreaW);
 
-  drawFooter(doc, posIndex + 1, totalPositions + 1);
+  drawFooter(doc, footerImg, posIndex + 1, totalPages);
 }
 
 // ---------------------------------------------------------------------------
