@@ -380,22 +380,32 @@ export function ProfileWorkbench2D({
             )}
 
             {/* Zoom */}
-            <div className="flex items-center gap-1.5 bg-white rounded-md border border-slate-200 px-2 py-1">
-              <span className="text-[10px] text-muted-foreground">Zoom</span>
-              <input
-                type="range"
-                min={1}
-                max={4}
-                step={0.25}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-24 accent-primary"
-              />
-              <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">{zoom.toFixed(2)}×</span>
-              {zoom !== 1 && (
-                <button onClick={() => setZoom(1)} className="text-[10px] text-primary hover:underline">reset</button>
-              )}
+            {/* View mode toggle: Anpassen vs. Detail */}
+            <div className="flex items-center bg-white rounded-md border border-slate-200 p-0.5">
+              <button
+                onClick={() => setDetailView(false)}
+                className={`px-2 py-1 text-xs rounded ${!detailView ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                title="Profil auf Fensterbreite anpassen"
+              >
+                Anpassen
+              </button>
+              <button
+                onClick={() => setDetailView(true)}
+                className={`px-2 py-1 text-xs rounded ${detailView ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                title="1 mm ≈ 0,6 px – horizontal scrollen für lange Profile"
+              >
+                Detail
+              </button>
             </div>
+
+            {/* Bohrungen als Liste eingeben */}
+            <button
+              onClick={() => setListDialogOpen(true)}
+              className="px-2 py-1 text-xs rounded border border-slate-200 bg-white hover:bg-primary/5 hover:border-primary/40 text-foreground"
+              title="Bohrungspositionen als Liste eingeben"
+            >
+              ⌨ Liste
+            </button>
           </div>
         </div>
 
