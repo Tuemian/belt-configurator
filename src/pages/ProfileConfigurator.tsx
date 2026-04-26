@@ -236,16 +236,15 @@ export default function ProfileConfigurator() {
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Länge (mm)</Label>
                   <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
+                    <NumericInput
                       min={50}
                       max={3000}
                       step={5}
                       value={config.length}
-                      onChange={(e) => {
-                        const v = Math.max(50, Math.min(3000, Number(e.target.value)));
-                        update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) });
-                      }}
+                      onCommit={(v) => update({
+                        length: v,
+                        holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
+                      })}
                       className="h-8 w-24 text-right text-sm"
                     />
                     <span className="text-muted-foreground text-xs">mm</span>
