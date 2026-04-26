@@ -138,6 +138,7 @@ export default function ProfileConfigurator() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <ProfileOnboarding />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-28 flex items-center justify-between gap-4">
