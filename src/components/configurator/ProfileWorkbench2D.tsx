@@ -40,8 +40,12 @@ interface Props {
   angleEnd: number;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
+  endStart?: EndTreatment;
+  endEnd?: EndTreatment;
   onUpdateHoles: (holes: ProfileHole[]) => void;
   onUpdateConnectors: (connectors: ProfileConnector[]) => void;
+  onUpdateEndStart?: (e: EndTreatment) => void;
+  onUpdateEndEnd?: (e: EndTreatment) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,13 +100,21 @@ export function ProfileWorkbench2D({
   angleEnd,
   holes,
   connectors,
+  endStart,
+  endEnd,
   onUpdateHoles,
   onUpdateConnectors,
+  onUpdateEndStart,
+  onUpdateEndEnd,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeSlot, setActiveSlot] = useState<SlotId>('A');
   const [activeModuleIndex, setActiveModuleIndex] = useState<number>(0);
+  /** Multi-Select: zusätzliche Nuten für Batch-Bearbeitung */
+  const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
   const [tool, setTool] = useState<Tool>('hole');
+  /** Stirnseiten-Modus: zeigt Querschnitt groß an, klickbar für Kernzug-Gewinde */
+  const [endFaceMode, setEndFaceMode] = useState<null | 'start' | 'end'>(null);
   const snap = SNAP_FINE;
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
   const [connType, setConnType] = useState<ConnectorType>('tnut-m8');
@@ -114,6 +126,16 @@ export function ProfileWorkbench2D({
   const MODULE = getModulePitch(section);
   const slotCenters = getSlotCenters(section, activeSlot);
   const allSlots = useMemo(() => getAllSlots(section), [section]);
+
+  /** Liste aller derzeit ausgewählten Slots (immer mind. der aktive) */
+  const selectedSlots = useMemo(() => {
+    const set = new Set(multiSelected);
+    set.add(slotKey(activeSlot, activeModuleIndex));
+    return Array.from(set).map((k) => {
+      const [s, mi] = k.split(':');
+      return { slot: s as SlotId, moduleIndex: Number(mi) };
+    });
+  }, [multiSelected, activeSlot, activeModuleIndex]);
 
   // Wenn Profilwechsel den moduleIndex ungültig macht, korrigieren
   useEffect(() => {
