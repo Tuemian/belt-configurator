@@ -84,6 +84,8 @@ export type EndThreadScope = 'all' | 'center' | SlotId;
 
 export interface EndTreatment {
   thread: boolean;
+  /** Wo das Gewinde gesetzt wird: 'all' (alle Kernzüge), 'center' oder Nut A/B/C/D. Default 'all'. */
+  scope?: EndThreadScope;
   /** Kernloch wird im UI nicht mehr angeboten, Feld bleibt für Backwards-Compat */
   coreHole?: boolean;
 }
