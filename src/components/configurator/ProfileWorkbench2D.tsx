@@ -155,6 +155,21 @@ export function ProfileWorkbench2D({
     () => connectors.filter((c) => c.slot === activeSlot && (c.moduleIndex ?? 0) === activeModuleIndex),
     [connectors, activeSlot, activeModuleIndex],
   );
+  /**
+   * Bohrungen aus „gegenüberliegenden" oder anderen Slots, die optisch durch das aktive
+   * Profilfenster sichtbar sind (z. B. Bohrung von Nut C wird auch in Ansicht von Nut A
+   * leicht angedeutet). Wir zeigen sie gedimmt, damit klar ist: die Bohrung geht durch.
+   */
+  const ghostHoles = useMemo(() => {
+    return holes.filter((h) => {
+      const s = ensureSlot(h);
+      // Auf der gleichen Achse (A↔C oder B↔D) und gleichem moduleIndex
+      const sameAxis =
+        (activeSlot === 'A' && s === 'C') || (activeSlot === 'C' && s === 'A') ||
+        (activeSlot === 'B' && s === 'D') || (activeSlot === 'D' && s === 'B');
+      return sameAxis && (h.moduleIndex ?? 0) === activeModuleIndex;
+    });
+  }, [holes, activeSlot, activeModuleIndex]);
 
   // Overlap detection (warning only, not blocking)
   const overlapWarning = useMemo(() => {
@@ -247,36 +262,41 @@ export function ProfileWorkbench2D({
     if (tool === 'hole') {
       const z = snapValue(m.z, snap, snapPoints, length);
       const typeDef = HOLE_TYPES.find((t) => t.id === holeType)!;
-      const newHole: ProfileHole = {
+      // Multi-Slot: für jeden ausgewählten Slot eine Bohrung erstellen
+      const newHoles: ProfileHole[] = selectedSlots.map((s) => ({
         id: crypto.randomUUID(),
         zPosition: z,
         diameter: typeDef.diameter,
-        slot: activeSlot,
-        moduleIndex: targetModuleIndex,
+        slot: s.slot,
+        moduleIndex: s.moduleIndex,
         type: holeType,
         label: typeDef.label,
-      };
-      onUpdateHoles([...holes, newHole]);
-      setSelectedId(newHole.id);
+      }));
+      onUpdateHoles([...holes, ...newHoles]);
+      const primary = newHoles.find((h) => h.slot === activeSlot && h.moduleIndex === activeModuleIndex);
+      setSelectedId(primary?.id ?? newHoles[0]?.id ?? null);
     } else if (tool === 'connector') {
-      // Only one connector per end per slot per module
       const end: 'start' | 'end' = m.z < length / 2 ? 'start' : 'end';
-      const taken = connectors.some((c) => c.slot === activeSlot && c.end === end && (c.moduleIndex ?? 0) === targetModuleIndex);
-      if (taken) {
-        setSelectedId(null);
-        return;
-      }
       const typeDef = CONNECTOR_TYPES.find((t) => t.id === connType)!;
-      const newConn: ProfileConnector = {
-        id: crypto.randomUUID(),
-        type: connType,
-        end,
-        slot: activeSlot,
-        moduleIndex: targetModuleIndex,
-        label: typeDef.label,
-      };
-      onUpdateConnectors([...connectors, newConn]);
-      setSelectedId(newConn.id);
+      // Multi-Slot: für jeden ausgewählten Slot, sofern noch frei
+      const additions: ProfileConnector[] = [];
+      selectedSlots.forEach((s) => {
+        const taken = connectors.some((c) => c.slot === s.slot && c.end === end && (c.moduleIndex ?? 0) === s.moduleIndex);
+        if (!taken) {
+          additions.push({
+            id: crypto.randomUUID(),
+            type: connType,
+            end,
+            slot: s.slot,
+            moduleIndex: s.moduleIndex,
+            label: typeDef.label,
+          });
+        }
+      });
+      if (additions.length === 0) { setSelectedId(null); return; }
+      onUpdateConnectors([...connectors, ...additions]);
+      const primary = additions.find((c) => c.slot === activeSlot && c.moduleIndex === activeModuleIndex);
+      setSelectedId(primary?.id ?? additions[0].id);
     } else {
       setSelectedId(null);
     }
