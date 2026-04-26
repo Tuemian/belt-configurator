@@ -731,7 +731,7 @@ export function ProfileWorkbench2D({
             <div className="absolute top-3 right-3 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-foreground">
-                  {selectedHole ? 'Bohrung' : 'Verbinder'} · {SLOT_LABEL_DE[activeSlot]}
+                  {selectedHole ? 'Bohrung' : 'Verbinder'} · Nut {activeSlotNumber} ({SLOT_SIDE_DE[activeSlot]})
                 </span>
                 <button onClick={() => setSelectedId(null)} className="text-muted-foreground hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
