@@ -406,15 +406,36 @@ export function ProfileWorkbench2D({
           <div className="flex items-center gap-1 flex-wrap max-w-[60%]">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Nut</span>
             {allSlots.map((s) => {
+              const key = slotKey(s.slot, s.moduleIndex);
               const isActive = s.slot === activeSlot && s.moduleIndex === activeModuleIndex;
+              const isMulti = multiSelected.has(key);
+              const isSel = isActive || isMulti;
               return (
-                <Tooltip key={`${s.slot}-${s.moduleIndex}`}>
+                <Tooltip key={key}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => { setActiveSlot(s.slot); setActiveModuleIndex(s.moduleIndex); setSelectedId(null); }}
+                      onClick={(e) => {
+                        if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                          // Multi-Select Toggle (aktive Nut nicht entfernen)
+                          setMultiSelected((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(key)) next.delete(key); else next.add(key);
+                            // Aktive nicht in Multi halten
+                            next.delete(slotKey(activeSlot, activeModuleIndex));
+                            return next;
+                          });
+                        } else {
+                          setActiveSlot(s.slot);
+                          setActiveModuleIndex(s.moduleIndex);
+                          setMultiSelected(new Set());
+                          setSelectedId(null);
+                        }
+                      }}
                       className={`min-w-[28px] px-2 py-1 text-xs rounded-md transition-colors border font-semibold ${
                         isActive
                           ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : isMulti
+                          ? 'bg-primary/15 text-primary border-primary/50'
                           : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:text-primary'
                       }`}
                     >
@@ -422,11 +443,19 @@ export function ProfileWorkbench2D({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">
-                    Nut {s.number} · {SLOT_SIDE_DE[s.slot]}
+                    Nut {s.number} · {SLOT_SIDE_DE[s.slot]}{!isActive && ' · Shift-Klick = Mehrfach'}
                   </TooltipContent>
                 </Tooltip>
               );
             })}
+            {multiSelected.size > 0 && (
+              <button
+                onClick={() => setMultiSelected(new Set())}
+                className="ml-1 text-[10px] text-muted-foreground hover:text-foreground underline"
+              >
+                Mehrfach aufheben ({multiSelected.size + 1})
+              </button>
+            )}
           </div>
 
           {/* Tool palette */}
