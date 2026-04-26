@@ -356,21 +356,31 @@ export function ProfileWorkbench2D({
       <div className="flex flex-col h-full bg-white rounded-lg border border-slate-200 overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50 flex-wrap">
-          {/* Slot tabs A B C D */}
-          <div className="flex items-center gap-1">
-            {SLOT_IDS.map((s) => (
-              <button
-                key={s}
-                onClick={() => { setActiveSlot(s); setSelectedId(null); }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors border ${
-                  activeSlot === s
-                    ? 'bg-white border-primary text-primary shadow-sm font-semibold'
-                    : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-white/60'
-                }`}
-              >
-                {SLOT_LABEL_DE[s]}
-              </button>
-            ))}
+          {/* Nut-Auswahl: pro Nut ein Knopf, Beschriftung mit Alvaris-Nummer */}
+          <div className="flex items-center gap-1 flex-wrap max-w-[60%]">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">Nut</span>
+            {allSlots.map((s) => {
+              const isActive = s.slot === activeSlot && s.moduleIndex === activeModuleIndex;
+              return (
+                <Tooltip key={`${s.slot}-${s.moduleIndex}`}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { setActiveSlot(s.slot); setActiveModuleIndex(s.moduleIndex); setSelectedId(null); }}
+                      className={`min-w-[28px] px-2 py-1 text-xs rounded-md transition-colors border font-semibold ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:text-primary'
+                      }`}
+                    >
+                      {s.number}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Nut {s.number} · {SLOT_SIDE_DE[s.slot]}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
 
           {/* Tool palette */}
