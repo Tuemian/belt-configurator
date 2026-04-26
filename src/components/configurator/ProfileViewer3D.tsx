@@ -167,30 +167,38 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
     const { w, h } = section;
     const hw = w / 2;
     const hh = h / 2;
+    const numW = Math.round(w / MODULE);
+    const numH = Math.round(h / MODULE);
     return holes.map((hole, idx) => {
       const r = hole.diameter / 2;
       const slot: SlotId = hole.slot ?? 'A';
       const dir = SLOT_DIR[slot];
-      // Through-length: depends on which axis we drill along
       const through = (Math.abs(dir.nx) > 0 ? w : h) + 4;
       const cylGeo = new THREE.CylinderGeometry(r, r, through, 24);
-      const isThread = hole.type === 'm8-thread';
+      const isThread = hole.type === 'm8-thread' || hole.type === 'm6-thread';
       const isStep   = hole.type === 'step-m6' || hole.type === 'step-m8';
       const color = isThread ? '#a07830' : isStep ? '#4a6fa5' : '#1e293b';
       const mat = new THREE.MeshStandardMaterial({ color, roughness: isThread ? 0.45 : 0.7, metalness: isThread ? 0.7 : 0.1 });
 
-      // Position the hole on the chosen slot. For multi-module profiles
-      // (e.g. 80×40), slot A/C sits on the wider face — choose the module
-      // closest to the cross-section center for now.
-      const cx = (slot === 'A' || slot === 'C') ? 0 : dir.nx * (hw - r * 0.1);
-      const cy = (slot === 'A' || slot === 'C') ? dir.ny * (hh - r * 0.1) : 0;
+      // Multi-Modul: Position der Bohrung anhand moduleIndex auf der jeweiligen Achse
+      const mi = hole.moduleIndex ?? 0;
+      let cx = 0, cy = 0;
+      if (slot === 'A' || slot === 'C') {
+        // Modul liegt entlang der Profilbreite (X)
+        const idx = Math.min(mi, numW - 1);
+        cx = -hw + MODULE * (idx + 0.5);
+        cy = dir.ny * (hh - r * 0.1);
+      } else {
+        // Modul liegt entlang der Profilhöhe (Y)
+        const idx = Math.min(mi, numH - 1);
+        cy = -hh + MODULE * (idx + 0.5);
+        cx = dir.nx * (hw - r * 0.1);
+      }
       const m = new THREE.Mesh(cylGeo, mat);
       m.position.set(cx, cy, Math.max(0, Math.min(length, hole.zPosition)));
-      // Rotate cylinder so its axis is normal to the chosen slot
       if (slot === 'A' || slot === 'C') {
-        // axis = Y, default cylinder axis is Y → no rotation needed
+        // axis = Y (default)
       } else {
-        // axis = X
         m.rotation.z = Math.PI / 2;
       }
       return <primitive key={idx} object={m} />;
