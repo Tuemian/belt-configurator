@@ -49,7 +49,6 @@ const SNAP_OPTIONS: { value: number; label: string; tooltip: string }[] = [
   { value: 10, label: 'Grob',   tooltip: 'Position rastet auf 10-mm-Raster' },
 ];
 
-const MODULE = 40;
 const CONNECTOR_FOOTPRINT = 22; // mm – Länge des Verbinder-Blocks im Profil
 
 function holeColor(type: ProfileHole['type']): string {
