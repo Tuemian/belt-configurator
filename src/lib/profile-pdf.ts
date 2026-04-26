@@ -688,16 +688,18 @@ function drawPriceBreakdown(
   doc.rect(x, y, w, 22, 'F');
   setText(doc, SLATE_500, 7, 'bold');
   doc.text('MATERIAL', x + 3, y + 5);
-  doc.text('SCHRÄGSCHNITTE', x + 38, y + 5);
-  doc.text('BOHR./GEW.', x + 80, y + 5);
-  doc.text('VERBINDER', x + 112, y + 5);
+  doc.text('SCHRÄGSCHN.', x + 32, y + 5);
+  doc.text('BOHRUNGEN', x + 64, y + 5);
+  doc.text('STIRNGEW.', x + 92, y + 5);
+  doc.text('VERBINDER', x + 120, y + 5);
   doc.text('GESAMT', x + w - 3, y + 5, { align: 'right' });
 
   setText(doc, SLATE_900, 9, 'normal');
   doc.text(fmtEur.format(price.material),    x + 3, y + 12);
-  doc.text(fmtEur.format(price.miterCuts),   x + 38, y + 12);
-  doc.text(fmtEur.format(price.holes),       x + 80, y + 12);
-  doc.text(fmtEur.format(price.connectors),  x + 112, y + 12);
+  doc.text(fmtEur.format(price.miterCuts),   x + 32, y + 12);
+  doc.text(fmtEur.format(price.holes),       x + 64, y + 12);
+  doc.text(fmtEur.format(price.endThreads),  x + 92, y + 12);
+  doc.text(fmtEur.format(price.connectors),  x + 120, y + 12);
   setText(doc, BRAND, 12, 'bold');
   doc.text(fmtEur.format(price.total), x + w - 3, y + 13, { align: 'right' });
   setText(doc, SLATE_500, 6.5, 'italic');
