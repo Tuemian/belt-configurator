@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import { toDataURL as toQrDataUrl } from 'qrcode';
 import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
 import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
+import { buildSharedConfiguratorUrl, getOrCreateCurrentConfiguratorId } from '@/lib/configurator-share';
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from '@/lib/pricing';
 
 const ConveyorViewer3D = lazy(() =>
@@ -79,6 +80,7 @@ function normalizeForHash(value: unknown): unknown {
 async function buildConfigurationIdentity(config: ConveyorConfig): Promise<ConfigurationIdentity> {
   const normalized = normalizeForHash(config);
   const payload = JSON.stringify(normalized);
+  const shortId = getOrCreateCurrentConfiguratorId(typeof window !== 'undefined' ? window.location.href : undefined);
   let fullHash: string;
 
   if (typeof crypto !== 'undefined' && crypto.subtle) {
@@ -97,7 +99,7 @@ async function buildConfigurationIdentity(config: ConveyorConfig): Promise<Confi
   }
 
   return {
-    shortId: fullHash.slice(0, 7).toUpperCase(),
+    shortId,
     fullHash,
   };
 }
@@ -357,7 +359,8 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     const configurationUrl = typeof window !== 'undefined' ? window.location.href : 'https://www.novamotis.com/';
     let qrTargetUrl = configurationUrl;
     try {
-      const parsedUrl = new URL(configurationUrl);
+      qrTargetUrl = buildSharedConfiguratorUrl(configurationUrl, config, 5);
+      const parsedUrl = new URL(qrTargetUrl);
       parsedUrl.searchParams.set('configId', identity.shortId);
       parsedUrl.searchParams.set('configHash', identity.fullHash.slice(0, 16));
       qrTargetUrl = parsedUrl.toString();

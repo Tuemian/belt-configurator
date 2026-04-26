@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
+import { clearSharedConfiguratorStateFromUrl, readSharedConfiguratorState } from '@/lib/configurator-share';
 import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,20 @@ const BeltConfigurator = () => {
   const [config, setConfig] = useState<ConveyorConfig>(defaultConfig);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const sharedState = readSharedConfiguratorState(window.location.search);
+    if (!sharedState) {
+      return;
+    }
+
+    setConfig(sharedState.config);
+    setStep(sharedState.step);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step]);
 
@@ -48,6 +63,7 @@ const BeltConfigurator = () => {
   const handleReset = useCallback(() => {
     setConfig(defaultConfig);
     setStep(0);
+    clearSharedConfiguratorStateFromUrl();
   }, []);
 
   const stepTitles = [
