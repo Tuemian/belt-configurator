@@ -629,7 +629,7 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSectio
   y += 3;
 
   holes.forEach((h, idx) => {
-    if (y > PAGE_H - 50) return; // keep room for price
+    if (y > PAGE_H - 68) return; // keep room for price
     if (idx % 2 === 1) {
       setFill(doc, SLATE_50);
       doc.rect(x - 1, y - 3.2, w + 2, 5, 'F');
@@ -662,7 +662,7 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section
   y += 3;
 
   connectors.forEach((c, idx) => {
-    if (y > PAGE_H - 50) return;
+    if (y > PAGE_H - 68) return;
     if (idx % 2 === 1) {
       setFill(doc, SLATE_50);
       doc.rect(x - 1, y - 3.2, w + 2, 5, 'F');
