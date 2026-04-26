@@ -281,39 +281,51 @@ export default function ProfileConfigurator() {
               </div>
             </div>
 
-            {/* Miter cuts */}
+            {/* Miter cuts – pro Seite per Checkbox aktivieren, Winkel danach 0..45° */}
             <div>
               <SectionDivider label="Schrägschnitte" />
               <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Negative Werte schneiden in die andere Richtung.
+                Pro Stirnseite separat aktivierbar. Winkel 0–45°.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-4">
                 {(['Anfang', 'Ende'] as const).map((end) => {
                   const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
                   const val = config[key];
+                  const enabled = val !== 0;
                   return (
                     <div key={end} className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">{end}</Label>
-                      <div className="flex items-center gap-1">
-                        <NumericInput
-                          min={-45}
-                          max={45}
-                          step={1}
-                          value={val}
-                          onCommit={(v) => update({ [key]: v })}
-                          className="h-8 w-16 text-right text-sm"
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={enabled}
+                          onCheckedChange={(v) => {
+                            // Beim Aktivieren: Default 15°. Beim Deaktivieren: zurück auf 0.
+                            update({ [key]: v ? 15 : 0 });
+                          }}
                         />
-                        <span className="text-muted-foreground text-xs">°</span>
-                      </div>
-                      <Slider
-                        min={-45}
-                        max={45}
-                        step={1}
-                        value={[val]}
-                        onValueChange={([v]) => update({ [key]: v })}
-                      />
-                      {val !== 0 && (
-                        <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
+                        <span className="text-xs font-medium text-foreground">{end}</span>
+                      </label>
+                      {enabled && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <NumericInput
+                              min={0}
+                              max={45}
+                              step={1}
+                              value={val}
+                              onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
+                              className="h-8 w-16 text-right text-sm"
+                            />
+                            <span className="text-muted-foreground text-xs">°</span>
+                          </div>
+                          <Slider
+                            min={0}
+                            max={45}
+                            step={1}
+                            value={[val]}
+                            onValueChange={([v]) => update({ [key]: v })}
+                          />
+                          <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
+                        </>
                       )}
                     </div>
                   );
