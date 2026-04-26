@@ -15,11 +15,20 @@ export type SlotId = 'A' | 'B' | 'C' | 'D';
 
 export const SLOT_IDS: SlotId[] = ['A', 'B', 'C', 'D'];
 
+/** Backwards-compat: Buchstaben-Bezeichnungen (intern weiter verwendet, im UI durch Alvaris-Nummern ersetzt) */
 export const SLOT_LABEL_DE: Record<SlotId, string> = {
-  A: 'Nut A (oben)',
-  B: 'Nut B (rechts)',
-  C: 'Nut C (unten)',
-  D: 'Nut D (links)',
+  A: 'Oben',
+  B: 'Rechts',
+  C: 'Unten',
+  D: 'Links',
+};
+
+/** Klartext der Seite (für Tooltips / PDF) */
+export const SLOT_SIDE_DE: Record<SlotId, string> = {
+  A: 'oben',
+  B: 'rechts',
+  C: 'unten',
+  D: 'links',
 };
 
 export interface ProfileSize {
