@@ -7,11 +7,13 @@
 import jsPDF from 'jspdf';
 import {
   PROFILE_SECTIONS,
-  SLOT_LABEL_DE,
+  SLOT_SIDE_DE,
   CONNECTOR_TYPES,
   HOLE_TYPES,
   getModulePitch,
   getSlotCenters,
+  getSlotNumber,
+  getAllSlots,
   calculateProfilePrice,
   type ProfileConfig,
   type ProfileSection,
