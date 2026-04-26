@@ -770,22 +770,7 @@ export function ProfileWorkbench2D({
                       className="h-8 text-xs"
                     />
                   </div>
-                  {slotCenters.length > 1 && (
-                    <div>
-                      <Label className="text-[10px] text-muted-foreground mb-1 block">Nut-Spur</Label>
-                      <Select
-                        value={String(selectedHole.moduleIndex ?? 0)}
-                        onValueChange={(v) => updateHole({ moduleIndex: Number(v) })}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {slotCenters.map((_, i) => (
-                            <SelectItem key={i} value={String(i)} className="text-xs">Spur {i + 1}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  {/* Spur-Auswahl entfällt – jede Nut ist als eigener Tab adressierbar */}
                 </>
               )}
 
