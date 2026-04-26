@@ -187,7 +187,7 @@ export default function ProfileConfigurator() {
             </Button>
             <img src={logo} alt="NOVAMOTIS" className="h-20 w-auto" />
             <span className="text-slate-300 text-xl font-light hidden sm:block">|</span>
-            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden sm:block">Profil-Konfigurator</span>
+            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden sm:block">Profilzuschnitte</span>
           </div>
 
           <div className="flex items-center gap-2">
