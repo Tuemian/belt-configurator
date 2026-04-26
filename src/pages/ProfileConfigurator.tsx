@@ -1,28 +1,24 @@
 import { useState, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.svg';
+import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import {
   PROFILE_SECTIONS,
   PROFILE_SIZES,
-  HOLE_TYPES,
-  CONNECTOR_TYPES,
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
-  PRICE_CONNECTOR,
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
-  type ConnectorType,
 } from '@/lib/profile-configurator-types';
 
 const ProfileViewer3D = lazy(() =>
