@@ -550,7 +550,7 @@ function holePdfColor(type: ProfileHole['type']) {
 // Tables
 // ---------------------------------------------------------------------------
 
-function drawCutsBlock(doc: jsPDF, config: ProfileConfig, x: number, y: number, w: number) {
+function drawCutsBlock(doc: jsPDF, config: ProfileConfig, section: ProfileSection, x: number, y: number, w: number) {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text('SCHRÄGSCHNITTE & STIRNSEITEN', x, y);
   setFill(doc, SLATE_200);
@@ -560,20 +560,23 @@ function drawCutsBlock(doc: jsPDF, config: ProfileConfig, x: number, y: number, 
   const partsRight: string[] = [];
   partsLeft.push(`Anfang: ${config.angleStart === 0 ? '90° (gerade)' : `${config.angleStart}°`}`);
   partsRight.push(`Ende: ${config.angleEnd === 0 ? '90° (gerade)' : `${config.angleEnd}°`}`);
-  if (config.endStart.thread) partsLeft.push(`Gewinde M8 · ${scopeLabel(config.endStart.scope)}`);
-  if (config.endEnd.thread)   partsRight.push(`Gewinde M8 · ${scopeLabel(config.endEnd.scope)}`);
+  if (config.endStart.thread) partsLeft.push(`Gewinde M8 · ${scopeLabel(config.endStart.scope, section)}`);
+  if (config.endEnd.thread)   partsRight.push(`Gewinde M8 · ${scopeLabel(config.endEnd.scope, section)}`);
   doc.text(partsLeft.join('   ·   '),  x, y + 7);
   doc.text(partsRight.join('   ·   '), x + w / 2, y + 7);
 }
 
-function scopeLabel(scope: string | undefined): string {
+function scopeLabel(scope: string | undefined, section: ProfileSection): string {
   switch (scope) {
     case 'all':    return 'alle Kernzüge';
     case 'center': return 'Zentrum';
-    case 'A':      return 'Nut A';
-    case 'B':      return 'Nut B';
-    case 'C':      return 'Nut C';
-    case 'D':      return 'Nut D';
+    case 'A':
+    case 'B':
+    case 'C':
+    case 'D': {
+      const n = getSlotNumber(section, scope as SlotId, 0);
+      return `Nut ${n}`;
+    }
     default:       return 'alle Kernzüge';
   }
 }
