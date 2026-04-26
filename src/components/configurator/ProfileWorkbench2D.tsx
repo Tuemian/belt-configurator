@@ -448,14 +448,45 @@ export function ProfileWorkbench2D({
                 </Tooltip>
               );
             })}
-            {multiSelected.size > 0 && (
-              <button
-                onClick={() => setMultiSelected(new Set())}
-                className="ml-1 text-[10px] text-muted-foreground hover:text-foreground underline"
-              >
-                Mehrfach aufheben ({multiSelected.size + 1})
-              </button>
-            )}
+            {/* Quick-Buttons: gegenüberliegende Nut, alle Nuten der gleichen Achse */}
+            <div className="ml-2 flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      // Gegenüberliegende Seite (A↔C, B↔D), gleicher moduleIndex
+                      const opposite: Record<SlotId, SlotId> = { A: 'C', C: 'A', B: 'D', D: 'B' };
+                      const oppSlot = opposite[activeSlot];
+                      const k = slotKey(oppSlot, activeModuleIndex);
+                      setMultiSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(k)) next.delete(k); else next.add(k);
+                        next.delete(slotKey(activeSlot, activeModuleIndex));
+                        return next;
+                      });
+                    }}
+                    className={`px-2 py-1 text-[10px] rounded border font-medium transition-colors ${
+                      multiSelected.has(slotKey(({ A: 'C', C: 'A', B: 'D', D: 'B' } as Record<SlotId, SlotId>)[activeSlot], activeModuleIndex))
+                        ? 'bg-primary/15 border-primary/50 text-primary'
+                        : 'bg-white border-slate-200 text-muted-foreground hover:border-primary/50 hover:text-primary'
+                    }`}
+                  >
+                    + Gegenüber
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Gegenüberliegende Nut zusätzlich auswählen (z. B. Oben + Unten gleichzeitig bohren)
+                </TooltipContent>
+              </Tooltip>
+              {multiSelected.size > 0 && (
+                <button
+                  onClick={() => setMultiSelected(new Set())}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline px-1"
+                >
+                  Aufheben ({multiSelected.size + 1})
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Tool palette */}
@@ -537,8 +568,9 @@ export function ProfileWorkbench2D({
 
         {/* SVG stage */}
         <div className="flex-1 relative overflow-auto bg-gradient-to-br from-slate-50 to-slate-100">
-          {/* Mini cross-section overlay (multi-select aware, rotated for tall profiles) */}
-          <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
+          {/* Mini cross-section overlay (multi-select aware, rotated for tall profiles).
+              Positioniert oben-rechts neben der Overlap-Warnung, damit das Profil links frei bleibt. */}
+          <div className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
             <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 text-center">
               Querschnitt {section.h > section.w && '(↻90°)'}
             </div>
@@ -570,9 +602,9 @@ export function ProfileWorkbench2D({
             />
           </div>
 
-          {/* Overlap warning */}
+          {/* Overlap warning – links oben, wo früher der Querschnitt war */}
           {overlapWarning && (
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
+            <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
               <AlertTriangle className="h-3 w-3" />
               Bohrungen überlappen
             </div>
@@ -883,7 +915,7 @@ export function ProfileWorkbench2D({
 
           {/* Selected-item floating panel */}
           {(selectedHole || selectedConn) && (
-            <div className="absolute top-3 right-3 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
+            <div className="absolute bottom-12 right-3 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-foreground">
                   {selectedHole ? 'Bohrung' : 'Verbinder'} · Nut {activeSlotNumber} ({SLOT_SIDE_DE[activeSlot]})
@@ -1034,21 +1066,25 @@ function EndFaceOverlay({ section, endLabel, treatment, onChange, onClose }: End
 
   const activeBores = useMemo(() => {
     if (!t.thread) return new Set<number>();
+    if (t.scope === 'custom' && t.bores) return new Set(t.bores);
     if (t.scope === 'all' || t.scope === undefined) return new Set(allBoreNums);
     if (t.scope === 'center') {
       const mid = Math.ceil(allBoreNums.length / 2);
       return new Set([mid]);
     }
     return new Set(allBoreNums);
-  }, [t.thread, t.scope, allBoreNums]);
+  }, [t.thread, t.scope, t.bores, allBoreNums]);
 
   const toggleBore = (num: number) => {
     const next = new Set(activeBores);
     if (next.has(num)) next.delete(num); else next.add(num);
-    if (next.size === 0) onChange({ ...t, thread: false });
-    else if (next.size === allBoreNums.length) onChange({ ...t, thread: true, scope: 'all' });
-    else if (next.size === 1) onChange({ ...t, thread: true, scope: 'center' });
-    else onChange({ ...t, thread: true, scope: 'all' });
+    if (next.size === 0) {
+      onChange({ ...t, thread: false, scope: 'custom', bores: [] });
+    } else if (next.size === allBoreNums.length) {
+      onChange({ ...t, thread: true, scope: 'all', bores: undefined });
+    } else {
+      onChange({ ...t, thread: true, scope: 'custom', bores: Array.from(next).sort((a, b) => a - b) });
+    }
   };
 
   return (

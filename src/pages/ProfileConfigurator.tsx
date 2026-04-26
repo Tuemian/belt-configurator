@@ -19,8 +19,7 @@ import {
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
-  getAllSlots,
-  SLOT_SIDE_DE,
+  // getAllSlots / SLOT_SIDE_DE: nicht mehr in der Sidebar gebraucht (Kernzug-Auswahl per Klick im Overlay)
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
@@ -281,39 +280,51 @@ export default function ProfileConfigurator() {
               </div>
             </div>
 
-            {/* Miter cuts */}
+            {/* Miter cuts – pro Seite per Checkbox aktivieren, Winkel danach 0..45° */}
             <div>
               <SectionDivider label="Schrägschnitte" />
               <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Negative Werte schneiden in die andere Richtung.
+                Pro Stirnseite separat aktivierbar. Winkel 0–45°.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-4">
                 {(['Anfang', 'Ende'] as const).map((end) => {
                   const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
                   const val = config[key];
+                  const enabled = val !== 0;
                   return (
                     <div key={end} className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">{end}</Label>
-                      <div className="flex items-center gap-1">
-                        <NumericInput
-                          min={-45}
-                          max={45}
-                          step={1}
-                          value={val}
-                          onCommit={(v) => update({ [key]: v })}
-                          className="h-8 w-16 text-right text-sm"
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={enabled}
+                          onCheckedChange={(v) => {
+                            // Beim Aktivieren: Default 15°. Beim Deaktivieren: zurück auf 0.
+                            update({ [key]: v ? 15 : 0 });
+                          }}
                         />
-                        <span className="text-muted-foreground text-xs">°</span>
-                      </div>
-                      <Slider
-                        min={-45}
-                        max={45}
-                        step={1}
-                        value={[val]}
-                        onValueChange={([v]) => update({ [key]: v })}
-                      />
-                      {val !== 0 && (
-                        <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
+                        <span className="text-xs font-medium text-foreground">{end}</span>
+                      </label>
+                      {enabled && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <NumericInput
+                              min={0}
+                              max={45}
+                              step={1}
+                              value={val}
+                              onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
+                              className="h-8 w-16 text-right text-sm"
+                            />
+                            <span className="text-muted-foreground text-xs">°</span>
+                          </div>
+                          <Slider
+                            min={0}
+                            max={45}
+                            step={1}
+                            value={[val]}
+                            onValueChange={([v]) => update({ [key]: v })}
+                          />
+                          <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
+                        </>
                       )}
                     </div>
                   );
@@ -321,44 +332,36 @@ export default function ProfileConfigurator() {
               </div>
             </div>
 
-            {/* End treatments with Kernzug-Auswahl */}
+            {/* End treatments – Status + Hinweis. Detail-Auswahl erfolgt im Stirnseiten-Overlay (2D-Werkbank). */}
             <div>
               <SectionDivider label="Stirnseitenbearbeitung" />
-              <div className="mt-3 space-y-3">
+              <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
+                Klicke in der 2D-Werkbank auf <span className="font-medium text-foreground">„Stirn Anfang"</span> bzw. <span className="font-medium text-foreground">„Stirn Ende"</span>, um Kernzug-Gewinde direkt auf den blauen Nummern auszuwählen.
+              </p>
+              <div className="mt-3 space-y-2">
                 {(['endStart', 'endEnd'] as const).map((endKey) => {
                   const label = endKey === 'endStart' ? 'Anfang' : 'Ende';
                   const val = config[endKey];
                   const scope = val.scope ?? 'all';
+                  const scopeText = !val.thread
+                    ? 'kein Gewinde'
+                    : scope === 'all'
+                    ? 'alle Kernzüge'
+                    : scope === 'center'
+                    ? 'nur Mitte'
+                    : `Auswahl`;
                   return (
-                    <div key={endKey} className="space-y-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-                      <div className="flex flex-col gap-1.5 pl-1">
-                        <label className="flex items-center gap-2 cursor-pointer text-xs text-foreground">
-                          <Checkbox
-                            checked={val.thread}
-                            onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v, scope: val.scope ?? 'all' } })}
-                          />
-                          Gewinde M8
-                          {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
-                        </label>
-                        {val.thread && (
-                          <div className="pl-6">
-                            <Label className="text-[10px] text-muted-foreground mb-1 block">Kernzug</Label>
-                            <select
-                              value={scope}
-                              onChange={(e) => update({ [endKey]: { ...val, scope: e.target.value as typeof scope } })}
-                              className="h-7 w-full rounded border border-slate-200 bg-white px-2 text-xs text-foreground"
-                            >
-                              <option value="all">Alle Kernzüge</option>
-                              <option value="center">Nur Zentrumsbohrung</option>
-                              {getAllSlots(section).map((s) => (
-                                <option key={`${s.slot}-${s.moduleIndex}`} value={s.slot}>
-                                  Nut {s.number} ({SLOT_SIDE_DE[s.slot]})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
+                    <div key={endKey} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-2">
+                      <div>
+                        <div className="text-[11px] font-medium text-foreground">{label}</div>
+                        <div className="text-[10px] text-muted-foreground">{scopeText}</div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
+                        <Checkbox
+                          checked={val.thread}
+                          onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v, scope: val.scope ?? 'all' } })}
+                        />
                       </div>
                     </div>
                   );

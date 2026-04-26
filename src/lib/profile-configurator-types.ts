@@ -89,12 +89,14 @@ export interface ProfileConnector {
 }
 
 /** Auswahl, wo das Stirnseiten-Gewinde sitzen soll. */
-export type EndThreadScope = 'all' | 'center' | SlotId;
+export type EndThreadScope = 'all' | 'center' | 'custom' | SlotId;
 
 export interface EndTreatment {
   thread: boolean;
-  /** Wo das Gewinde gesetzt wird: 'all' (alle Kernzüge), 'center' oder Nut A/B/C/D. Default 'all'. */
+  /** Wo das Gewinde gesetzt wird: 'all' (alle Kernzüge), 'center', 'custom' (siehe `bores`) oder Nut A/B/C/D. Default 'all'. */
   scope?: EndThreadScope;
+  /** Bei scope==='custom': Liste der aktiven Kernzug-Nummern (Alvaris-Nummerierung) */
+  bores?: number[];
   /** Kernloch wird im UI nicht mehr angeboten, Feld bleibt für Backwards-Compat */
   coreHole?: boolean;
 }
