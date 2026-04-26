@@ -589,10 +589,11 @@ export function ProfileWorkbench2D({
                 </g>
               )}
 
-              {/* Connectors as silver squares anchored at the relevant end */}
+              {/* Connectors as silver squares anchored at the relevant end, on the chosen slot track */}
               {visibleConnectors.map((c) => {
                 const isSel = selectedId === c.id;
-                const cy = faceDepth / 2;
+                const idx = Math.min(slotCenters.length - 1, c.moduleIndex ?? 0);
+                const cy = slotCenters[idx];
                 const w = CONNECTOR_FOOTPRINT;
                 const x = c.end === 'start' ? 0 : length - w;
                 return (
