@@ -421,26 +421,12 @@ export function ProfileWorkbench2D({
             )}
           </div>
 
-          {/* Snap (renamed) */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Raster</span>
-            {SNAP_OPTIONS.map((opt) => (
-              <Tooltip key={opt.value}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setSnap(opt.value)}
-                    className={`px-2 py-1 text-xs rounded border transition-colors ${
-                      snap === opt.value
-                        ? 'bg-primary/10 border-primary text-primary font-semibold'
-                        : 'bg-white border-slate-200 text-muted-foreground hover:border-primary/50'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{opt.tooltip}</TooltipContent>
-              </Tooltip>
-            ))}
+          {/* Raster: festes 1-mm-Feinraster */}
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span>Raster</span>
+            <span className="px-2 py-0.5 rounded border border-primary/30 bg-primary/5 text-primary font-semibold normal-case tracking-normal text-[11px]">
+              Genau · 1 mm
+            </span>
           </div>
         </div>
 
