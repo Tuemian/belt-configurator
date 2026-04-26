@@ -452,6 +452,10 @@ export function ProfileWorkbench2D({
             {sideRows.map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
+              // Bohrungen von der gegenüberliegenden Seite (A↔C, B↔D) als Geister-Marker
+              const oppositeSlot: SlotId =
+                side.slot === 'A' ? 'C' : side.slot === 'C' ? 'A' : side.slot === 'B' ? 'D' : 'B';
+              const ghostHoles = holes.filter((h) => ensureSlot(h) === oppositeSlot);
               const isActiveSide = side.slot === activeKey.slot;
               const isMultiSide = side.lanes.some((l) => multiSelected.has(keyOf(side.slot, l.moduleIndex)));
               return (
@@ -463,6 +467,7 @@ export function ProfileWorkbench2D({
                   angleStart={angleStart}
                   angleEnd={angleEnd}
                   holes={sideHoles}
+                  ghostHoles={ghostHoles}
                   connectors={sideConns}
                   tool={tool}
                   activeModuleIndex={isActiveSide ? activeKey.moduleIndex : null}
