@@ -144,83 +144,83 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   // 30 × 30
   { id: '30x30-leicht', sizeKey: '30x30', variant: 'leicht', label: '30 × 30 · Leicht',
     w: 30, h: 30, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 5.40,
-    orderCode: '0.0.026.43', massPerMeter: 0.81, modulePitch: 30 },
+    orderCode: 'NM-PRO-30x30-L', massPerMeter: 0.81, modulePitch: 30 },
 
   // 30 × 60
   { id: '30x60-leicht', sizeKey: '30x60', variant: 'leicht', label: '30 × 60 · Leicht',
     w: 30, h: 60, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 9.10,
-    orderCode: '0.0.026.44', massPerMeter: 1.45, modulePitch: 30 },
+    orderCode: 'NM-PRO-30x60-L', massPerMeter: 1.45, modulePitch: 30 },
 
   // 40 × 40
   { id: '40x40-eco',    sizeKey: '40x40', variant: 'eco',    label: '40 × 40 · ECO',
     w: 40, h: 40, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 6.20,
-    orderCode: '0.0.026.04', massPerMeter: 1.18 },
+    orderCode: 'NM-PRO-40x40-E', massPerMeter: 1.18 },
   { id: '40x40-leicht', sizeKey: '40x40', variant: 'leicht', label: '40 × 40 · Leicht',
     w: 40, h: 40, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 8.90,
-    orderCode: '0.0.026.03', massPerMeter: 1.55 },
+    orderCode: 'NM-PRO-40x40-L', massPerMeter: 1.55 },
   { id: '40x40-schwer', sizeKey: '40x40', variant: 'schwer', label: '40 × 40 · Schwer',
     w: 40, h: 40, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 12.40,
-    orderCode: '0.0.026.05', massPerMeter: 2.10 },
+    orderCode: 'NM-PRO-40x40-S', massPerMeter: 2.10 },
 
   // 40 × 80
   { id: '40x80-leicht', sizeKey: '40x80', variant: 'leicht', label: '40 × 80 · Leicht',
     w: 40, h: 80, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 14.20,
-    orderCode: '0.0.026.07', massPerMeter: 2.95 },
+    orderCode: 'NM-PRO-40x80-L', massPerMeter: 2.95 },
   { id: '40x80-schwer', sizeKey: '40x80', variant: 'schwer', label: '40 × 80 · Schwer',
     w: 40, h: 80, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 19.80,
-    orderCode: '0.0.026.08', massPerMeter: 3.95 },
+    orderCode: 'NM-PRO-40x80-S', massPerMeter: 3.95 },
 
   // 40 × 120
   { id: '40x120-leicht', sizeKey: '40x120', variant: 'leicht', label: '40 × 120 · Leicht',
     w: 40, h: 120, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 19.80,
-    orderCode: '0.0.026.10', massPerMeter: 4.30 },
+    orderCode: 'NM-PRO-40x120-L', massPerMeter: 4.30 },
 
   // 40 × 160
   { id: '40x160-leicht', sizeKey: '40x160', variant: 'leicht', label: '40 × 160 · Leicht',
     w: 40, h: 160, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 25.40,
-    orderCode: '0.0.026.11', massPerMeter: 5.65 },
+    orderCode: 'NM-PRO-40x160-L', massPerMeter: 5.65 },
 
   // 60 × 60
   { id: '60x60-leicht', sizeKey: '60x60', variant: 'leicht', label: '60 × 60 · Leicht',
     w: 60, h: 60, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 13.40,
-    orderCode: '0.0.026.45', massPerMeter: 2.45 },
+    orderCode: 'NM-PRO-60x60-L', massPerMeter: 2.45 },
 
   // 80 × 40
   { id: '80x40-eco',    sizeKey: '80x40', variant: 'eco',    label: '80 × 40 · ECO',
     w: 80, h: 40, ...NUT8_GEO, webThickness: 2.5, pricePerMeter: 11.50,
-    orderCode: '0.0.026.21' },
+    orderCode: 'NM-PRO-80x40-E' },
   { id: '80x40-leicht', sizeKey: '80x40', variant: 'leicht', label: '80 × 40 · Leicht',
     w: 80, h: 40, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 14.20,
-    orderCode: '0.0.026.22' },
+    orderCode: 'NM-PRO-80x40-L' },
   { id: '80x40-schwer', sizeKey: '80x40', variant: 'schwer', label: '80 × 40 · Schwer',
     w: 80, h: 40, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 19.80,
-    orderCode: '0.0.026.23' },
+    orderCode: 'NM-PRO-80x40-S' },
 
   // 80 × 80
   { id: '80x80-leicht', sizeKey: '80x80', variant: 'leicht', label: '80 × 80 · Leicht',
     w: 80, h: 80, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 22.40,
-    orderCode: '0.0.026.31', massPerMeter: 4.20 },
+    orderCode: 'NM-PRO-80x80-L', massPerMeter: 4.20 },
   { id: '80x80-schwer', sizeKey: '80x80', variant: 'schwer', label: '80 × 80 · Schwer',
     w: 80, h: 80, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 32.50,
-    orderCode: '0.0.026.32', massPerMeter: 6.20 },
+    orderCode: 'NM-PRO-80x80-S', massPerMeter: 6.20 },
 
   // 80 × 120
   { id: '80x120-leicht', sizeKey: '80x120', variant: 'leicht', label: '80 × 120 · Leicht',
     w: 80, h: 120, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 32.80,
-    orderCode: '0.0.026.36', massPerMeter: 6.10 },
+    orderCode: 'NM-PRO-80x120-L', massPerMeter: 6.10 },
 
   // 80 × 160
   { id: '80x160-leicht', sizeKey: '80x160', variant: 'leicht', label: '80 × 160 · Leicht',
     w: 80, h: 160, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 38.50,
-    orderCode: '0.0.026.41', massPerMeter: 7.95 },
+    orderCode: 'NM-PRO-80x160-L', massPerMeter: 7.95 },
   { id: '80x160-schwer', sizeKey: '80x160', variant: 'schwer', label: '80 × 160 · Schwer',
     w: 80, h: 160, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 56.00,
-    orderCode: '0.0.026.42', massPerMeter: 11.20 },
+    orderCode: 'NM-PRO-80x160-S', massPerMeter: 11.20 },
 
   // 80 × 240
   { id: '80x240-leicht', sizeKey: '80x240', variant: 'leicht', label: '80 × 240 · Leicht',
     w: 80, h: 240, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 56.00,
-    orderCode: '0.0.026.46', massPerMeter: 11.80 },
+    orderCode: 'NM-PRO-80x240-L', massPerMeter: 11.80 },
 ];
 
 export const CONNECTOR_TYPES = [
