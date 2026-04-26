@@ -2,7 +2,7 @@ import { useRef, useMemo, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import type { ProfileSection, ProfileHole, ProfileConnector, SlotId } from '@/lib/profile-configurator-types';
+import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId } from '@/lib/profile-configurator-types';
 
 // Slot direction vectors in cross-section space (X right, Y up).
 // Slot A=top, B=right, C=bottom, D=left. We need both an outward normal
