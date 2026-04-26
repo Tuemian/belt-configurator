@@ -334,7 +334,7 @@ function drawProfilePage(
 
   // Connectors table
   if (item.config.connectors.length > 0) {
-    y = drawConnectorsTable(doc, item.config.connectors, MARGIN, y, drawAreaW);
+    y = drawConnectorsTable(doc, item.config.connectors, s, MARGIN, y, drawAreaW);
   }
 
   // Price breakdown
