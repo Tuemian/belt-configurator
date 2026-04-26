@@ -364,149 +364,38 @@ export default function ProfileConfigurator() {
               </div>
             </div>
 
-            {/* Holes */}
+            {/* Bohrungen & Verbinder Status (Bearbeitung erfolgt direkt in der 2D-Werkbank) */}
             <div>
-              <SectionDivider label="Bohrungen" />
-              <div className="mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Typ</Label>
-                    <Select value={newHoleType} onValueChange={(v) => setNewHoleType(v as ProfileHole['type'])}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HOLE_TYPES.map((t) => (
-                          <SelectItem key={t.id} value={t.id} className="text-xs">
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Position (mm)</Label>
-                    <Input
-                      type="number"
-                      min={5}
-                      max={config.length - 5}
-                      step={5}
-                      value={newHoleZ}
-                      onChange={(e) => setNewHoleZ(Number(e.target.value))}
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={addHole}
-                  className="w-full gap-2 text-xs"
-                >
+              <SectionDivider label="Bearbeitung" />
+              <div className="mt-3 rounded-md bg-primary/5 border border-primary/20 px-3 py-2.5 text-xs text-foreground space-y-1.5">
+                <div className="flex items-center gap-2 text-primary font-semibold">
                   <Plus className="h-3.5 w-3.5" />
-                  Bohrung hinzufügen
-                  <span className="text-amber-600 font-medium ml-auto">+{fmt.format(PRICE_HOLE)}</span>
-                </Button>
-
-                {config.holes.length > 0 && (
-                  <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                    {config.holes.map((hole) => (
-                      <div key={hole.id} className="flex items-center justify-between bg-slate-50 rounded border border-slate-100 px-2 py-1 text-xs">
-                        <span className="text-foreground truncate">{hole.label}</span>
-                        <span className="text-muted-foreground ml-2 shrink-0">@ {hole.zPosition} mm</span>
-                        <button onClick={() => removeHole(hole.id)} className="ml-2 text-muted-foreground hover:text-red-500">
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  Drag &amp; Drop in der 2D-Werkbank
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  Klicke direkt auf das Profil rechts, um Bohrungen oder Verbinder zu setzen. Ziehe sie zum Verschieben, klicke zum Bearbeiten.
+                </p>
+                <div className="flex items-center justify-between pt-1.5 border-t border-primary/10 text-[11px]">
+                  <span className="text-muted-foreground">Bohrungen</span>
+                  <span className="font-mono font-semibold text-foreground">{config.holes.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">Verbinder</span>
+                  <span className="font-mono font-semibold text-foreground">{config.connectors.length}</span>
+                </div>
+                {(config.holes.length > 0 || config.connectors.length > 0) && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => update({ holes: [], connectors: [] })}
+                    className="w-full h-7 text-[11px] text-muted-foreground hover:text-red-600 mt-1"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Alle entfernen
+                  </Button>
                 )}
               </div>
             </div>
-
-            {/* Connectors */}
-            <div>
-              <SectionDivider label="Verbinder" />
-              <div className="mt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Typ</Label>
-                    <Select value={newConnectorType} onValueChange={(v) => setNewConnectorType(v as ConnectorType)}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CONNECTOR_TYPES.map((t) => (
-                          <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Seite</Label>
-                    <Select value={newConnectorFace} onValueChange={(v) => { setNewConnectorFace(v as ProfileConnector['face']); setNewConnectorModule(0); }}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="top" className="text-xs">Oben</SelectItem>
-                        <SelectItem value="bottom" className="text-xs">Unten</SelectItem>
-                        <SelectItem value="left" className="text-xs">Links</SelectItem>
-                        <SelectItem value="right" className="text-xs">Rechts</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {numModulesOnFace > 1 && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground mb-1 block">Nut-Position</Label>
-                      <Select value={String(newConnectorModule)} onValueChange={(v) => setNewConnectorModule(Number(v))}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: numModulesOnFace }, (_, i) => (
-                            <SelectItem key={i} value={String(i)} className="text-xs">Nut {i + 1}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  <div className={numModulesOnFace > 1 ? '' : 'col-span-2'}>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Position (mm)</Label>
-                    <Input
-                      type="number"
-                      min={5}
-                      max={config.length - 5}
-                      step={5}
-                      value={newConnectorZ}
-                      onChange={(e) => setNewConnectorZ(Number(e.target.value))}
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" onClick={addConnector} className="w-full gap-2 text-xs">
-                  <Plus className="h-3.5 w-3.5" />
-                  Verbinder einsetzen
-                  <span className="text-amber-600 font-medium ml-auto">+{fmt.format(PRICE_CONNECTOR)}</span>
-                </Button>
-                {config.connectors.length > 0 && (
-                  <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
-                    {config.connectors.map((conn) => (
-                      <div key={conn.id} className="flex items-center justify-between bg-slate-50 rounded border border-slate-100 px-2 py-1 text-xs">
-                        <span className="text-foreground truncate">{conn.label}</span>
-                        <span className="text-muted-foreground ml-2 shrink-0">{conn.face} @ {conn.zPosition} mm</span>
-                        <button onClick={() => removeConnector(conn.id)} className="ml-2 text-muted-foreground hover:text-red-500">
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
           {/* Reset */}
           <div className="p-4 border-t border-slate-200">
