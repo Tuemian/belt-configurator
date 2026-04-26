@@ -324,12 +324,12 @@ function drawProfilePage(
   y += xsH + 6;
 
   // Cuts / end treatments
-  drawCutsBlock(doc, item.config, MARGIN, y, drawAreaW);
+  drawCutsBlock(doc, item.config, s, MARGIN, y, drawAreaW);
   y += 18;
 
   // Holes table
   if (item.config.holes.length > 0) {
-    y = drawHolesTable(doc, item.config.holes, MARGIN, y, drawAreaW);
+    y = drawHolesTable(doc, item.config.holes, s, MARGIN, y, drawAreaW);
   }
 
   // Connectors table
