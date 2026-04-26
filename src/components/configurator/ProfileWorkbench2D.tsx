@@ -544,11 +544,9 @@ export function ProfileWorkbench2D({
                     strokeDasharray="4 3"
                     opacity="0.55"
                   />
-                  {slotGuides.length > 1 && (
-                    <text x={-6} y={y + 3} textAnchor="end" fontSize="8" fill="#64748b" fontWeight="600">
-                      {i + 1}
-                    </text>
-                  )}
+                  <text x={-6} y={y + 3} textAnchor="end" fontSize="8" fill="hsl(var(--primary))" fontWeight="700">
+                    {activeSlotNumber}
+                  </text>
                 </g>
               ))}
 
