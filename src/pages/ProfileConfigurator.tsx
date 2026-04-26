@@ -292,13 +292,12 @@ export default function ProfileConfigurator() {
                     <div key={end} className="space-y-2">
                       <Label className="text-xs text-muted-foreground">{end}</Label>
                       <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
+                        <NumericInput
                           min={-45}
                           max={45}
                           step={1}
                           value={val}
-                          onChange={(e) => update({ [key]: Math.max(-45, Math.min(45, Number(e.target.value))) })}
+                          onCommit={(v) => update({ [key]: v })}
                           className="h-8 w-16 text-right text-sm"
                         />
                         <span className="text-muted-foreground text-xs">°</span>
