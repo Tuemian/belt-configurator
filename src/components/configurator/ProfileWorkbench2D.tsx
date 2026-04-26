@@ -118,8 +118,9 @@ export function ProfileWorkbench2D({
   const counts = useMemo(() => getSlotCounts(section), [section]);
   const MODULE = getModulePitch(section);
 
-  // Zoom für lange Profile
-  const [zoom, setZoom] = useState(1);
+  // View modes & dialogs
+  const [detailView, setDetailView] = useState(false);  // false = Anpassen, true = Detail (1mm ≈ 0.6px, scrollbar)
+  const [listDialogOpen, setListDialogOpen] = useState(false);
 
   /** Eine Reihe pro Profilseite (A/B/C/D); jede Reihe hat 1..n Nut-Spuren */
   const sideRows = useMemo(() => {
