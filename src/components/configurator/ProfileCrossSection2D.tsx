@@ -50,6 +50,7 @@ export function ProfileCrossSection2D({
   size = 96,
   showLabels = true,
   rotate90 = false,
+  showSideLabels = false,
 }: Props) {
   const { w, h, slotWidth, slotDepth, cornerR, boreRadius } = section;
   const MODULE = getModulePitch(section);
