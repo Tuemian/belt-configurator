@@ -154,52 +154,72 @@ export function buildProfileInquirySummary(cart: CartItemLike[]): string {
 // Cover page with logo, customer info, TOC and total
 // ---------------------------------------------------------------------------
 
-function drawCoverPage(doc: jsPDF, cart: CartItemLike[], totalNet: number, customer: CustomerInfo | null) {
-  drawHeader(doc, 'Profilzuschnitte – Anfrage');
-
-  let y = 38;
+function drawCoverPage(
+  doc: jsPDF,
+  cart: CartItemLike[],
+  totalNet: number,
+  customer: CustomerInfo | null,
+  headerImg: CachedImage | null,
+  footerImg: CachedImage | null,
+  totalPages: number,
+) {
+  const bodyStart = drawHeader(doc, headerImg, 'NOVAMOTIS – Profilzuschnitte', 'Anfrage mit Inhaltsverzeichnis und Positionsdetails');
+  let y = bodyStart;
 
   // Date / inquiry meta
   setText(doc, SLATE_500, 9, 'normal');
   doc.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, MARGIN, y);
   doc.text(`Positionen: ${cart.length}`, PAGE_W - MARGIN, y, { align: 'right' });
-  y += 10;
+  y += 8;
 
   // Customer info card
   if (customer) {
-    setFill(doc, SLATE_50);
-    doc.rect(MARGIN, y, PAGE_W - MARGIN * 2, 28, 'F');
-    setText(doc, SLATE_500, 8, 'bold');
-    doc.text('KUNDENDATEN', MARGIN + 3, y + 5);
+    const hasMessage = !!customer.message;
+    const hasDelivery = !!customer.desiredDelivery;
+    const cardH = 22 + (hasMessage ? 6 : 0) + (hasDelivery ? 6 : 0);
+    setFill(doc, PANEL_FILL);
+    setStroke(doc, BORDER_GRAY);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(MARGIN, y, PAGE_W - MARGIN * 2, cardH, 3, 3, 'FD');
+    setText(doc, BRAND, 11, 'bold');
+    doc.text('Kundendaten', MARGIN + 4, y + 7);
     setText(doc, SLATE_900, 10, 'normal');
     const contactLine1 = [customer.name, customer.company].filter(Boolean).join(' · ');
     const contactLine2 = [customer.email, customer.phone].filter(Boolean).join(' · ');
-    if (contactLine1) doc.text(contactLine1, MARGIN + 3, y + 11);
-    if (contactLine2) doc.text(contactLine2, MARGIN + 3, y + 17);
-    if (customer.message) {
-      setText(doc, SLATE_500, 8, 'italic');
-      const wrap = doc.splitTextToSize(customer.message, PAGE_W - MARGIN * 2 - 6);
-      doc.text(wrap.slice(0, 1), MARGIN + 3, y + 23);
+    if (contactLine1) doc.text(contactLine1, MARGIN + 4, y + 13);
+    if (contactLine2) doc.text(contactLine2, MARGIN + 4, y + 18);
+    let extraY = y + 24;
+    if (hasDelivery) {
+      setText(doc, BRAND, 9, 'bold');
+      doc.text('Wunschliefertermin:', MARGIN + 4, extraY);
+      setText(doc, SLATE_900, 9, 'normal');
+      doc.text(String(customer.desiredDelivery), MARGIN + 42, extraY);
+      extraY += 6;
     }
-    y += 34;
+    if (hasMessage) {
+      setText(doc, SLATE_500, 8.5, 'italic');
+      const wrap = doc.splitTextToSize(String(customer.message), PAGE_W - MARGIN * 2 - 8);
+      doc.text(wrap.slice(0, 1), MARGIN + 4, extraY);
+    }
+    y += cardH + 6;
   }
 
   // TOC heading
   setText(doc, BRAND, 12, 'bold');
   doc.text('Inhaltsverzeichnis', MARGIN, y);
-  y += 6;
-  setFill(doc, SLATE_200);
-  doc.rect(MARGIN, y, PAGE_W - MARGIN * 2, 0.4, 'F');
-  y += 4;
+  y += 5;
+  setFill(doc, BRAND);
+  doc.rect(MARGIN, y, PAGE_W - MARGIN * 2, 0.5, 'F');
+  y += 5;
 
   // TOC table header
-  setText(doc, SLATE_500, 7.5, 'bold');
+  setText(doc, BRAND_GRAY, 7.5, 'bold');
   doc.text('SEITE', MARGIN, y);
   doc.text('POS.', MARGIN + 14, y);
   doc.text('PROFIL', MARGIN + 26, y);
-  doc.text('ART.-NR.', MARGIN + 88, y);
-  doc.text('LÄNGE', MARGIN + 116, y);
-  doc.text('MENGE', MARGIN + 138, y);
+  doc.text('ART.-NR.', MARGIN + 86, y);
+  doc.text('LÄNGE', MARGIN + 114, y);
+  doc.text('MENGE', MARGIN + 134, y);
   doc.text('PREIS', PAGE_W - MARGIN, y, { align: 'right' });
   y += 2;
   setFill(doc, SLATE_200);
@@ -208,9 +228,9 @@ function drawCoverPage(doc: jsPDF, cart: CartItemLike[], totalNet: number, custo
 
   // TOC entries
   cart.forEach((item, idx) => {
-    if (y > PAGE_H - 40) return; // overflow guard – TOC stays on first page
+    if (y > PAGE_H - 70) return; // overflow guard
     const s = PROFILE_SECTIONS.find((p) => p.id === item.config.sectionId)!;
-    const pageNum = idx + 2;     // cover = 1, profiles start at 2
+    const pageNum = idx + 2;
     const isAlt = idx % 2 === 1;
     if (isAlt) {
       setFill(doc, SLATE_50);
@@ -219,44 +239,53 @@ function drawCoverPage(doc: jsPDF, cart: CartItemLike[], totalNet: number, custo
     setText(doc, SLATE_900, 9, 'normal');
     doc.text(String(pageNum), MARGIN, y);
     doc.text(`#${idx + 1}`, MARGIN + 14, y);
-    doc.text(truncate(s.label, 32), MARGIN + 26, y);
-    setText(doc, SLATE_500, 8.5, 'normal');
-    doc.text(s.orderCode ?? '—', MARGIN + 88, y);
+    doc.text(truncate(s.label, 30), MARGIN + 26, y);
+    setText(doc, BRAND_GRAY, 8.5, 'normal');
+    doc.text(s.orderCode ?? '—', MARGIN + 86, y);
     setText(doc, SLATE_900, 9, 'normal');
-    doc.text(`${item.config.length} mm`, MARGIN + 116, y);
-    doc.text(`${item.config.quantity} ×`, MARGIN + 138, y);
+    doc.text(`${item.config.length} mm`, MARGIN + 114, y);
+    doc.text(`${item.config.quantity} ×`, MARGIN + 134, y);
     setText(doc, SLATE_900, 9, 'bold');
     doc.text(fmtEur.format(item.price.total), PAGE_W - MARGIN, y, { align: 'right' });
     y += 6;
   });
 
-  // Totals card
-  y = Math.max(y + 4, PAGE_H - 70);
+  // Totals card – matches Fördertechnik price card style
+  y = Math.max(y + 6, PAGE_H - 78);
   setFill(doc, ACCENT_BG);
-  doc.rect(MARGIN, y, PAGE_W - MARGIN * 2, 24, 'F');
-  setText(doc, BRAND, 9, 'bold');
-  doc.text('GESAMTPREIS (RICHTPREIS, NETTO)', MARGIN + 4, y + 8);
-  setText(doc, BRAND, 18, 'bold');
-  doc.text(fmtEur.format(totalNet), PAGE_W - MARGIN - 4, y + 12, { align: 'right' });
-  setText(doc, SLATE_500, 7.5, 'normal');
+  setStroke(doc, BRAND);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(MARGIN, y, PAGE_W - MARGIN * 2, 26, 3, 3, 'FD');
+  setText(doc, BRAND, 9.5, 'bold');
+  doc.text('GESAMTPREIS (RICHTPREIS, NETTO)', MARGIN + 5, y + 8);
+  setText(doc, BRAND, 19, 'bold');
+  doc.text(fmtEur.format(totalNet), PAGE_W - MARGIN - 5, y + 13, { align: 'right' });
+  setText(doc, BRAND_GRAY, 7.5, 'normal');
   doc.text(
     'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS. Preise verstehen sich netto, zzgl. MwSt. und Versand.',
-    MARGIN + 4, y + 19,
-    { maxWidth: PAGE_W - MARGIN * 2 - 8 },
+    MARGIN + 5, y + 21,
+    { maxWidth: PAGE_W - MARGIN * 2 - 10 },
   );
 
-  drawFooter(doc, 1, cart.length + 1);
+  drawFooter(doc, footerImg, 1, totalPages);
 }
 
 // ---------------------------------------------------------------------------
 // Profile detail page
 // ---------------------------------------------------------------------------
 
-function drawProfilePage(doc: jsPDF, item: CartItemLike, posIndex: number, totalPositions: number) {
+function drawProfilePage(
+  doc: jsPDF,
+  item: CartItemLike,
+  posIndex: number,
+  totalPositions: number,
+  headerImg: CachedImage | null,
+  footerImg: CachedImage | null,
+  totalPages: number,
+) {
   const s = PROFILE_SECTIONS.find((p) => p.id === item.config.sectionId)!;
-  drawHeader(doc, `Position ${posIndex} · ${s.label}`);
-
-  let y = 36;
+  const bodyStart = drawHeader(doc, headerImg, `Position ${posIndex} · ${s.label}`, `Profilzuschnitt ${posIndex} von ${totalPositions}`);
+  let y = bodyStart;
 
   // Meta row
   setFill(doc, SLATE_50);
