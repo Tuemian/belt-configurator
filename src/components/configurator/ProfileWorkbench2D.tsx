@@ -587,7 +587,7 @@ export function ProfileWorkbench2D({
                     strokeWidth="0.6"
                   />
                   <text x={CONNECTOR_FOOTPRINT / 2} y={-3} textAnchor="middle" fontSize="8" fill="hsl(var(--primary))" fontWeight="600">
-                    Start
+                    Anfang
                   </text>
                   <text x={length - CONNECTOR_FOOTPRINT / 2} y={-3} textAnchor="middle" fontSize="8" fill="hsl(var(--primary))" fontWeight="600">
                     Ende
