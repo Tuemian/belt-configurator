@@ -762,15 +762,18 @@ export function ProfileWorkbench2D({
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-[10px] text-muted-foreground mb-1 block">Position (mm vom Anfang)</Label>
+                    <Label className="text-[10px] text-muted-foreground mb-1 block">
+                      Position (mm vom Anfang) · Schritt {snap} mm
+                    </Label>
                     <Input
                       type="number"
-                      min={1}
+                      min={snap}
                       max={length - 1}
-                      step={1}
+                      step={snap}
                       value={selectedHole.zPosition}
                       onChange={(e) => {
-                        const z = Math.max(1, Math.min(length - 1, Number(e.target.value)));
+                        const raw = Number(e.target.value);
+                        const z = Math.max(snap, Math.min(length - 1, Math.round(raw / snap) * snap));
                         updateHole({ zPosition: z });
                       }}
                       className="h-8 text-xs"
