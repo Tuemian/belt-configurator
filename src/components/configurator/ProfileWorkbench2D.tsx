@@ -541,7 +541,7 @@ export function ProfileWorkbench2D({
               Positioniert oben-rechts neben der Overlap-Warnung, damit das Profil links frei bleibt. */}
           <div className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur border border-slate-200 rounded-lg shadow-sm p-2">
             <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 text-center">
-              Querschnitt {section.w > section.h && '(↻90°)'}
+              Querschnitt {section.h > section.w && '(↻90°)'}
             </div>
             <ProfileCrossSection2D
               section={section}
