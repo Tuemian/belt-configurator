@@ -2,17 +2,7 @@ import { useRef, useMemo, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId } from '@/lib/profile-configurator-types';
-
-// Slot direction vectors in cross-section space (X right, Y up).
-// Slot A=top, B=right, C=bottom, D=left. We need both an outward normal
-// (where the slot opens) and the through-axis used for drilling holes.
-const SLOT_DIR: Record<SlotId, { nx: number; ny: number }> = {
-  A: { nx:  0, ny:  1 },
-  B: { nx:  1, ny:  0 },
-  C: { nx:  0, ny: -1 },
-  D: { nx: -1, ny:  0 },
-};
+import type { ProfileSection, ProfileHole, ProfileConnector } from '@/lib/profile-configurator-types';
 
 // ---------------------------------------------------------------------------
 // T-slot path helpers — all produce CW paths (negative signed area = hole)
@@ -62,11 +52,10 @@ function addSlotLeft(s: THREE.Shape, xf: number, cy: number, sw: number, gw: num
 
 function buildProfileShape(section: ProfileSection): THREE.Shape {
   const { w, h, slotWidth: sw, slotDepth: sd, grooveWidth: gw, cornerR, boreRadius, webThickness: wt } = section;
-  const PITCH = getModulePitch(section);
   const hw = w / 2;
   const hh = h / 2;
-  const numW = Math.max(1, Math.round(w / PITCH));
-  const numH = Math.max(1, Math.round(h / PITCH));
+  const numW = Math.round(w / MODULE);
+  const numH = Math.round(h / MODULE);
 
   // Outer rounded rectangle (CCW)
   const shape = new THREE.Shape();
@@ -82,12 +71,12 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
 
   // T-slots: one per module on each face
   for (let i = 0; i < numW; i++) {
-    const cx = -hw + PITCH * (i + 0.5);
+    const cx = -hw + MODULE * (i + 0.5);
     addSlotTop(shape, cx, hh, sw, gw, sd);
     addSlotBottom(shape, cx, -hh, sw, gw, sd);
   }
   for (let j = 0; j < numH; j++) {
-    const cy = -hh + PITCH * (j + 0.5);
+    const cy = -hh + MODULE * (j + 0.5);
     addSlotRight(shape, hw, cy, sw, gw, sd);
     addSlotLeft(shape, -hw, cy, sw, gw, sd);
   }
@@ -95,14 +84,16 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
   // Center bore + inner hollow per module cell
   for (let i = 0; i < numW; i++) {
     for (let j = 0; j < numH; j++) {
-      const cx = -hw + PITCH * (i + 0.5);
-      const cy = -hh + PITCH * (j + 0.5);
+      const cx = -hw + MODULE * (i + 0.5);
+      const cy = -hh + MODULE * (j + 0.5);
 
+      // Center bore (CW arc = hole)
       const bore = new THREE.Path();
       bore.absarc(cx, cy, boreRadius, 0, Math.PI * 2, true);
       shape.holes.push(bore);
 
-      const ie = PITCH / 2 - sd - wt * 0.3;
+      // Inner hollow octagon (CW) — represents the hollow web structure
+      const ie = MODULE / 2 - sd - wt * 0.3;
       if (ie > boreRadius + 2.5) {
         const ic = ie * 0.72;
         const inn = new THREE.Path();
@@ -158,80 +149,42 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
     return geo;
   }, [section, length, angleStart, angleEnd]);
 
-  // Bore / hole cylinders — drilled THROUGH the profile from the chosen slot.
-  // The hole orientation depends on which slot it sits on:
-  //   A/C → drilled vertically (Y axis), positioned along width (X)
-  //   B/D → drilled horizontally (X axis), positioned along height (Y)
+  // Bore / hole cylinders — thread=gold, step=blue, plain=dark
   const holeMeshes = useMemo(() => {
-    const { w, h } = section;
-    const PITCH = getModulePitch(section);
-    const hw = w / 2;
-    const hh = h / 2;
-    const numW = Math.max(1, Math.round(w / PITCH));
-    const numH = Math.max(1, Math.round(h / PITCH));
     return holes.map((hole, idx) => {
       const r = hole.diameter / 2;
-      const slot: SlotId = hole.slot ?? 'A';
-      const dir = SLOT_DIR[slot];
-      const through = (Math.abs(dir.nx) > 0 ? w : h) + 4;
-      const cylGeo = new THREE.CylinderGeometry(r, r, through, 24);
-      const isThread = hole.type === 'm8-thread' || hole.type === 'm6-thread';
-      const isStep   = hole.type === 'step-m6' || hole.type === 'step-m8';
+      const cylGeo = new THREE.CylinderGeometry(r, r, section.h + 4, 24);
+      const isThread = hole.type === 'm6-thread' || hole.type === 'm8-thread';
+      const isStep   = hole.type === 'step-m6'   || hole.type === 'step-m8';
       const color = isThread ? '#a07830' : isStep ? '#4a6fa5' : '#1e293b';
       const mat = new THREE.MeshStandardMaterial({ color, roughness: isThread ? 0.45 : 0.7, metalness: isThread ? 0.7 : 0.1 });
-
-      // Multi-Modul: Position der Bohrung anhand moduleIndex auf der jeweiligen Achse
-      const mi = hole.moduleIndex ?? 0;
-      let cx = 0, cy = 0;
-      if (slot === 'A' || slot === 'C') {
-        const idx = Math.min(mi, numW - 1);
-        cx = -hw + PITCH * (idx + 0.5);
-        cy = dir.ny * (hh - r * 0.1);
-      } else {
-        const idx = Math.min(mi, numH - 1);
-        cy = -hh + PITCH * (idx + 0.5);
-        cx = dir.nx * (hw - r * 0.1);
-      }
       const m = new THREE.Mesh(cylGeo, mat);
-      m.position.set(cx, cy, Math.max(0, Math.min(length, hole.zPosition)));
-      if (slot === 'A' || slot === 'C') {
-        // axis = Y (default)
-      } else {
-        m.rotation.z = Math.PI / 2;
-      }
+      m.position.set(0, 0, Math.max(0, Math.min(length, hole.zPosition)));
       return <primitive key={idx} object={m} />;
     });
   }, [holes, section, length]);
 
-  // Connector (T-nut) meshes — silver blocks seated inside the T-slot at one of the two ends
+  // Connector (T-nut) meshes — silver blocks seated inside the T-slot
   const connectorMeshes = useMemo(() => {
     const { w, h, slotWidth: sw, slotDepth: sd } = section;
-    const PITCH = getModulePitch(section);
     const hw = w / 2;
     const hh = h / 2;
-    const numW = Math.max(1, Math.round(w / PITCH));
-    const numH = Math.max(1, Math.round(h / PITCH));
     return connectors.map((conn, idx) => {
-      const tW = sw * 0.88;
-      const tD = sd * 0.80;
-      const tL = 22;
-      const z = conn.end === 'start' ? tL / 2 : length - tL / 2;
-      const slot: SlotId = conn.slot ?? 'A';
-      const dir = SLOT_DIR[slot];
-      const mi = conn.moduleIndex ?? 0;
+      const tW = sw * 0.88;   // fits in slot opening
+      const tD = sd * 0.80;   // depth into slot
+      const tL = 22;           // length along extrusion axis
+      const z = Math.max(tL / 2, Math.min(length - tL / 2, conn.zPosition));
 
       let pos: [number, number, number];
       let rot: [number, number, number] = [0, 0, 0];
-      if (slot === 'A' || slot === 'C') {
-        const idxM = Math.min(mi, numW - 1);
-        const xOff = -hw + PITCH * (idxM + 0.5);
-        const yOff = dir.ny * (hh - tD / 2);
-        pos = [xOff, yOff, z];
+      if (conn.face === 'top' || conn.face === 'bottom') {
+        const cx = -hw + MODULE * (conn.module + 0.5);
+        const yOff = conn.face === 'top' ? hh - tD / 2 : -hh + tD / 2;
+        pos = [cx, yOff, z];
       } else {
-        const idxM = Math.min(mi, numH - 1);
-        const yOff = -hh + PITCH * (idxM + 0.5);
-        const xOff = dir.nx * (hw - tD / 2);
-        pos = [xOff, yOff, z];
+        const cy = -hh + MODULE * (conn.module + 0.5);
+        const xOff = conn.face === 'right' ? hw - tD / 2 : -hw + tD / 2;
+        pos = [xOff, cy, z];
         rot = [0, 0, Math.PI / 2];
       }
       return (
