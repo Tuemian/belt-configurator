@@ -673,72 +673,49 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     URL.revokeObjectURL(url);
   };
 
-  const handleSendRequest = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.privacy) return;
     setSending(true);
     try {
-      const customerName = window.prompt('Bitte geben Sie Ihren Namen ein:');
-      if (customerName === null) {
-        setSending(false);
-        return;
-      }
-
-      const customerEmail = window.prompt('Bitte geben Sie Ihre E-Mail-Adresse ein:');
-      if (customerEmail === null) {
-        setSending(false);
-        return;
-      }
-
-      if (!customerName.trim() || !customerEmail.trim()) {
-        throw new Error('Name and email are required');
-      }
-
-      const requestPdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const currentDate = new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US');
-      const standLabel = config.withStand ? t('yes', lang) : t('no', lang);
-      const pdfLines = [
-        'Anfrage NOVAMOTIS Konfigurator',
-        `Datum: ${currentDate}`,
-        '',
-        `Laenge: ${config.beltLength} mm`,
-        `Breite: ${config.frameWidth} mm`,
-        `Motorposition: ${config.motorPosition}`,
-        `Geschwindigkeit: ${config.speed} m/min`,
-        `Untergestell: ${standLabel}`,
-      ];
-
-      requestPdf.setFont('helvetica', 'bold');
-      requestPdf.setFontSize(16);
-      requestPdf.text(pdfLines[0], 20, 20);
-      requestPdf.setFont('helvetica', 'normal');
-      requestPdf.setFontSize(11);
-      requestPdf.text(pdfLines.slice(1), 20, 32);
-
-      const pdfBlob = requestPdf.output('blob');
+      const identity = await buildConfigurationIdentity(config);
+      const modelImageDataUrl = await captureModelSnapshot();
+      const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       const pdfBase64 = await blobToBase64(pdfBlob);
 
-      const response = await fetch('/api/send_mail.php', {
+      const response = await fetch('/api/send-inquiry', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          customer: {
-            name: customerName.trim(),
-            email: customerEmail.trim(),
+          lang,
+          form: {
+            name: form.name,
+            company: form.company,
+            email: form.email,
+            phone: form.phone,
+            message: form.message,
           },
           config,
-          pdfBase64,
+          summary: generatePdfContent(identity),
+          attachment: {
+            filename: getPdfFilename(identity),
+            contentType: 'application/pdf',
+            contentBase64: pdfBase64,
+          },
         }),
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(`Request failed with status ${response.status}: ${errorBody}`);
+        throw new Error(`Inquiry request failed with status ${response.status}: ${errorBody}`);
       }
 
+      setForm({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
       toast({ title: t('submitSuccess', lang) });
     } catch (error) {
-      console.error('Request submit error:', error);
+      console.error('Inquiry submit error:', error);
       toast({ title: t('submitError', lang) });
     } finally {
       setSending(false);
@@ -884,7 +861,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           <p className="text-sm text-muted-foreground">{t('contactDesc', lang)}</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(event) => event.preventDefault()} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm">{t('name', lang)} *</Label>
@@ -929,7 +906,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
                 {t('privacyConsentSuffix', lang) ? ` ${t('privacyConsentSuffix', lang)}` : ''} *
               </Label>
             </div>
-            <Button type="button" onClick={handleSendRequest} disabled={sending} className="w-full">
+            <Button type="submit" disabled={sending || !form.privacy} className="w-full">
               <Send className="w-4 h-4 mr-2" />
               {sending ? '...' : t('sendInquiry', lang)}
             </Button>
