@@ -211,7 +211,7 @@ async function sendSmtpMail(options: SendMailOptions): Promise<void> {
     if (command) await writeLine(command);
     const response = await readResponse();
     if (!allowed.includes(response.code)) {
-      throw new Error(`SMTP ${command ?? "response"} failed: ${response.lines.join(" | ")}`);
+      throw new Error(`SMTP command failed: ${response.lines.join(" | ")}`);
     }
     return response;
   };
