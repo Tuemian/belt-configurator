@@ -24,6 +24,7 @@ import {
   type ProfileConnector,
   type ConnectorType,
 } from '@/lib/profile-configurator-types';
+import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
 
 const ProfileViewer3D = lazy(() =>
   import('@/components/configurator/ProfileViewer3D').then((m) => ({ default: m.ProfileViewer3D }))
@@ -88,6 +89,7 @@ export default function ProfileConfigurator() {
   const [newConnectorFace, setNewConnectorFace] = useState<ProfileConnector['face']>('top');
   const [newConnectorModule, setNewConnectorModule] = useState(0);
   const [newConnectorZ, setNewConnectorZ] = useState(50);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
@@ -151,29 +153,10 @@ export default function ProfileConfigurator() {
 
   const cartTotal = cart.reduce((sum, i) => sum + i.price.total, 0);
 
-  // Inquiry
+  // Inquiry — opens dialog (sends via Lovable Cloud + SMTP)
   const sendInquiry = () => {
-    const subject = encodeURIComponent('Anfrage Aluminium-Systemprofile – NOVAMOTIS Konfigurator');
-    const lines = cart.map((item, idx) => {
-      const s = PROFILE_SECTIONS.find((p) => p.id === item.config.sectionId)!;
-      return [
-        `Position ${idx + 1}: ${s.label}`,
-        `  Länge: ${item.config.length} mm`,
-        `  Menge: ${item.config.quantity} Stk.`,
-        item.config.angleStart !== 0 ? `  Schrägschnitt Start: ${item.config.angleStart}°` : '',
-        item.config.angleEnd !== 0   ? `  Schrägschnitt Ende:  ${item.config.angleEnd}°` : '',
-        item.config.endStart.thread  ? '  Gewinde Start: M8' : '',
-        item.config.endEnd.thread    ? '  Gewinde Ende: M8' : '',
-        item.config.holes.length > 0
-          ? `  Bohrungen: ${item.config.holes.map((h) => `${h.label} @ ${h.zPosition}mm`).join(', ')}`
-          : '',
-        `  Positionspreis: ${fmt.format(item.price.total)}`,
-      ].filter(Boolean).join('\n');
-    });
-    const body = encodeURIComponent(
-      `Sehr geehrtes NOVAMOTIS-Team,\n\nhiermit übermittle ich folgende Konfiguration:\n\n${lines.join('\n\n')}\n\nGesamtpreis (Richtwert): ${fmt.format(cartTotal)}\n\nBitte um Rückmeldung mit konkretem Angebot.\n\nMit freundlichen Grüßen`
-    );
-    window.location.href = `mailto:info@novamotis.com?subject=${subject}&body=${body}`;
+    if (cart.length === 0) return;
+    setInquiryOpen(true);
   };
 
   return (
@@ -686,13 +669,24 @@ export default function ProfileConfigurator() {
                 </p>
                 <Button onClick={sendInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />
-                  Anfrage per E-Mail senden
+                  Anfrage senden
                 </Button>
               </div>
             )}
           </div>
         </div>
       )}
+
+      <ProfileInquiryDialog
+        open={inquiryOpen}
+        onOpenChange={setInquiryOpen}
+        cart={cart}
+        cartTotal={cartTotal}
+        onSuccess={() => {
+          setCart([]);
+          setCartOpen(false);
+        }}
+      />
     </div>
   );
 }
