@@ -1,98 +1,90 @@
-## Problem
+## Problem & Diagnose
 
-Der Button **"Anfrage per E-Mail senden"** im Profil-Konfigurator verwendet aktuell `window.location.href = 'mailto:...'`. Das ist der Grund, warum es nicht funktioniert:
+In der Lovable-Vorschau-URL gibt der Aufruf `POST /api/send-inquiry` einen **404** zurück. Grund: Die Datei `api/send-inquiry.ts` ist eine **Vercel Serverless Function** und läuft nur, wenn die App auf Vercel gehostet ist. Die Lovable-Preview-URL (`*.lovableproject.com`) hat keinen Node-Server, deshalb existiert die Route dort nicht.
 
-- Auf Geräten ohne konfigurierten Mail-Client passiert nichts.
-- Es kann **kein PDF-Anhang** mitgegeben werden (mailto unterstützt keine Attachments).
-- Es gibt **keine Speicherung** in Supabase.
-- Auf dem Smartphone landet man im falschen Mail-Account.
+Damit der Versand **überall** funktioniert (Lovable-Vorschau, Lovable-Published-URL, ggf. auch Vercel), bauen wir auf **Lovable Cloud + Resend** um.
 
-Im Gurtförderer-Konfigurator funktioniert es bereits sauber über `/api/send-inquiry` (Microsoft Graph) + `/api/create-configuration` (Supabase). Das übertragen wir 1:1 auf den Profil-Konfigurator.
+## Was sich ändert
 
-## Lösung im Überblick
+| Vorher (Vercel) | Nachher (Lovable Cloud) |
+|---|---|
+| `api/send-inquiry.ts` (Microsoft Graph) | Edge Function `send-inquiry` (Resend) |
+| `api/create-configuration.ts` | Edge Function `create-configuration` (direkt Supabase) |
+| Aufruf via `fetch('/api/send-inquiry')` | Aufruf via `supabase.functions.invoke('send-inquiry')` |
+| Env-Vars in Vercel | Secrets in Lovable Cloud |
 
-1. Statt `mailto:` öffnet der Button einen **Anfrage-Dialog** (Name, Firma, E-Mail, Telefon, Nachricht, Datenschutz-Checkbox) – analog zum Gurtförderer-Step "Summary".
-2. Beim Absenden:
-   - PDF des aktuellen Warenkorbs wird im Browser generiert.
-   - PDF + Formulardaten + Konfigurationsübersicht werden an `/api/send-inquiry` geschickt → es geht eine E-Mail an `office@novamotis.com` (mit PDF-Anhang) **und** eine Bestätigung an den Kunden.
-   - Die Konfiguration wird in einer neuen Supabase-Tabelle `profile_configurations` gespeichert.
-3. Erfolg/Fehler werden per Toast angezeigt.
+## Umsetzungsschritte
 
-## Was wird gebaut
+### 1. Lovable Cloud aktivieren
+Per Tool aktivieren – legt automatisch Supabase-Backend an, generiert Client (`src/integrations/supabase/client.ts`) und stellt `VITE_SUPABASE_*` env-Vars bereit. Damit wird auch eine echte Datenbank für die Konfigurations-Speicherung verfügbar.
 
-### 1. Profil-PDF-Generator (neu)
-Neue Datei `src/lib/profile-pdf.ts` mit `buildProfilePdfBlob(cart, total)`:
-- Nutzt `jsPDF` (bereits Dependency).
-- NOVAMOTIS-Header mit Logo, Datum, Anfragen-Nr.
-- Tabelle aller Warenkorb-Positionen (Profil, Länge, Menge, Bohrungen, Gewinde, Verbinder, Schrägschnitt, Positionspreis).
-- Gesamtpreis als Richtwert + Hinweis "unverbindliches Angebot".
-- Liefert `Blob` zurück, dazu Helper `getProfilePdfFilename()`.
+### 2. Resend-Connector verbinden
+Über den Resend-Connector. Du wirst einen Resend-Account brauchen (kostenlos bis 3.000 Mails/Monat) und eine **verifizierte Absender-Domain** (z.B. `novamotis.com`). Solange die Domain noch nicht verifiziert ist, kannst du `onboarding@resend.dev` als Absender benutzen, dann gehen Mails aber nicht an beliebige Empfänger – nur an deine Resend-Account-Adresse. Das reicht zum Testen, für Produktion brauchen wir die Domain.
 
-### 2. Anfrage-Dialog (neu)
-Neue Komponente `src/components/configurator/ProfileInquiryDialog.tsx`:
-- Shadcn `Dialog` mit Formular: Name*, Firma, E-Mail*, Telefon, Nachricht, Datenschutz-Checkbox*.
-- Validierung clientseitig.
-- Beim Submit: PDF generieren → base64 → `POST /api/send-inquiry` aufrufen.
-- Parallel: `POST /api/create-profile-configuration` für DB-Speicherung.
-- Loading-State, Toast-Feedback, Reset nach Erfolg.
+### 3. Datenbank-Tabellen anlegen (Migration)
+Zwei Tabellen mit RLS:
 
-### 3. Profil-Konfigurator-Seite anpassen
-In `src/pages/ProfileConfigurator.tsx`:
-- `sendInquiry` (mailto) entfernen.
-- State `inquiryOpen` einführen, Button öffnet den Dialog statt mailto.
-- `<ProfileInquiryDialog>` einbinden, bekommt `cart` und `cartTotal` als Props.
+**`belt_inquiries`** (für Gurtförderer)
+- `id uuid pk`, `created_at timestamptz`, `lang text`
+- `customer_name`, `customer_company`, `customer_email`, `customer_phone`, `customer_message` (text)
+- `config jsonb`, `summary text`, `pdf_filename text`
+- `email_status text` ('sent' / 'failed'), `email_error text`
 
-### 4. Vercel-API-Route (neu)
-Neue Datei `api/create-profile-configuration.ts` (analog zu `create-configuration.ts`):
-- Nimmt `{ cart, total, lang }` entgegen.
-- Schreibt einen Datensatz pro Anfrage in Supabase-Tabelle `profile_configurations` über die REST-API mit `SUPABASE_SERVICE_ROLE_KEY`.
-- Gibt `{ configId }` zurück.
+**`profile_inquiries`** (für Profil-Konfigurator)
+- gleiches Schema, statt `config` → `items jsonb`, `total_eur numeric`
 
-`api/send-inquiry.ts` muss **nicht** geändert werden – die bestehende Route akzeptiert bereits PDF-Attachment + beliebigen `summary`-Text.
+RLS-Policies: Insert nur durch Service-Role (also nur über Edge Function), kein Select für public. Abruf über das Supabase-Dashboard (Cloud → Database → Tables).
 
-### 5. Supabase-Tabelle (Migration)
-Neue Tabelle `profile_configurations`:
-- `id` (uuid, PK)
-- `created_at` (timestamptz, default now)
-- `customer_name`, `customer_company`, `customer_email`, `customer_phone` (text)
-- `customer_message` (text)
-- `lang` (text, 'de'/'en')
-- `total_eur` (numeric)
-- `items` (jsonb) — komplette Warenkorb-Positionen (Profil-ID, Länge, Menge, Bohrungen, Gewinde, Verbinder, Schnittwinkel, Preis-Breakdown)
-- `pdf_filename` (text)
+### 4. Edge Function `send-inquiry` (neu)
+Eine generische Edge Function für **beide** Konfiguratoren:
 
-RLS aktiviert. Insert-Policy nur für service_role (über die API-Route). Eine Read-Policy lassen wir vorerst weg – Abruf läuft über Supabase-Dashboard oder eine spätere Admin-Seite.
+- Akzeptiert `{ kind: 'belt' | 'profile', lang, form, summary, configOrItems, total?, attachment }`
+- Validiert Input mit Zod (Name, gültige Email, Pflichtfelder, Größe des PDF-Anhangs ≤ 8 MB).
+- Rate-Limiting in-memory pro Edge-Instance (5 Requests / 10 min pro IP+Email).
+- Sendet 2 Mails über **Resend** via Lovable Connector Gateway:
+  1. an `office@novamotis.com` mit allen Daten + PDF-Anhang
+  2. Bestätigung an den Kunden (DE/EN je nach `lang`)
+- Speichert die Anfrage in der passenden Tabelle (`belt_inquiries` oder `profile_inquiries`) mit `email_status`.
+- CORS-Header korrekt gesetzt.
 
-## Voraussetzungen auf Vercel
+### 5. Frontend umbauen
 
-Diese Env-Vars müssen auf Vercel bereits gesetzt sein (für Gurtförderer benutzt du sie ja schon):
-- `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`
-- `INQUIRY_TO_EMAIL` (z.B. `office@novamotis.com`)
-- `INQUIRY_FROM_EMAIL`
-- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+**`src/components/configurator/StepSummary.tsx`** (Gurtförderer):
+- Ersetze `fetch('/api/send-inquiry', ...)` durch `supabase.functions.invoke('send-inquiry', { body: { kind: 'belt', ... } })`.
 
-→ Da der Gurtförderer-Versand laut deiner Aussage bereits läuft, sollten alle vorhanden sein. Falls die neue Tabelle nicht zugreifbar ist, liegt es nur an den Supabase-RLS-Policies (die Migration richtet das mit ein).
+**`src/pages/ProfileConfigurator.tsx`** (Profil):
+- Aktuelle `mailto:`-Lösung wird durch einen echten Anfrage-Dialog ersetzt (Name, Firma, Email, Telefon, Nachricht, Datenschutz-Checkbox).
+- PDF wird mit `jsPDF` direkt im Browser generiert (neue Datei `src/lib/profile-pdf.ts`).
+- Submit ruft dieselbe Edge Function auf mit `kind: 'profile'`.
 
-## Geänderte / neue Dateien
+### 6. Alte Vercel-Routen
+Die Dateien `api/send-inquiry.ts` und `api/create-configuration.ts` lassen wir **drin**, damit dein bestehendes Vercel-Deployment nicht bricht. Die App ruft sie aber nicht mehr auf. Du kannst sie später löschen, wenn du komplett auf Lovable umgestellt bist.
+
+## Was du vorbereiten musst
+
+1. **Resend-Account** erstellen auf [resend.com](https://resend.com) (kostenlos).
+2. Wenn du Mails an Kunden schicken willst: Domain `novamotis.com` in Resend hinzufügen und die DNS-Records (3 TXT-Einträge) bei deinem Domain-Provider hinterlegen. Dauert ~5 min Setup + ~30 min DNS-Propagierung.
+3. Beim Connector-Schritt wirst du nach dem Resend-API-Key gefragt – findest du in Resend unter "API Keys".
+
+## Neue / geänderte Dateien
 
 **Neu:**
-- `src/lib/profile-pdf.ts`
+- `supabase/functions/send-inquiry/index.ts` (Edge Function)
+- `src/lib/profile-pdf.ts` (PDF-Generator für Profil)
 - `src/components/configurator/ProfileInquiryDialog.tsx`
-- `api/create-profile-configuration.ts`
-- Supabase-Migration für `profile_configurations`
+- Migration: `belt_inquiries` und `profile_inquiries` Tabellen mit RLS
 
 **Geändert:**
+- `src/components/configurator/StepSummary.tsx` (Aufruf der Edge Function)
 - `src/pages/ProfileConfigurator.tsx` (Dialog statt mailto)
 
-## Test-Ablauf nach Umsetzung
+**Bleibt unverändert:**
+- `api/send-inquiry.ts`, `api/create-configuration.ts` (Vercel-Fallback, nicht mehr aufgerufen)
 
-1. Profil konfigurieren → Position(en) in den Warenkorb legen.
-2. Auf "Anfrage senden" klicken → Dialog öffnet sich.
-3. Formular ausfüllen, absenden.
-4. Erwartung: 
-   - Toast "Anfrage gesendet"
-   - Mail mit PDF-Anhang trifft bei `office@novamotis.com` ein
-   - Bestätigungsmail beim Kunden
-   - Neuer Eintrag in Supabase-Tabelle `profile_configurations`
+## Test nach Umsetzung
 
-Soll ich so vorgehen?
+1. Gurtförderer konfigurieren → Anfrage abschicken → Mail muss bei `office@novamotis.com` ankommen, Eintrag in `belt_inquiries`.
+2. Profil konfigurieren → Position(en) in den Warenkorb → "Anfrage senden" → Dialog → abschicken → Mail kommt an, Eintrag in `profile_inquiries`.
+3. Beides funktioniert jetzt sowohl in der Lovable-Vorschau als auch auf der veröffentlichten URL.
+
+Soll ich loslegen?
