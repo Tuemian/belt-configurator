@@ -420,65 +420,52 @@ Deno.serve(async (req) => {
     </div>
   `;
 
-  // Build attachment if present
-  const attachments = body.attachment?.contentBase64
-    ? [
-        {
-          filename: body.attachment.filename || "configuration.pdf",
-          content: base64ToUint8Array(body.attachment.contentBase64),
-          contentType: body.attachment.contentType || "application/pdf",
-          encoding: "binary" as const,
-        },
-      ]
+  const attachments: SmtpAttachment[] | undefined = body.attachment?.contentBase64
+    ? [{
+        filename: body.attachment.filename || "configuration.pdf",
+        contentType: body.attachment.contentType || "application/pdf",
+        contentBase64: body.attachment.contentBase64,
+      }]
     : undefined;
 
-  // Send via SMTP — TLS handling depends on port:
-  //   465 → implicit TLS (tls: true)
-  //   587 / 25 → STARTTLS (tls: false, server upgrades the connection)
-  const useImplicitTls = SMTP_PORT === 465;
+  // Send via SMTP — Office 365 on port 587 requires STARTTLS after EHLO.
   console.log(
-    `SMTP connecting to ${SMTP_HOST}:${SMTP_PORT} (implicitTls=${useImplicitTls})`,
+    `SMTP connecting to ${SMTP_HOST}:${SMTP_PORT} (${SMTP_PORT === 465 ? "implicit TLS" : "STARTTLS"})`,
   );
-
-  const client = new SMTPClient({
-    connection: {
-      hostname: SMTP_HOST,
-      port: SMTP_PORT,
-      tls: useImplicitTls,
-      auth: {
-        username: SMTP_USER,
-        password: SMTP_PASSWORD,
-      },
-    },
-  });
 
   try {
     // Mail to NOVAMOTIS
-    await client.send({
+    await sendSmtpMail({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      username: SMTP_USER,
+      password: SMTP_PASSWORD,
       from: SMTP_FROM,
-      to: INQUIRY_TO,
+      to: splitRecipients(INQUIRY_TO),
       replyTo: email,
       subject: adminSubject,
-      content: adminText,
+      text: adminText,
       html: adminHtml,
       attachments,
     });
 
     // Confirmation to customer
     try {
-      await client.send({
+      await sendSmtpMail({
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        username: SMTP_USER,
+        password: SMTP_PASSWORD,
         from: SMTP_FROM,
-        to: email,
+        to: [email],
         subject: customerSubject,
-        content: customerText,
+        text: customerText,
         html: customerHtml,
       });
     } catch (confirmErr) {
       console.error("Customer confirmation failed:", confirmErr);
       // do not fail the whole request
     }
-
-    await client.close();
 
     return new Response(
       JSON.stringify({ ok: true, id: inquiryId }),
@@ -489,11 +476,6 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("SMTP send error:", err);
-    try {
-      await client.close();
-    } catch {
-      /* ignore */
-    }
     return new Response(
       JSON.stringify({
         error: "Email send failed",
