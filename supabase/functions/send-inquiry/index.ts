@@ -1,8 +1,7 @@
 // Send inquiry edge function — handles both belt and profile configurator inquiries.
-// Uses classic SMTP via denomailer, persists to Supabase, sends email + customer confirmation.
+// Uses classic SMTP, persists to Supabase, sends email + customer confirmation.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,12 +67,187 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function base64ToUint8Array(b64: string): Uint8Array {
-  const clean = b64.replace(/^data:[^;]+;base64,/, "");
-  const bin = atob(clean);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+function cleanBase64(b64: string): string {
+  return b64.replace(/^data:[^;]+;base64,/, "").replace(/\s/g, "");
+}
+
+function base64FromUtf8(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.slice(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function wrapBase64(value: string): string {
+  return value.match(/.{1,76}/g)?.join("\r\n") ?? "";
+}
+
+function encodeHeader(value: string): string {
+  const safe = value.replace(/[\r\n]/g, " ");
+  return /^[\x00-\x7F]*$/.test(safe) ? safe : `=?UTF-8?B?${base64FromUtf8(safe)}?=`;
+}
+
+function extractEmail(address: string): string {
+  return address.match(/<([^>]+)>/)?.[1]?.trim() ?? address.trim();
+}
+
+function splitRecipients(value: string): string[] {
+  return value.split(/[;,]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function dotStuff(message: string): string {
+  return message.replace(/\r?\n/g, "\r\n").split("\r\n").map((line) =>
+    line.startsWith(".") ? `.${line}` : line
+  ).join("\r\n");
+}
+
+type SmtpAttachment = {
+  filename: string;
+  contentType: string;
+  contentBase64: string;
+};
+
+type SendMailOptions = {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  from: string;
+  to: string[];
+  replyTo?: string;
+  subject: string;
+  text: string;
+  html: string;
+  attachments?: SmtpAttachment[];
+};
+
+function buildMimeMessage(options: SendMailOptions): string {
+  const mixedBoundary = `mixed_${crypto.randomUUID()}`;
+  const altBoundary = `alt_${crypto.randomUUID()}`;
+  const lines = [
+    `From: ${options.from.replace(/[\r\n]/g, " ")}`,
+    `To: ${options.to.join(", ")}`,
+    options.replyTo ? `Reply-To: ${options.replyTo.replace(/[\r\n]/g, " ")}` : null,
+    `Subject: ${encodeHeader(options.subject)}`,
+    `Date: ${new Date().toUTCString()}`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${mixedBoundary}"`,
+    "",
+    `--${mixedBoundary}`,
+    `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+    "",
+    `--${altBoundary}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrapBase64(base64FromUtf8(options.text)),
+    `--${altBoundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrapBase64(base64FromUtf8(options.html)),
+    `--${altBoundary}--`,
+  ].filter((line): line is string => line !== null);
+
+  for (const attachment of options.attachments ?? []) {
+    const filename = encodeHeader(attachment.filename || "configuration.pdf");
+    lines.push(
+      `--${mixedBoundary}`,
+      `Content-Type: ${attachment.contentType || "application/octet-stream"}; name="${filename}"`,
+      `Content-Disposition: attachment; filename="${filename}"`,
+      "Content-Transfer-Encoding: base64",
+      "",
+      wrapBase64(cleanBase64(attachment.contentBase64)),
+    );
+  }
+
+  lines.push(`--${mixedBoundary}--`, "");
+  return lines.join("\r\n");
+}
+
+async function sendSmtpMail(options: SendMailOptions): Promise<void> {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let conn: Deno.Conn = options.port === 465
+    ? await Deno.connectTls({ hostname: options.host, port: options.port })
+    : await Deno.connect({ hostname: options.host, port: options.port });
+  let buffer = "";
+
+  const readLine = async (): Promise<string> => {
+    while (!buffer.includes("\n")) {
+      const chunk = new Uint8Array(4096);
+      const bytesRead = await conn.read(chunk);
+      if (bytesRead === null) throw new Error("SMTP connection closed");
+      buffer += decoder.decode(chunk.subarray(0, bytesRead));
+    }
+    const newlineIndex = buffer.indexOf("\n");
+    const line = buffer.slice(0, newlineIndex).replace(/\r$/, "");
+    buffer = buffer.slice(newlineIndex + 1);
+    return line;
+  };
+
+  const readResponse = async () => {
+    const lines: string[] = [];
+    let code = 0;
+    while (true) {
+      const line = await readLine();
+      lines.push(line);
+      const match = line.match(/^(\d{3})([ -])/);
+      if (match) {
+        code = Number(match[1]);
+        if (match[2] === " ") break;
+      }
+    }
+    return { code, lines };
+  };
+
+  const writeLine = async (line: string) => {
+    await conn.write(encoder.encode(`${line}\r\n`));
+  };
+
+  const expect = async (allowed: number[], command?: string) => {
+    if (command) await writeLine(command);
+    const response = await readResponse();
+    if (!allowed.includes(response.code)) {
+      throw new Error(`SMTP command failed: ${response.lines.join(" | ")}`);
+    }
+    return response;
+  };
+
+  try {
+    await expect([220]);
+    let ehlo = await expect([250], `EHLO ${options.host}`);
+
+    if (options.port !== 465) {
+      const supportsStartTls = ehlo.lines.some((line) => /STARTTLS/i.test(line));
+      if (!supportsStartTls) throw new Error("SMTP server does not offer STARTTLS");
+      await expect([220], "STARTTLS");
+      conn = await Deno.startTls(conn, { hostname: options.host });
+      buffer = "";
+      ehlo = await expect([250], `EHLO ${options.host}`);
+    }
+
+    await expect([334], "AUTH LOGIN");
+    await expect([334], base64FromUtf8(options.username));
+    await expect([235], base64FromUtf8(options.password));
+
+    await expect([250], `MAIL FROM:<${extractEmail(options.from)}>`);
+    for (const recipient of options.to) {
+      await expect([250, 251], `RCPT TO:<${extractEmail(recipient)}>`);
+    }
+    await expect([354], "DATA");
+    await conn.write(encoder.encode(`${dotStuff(buildMimeMessage(options))}\r\n.\r\n`));
+    await expect([250]);
+    await writeLine("QUIT");
+  } finally {
+    try {
+      conn.close();
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -246,65 +420,52 @@ Deno.serve(async (req) => {
     </div>
   `;
 
-  // Build attachment if present
-  const attachments = body.attachment?.contentBase64
-    ? [
-        {
-          filename: body.attachment.filename || "configuration.pdf",
-          content: base64ToUint8Array(body.attachment.contentBase64),
-          contentType: body.attachment.contentType || "application/pdf",
-          encoding: "binary" as const,
-        },
-      ]
+  const attachments: SmtpAttachment[] | undefined = body.attachment?.contentBase64
+    ? [{
+        filename: body.attachment.filename || "configuration.pdf",
+        contentType: body.attachment.contentType || "application/pdf",
+        contentBase64: body.attachment.contentBase64,
+      }]
     : undefined;
 
-  // Send via SMTP — TLS handling depends on port:
-  //   465 → implicit TLS (tls: true)
-  //   587 / 25 → STARTTLS (tls: false, server upgrades the connection)
-  const useImplicitTls = SMTP_PORT === 465;
+  // Send via SMTP — Office 365 on port 587 requires STARTTLS after EHLO.
   console.log(
-    `SMTP connecting to ${SMTP_HOST}:${SMTP_PORT} (implicitTls=${useImplicitTls})`,
+    `SMTP connecting to ${SMTP_HOST}:${SMTP_PORT} (${SMTP_PORT === 465 ? "implicit TLS" : "STARTTLS"})`,
   );
-
-  const client = new SMTPClient({
-    connection: {
-      hostname: SMTP_HOST,
-      port: SMTP_PORT,
-      tls: useImplicitTls,
-      auth: {
-        username: SMTP_USER,
-        password: SMTP_PASSWORD,
-      },
-    },
-  });
 
   try {
     // Mail to NOVAMOTIS
-    await client.send({
+    await sendSmtpMail({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      username: SMTP_USER,
+      password: SMTP_PASSWORD,
       from: SMTP_FROM,
-      to: INQUIRY_TO,
+      to: splitRecipients(INQUIRY_TO),
       replyTo: email,
       subject: adminSubject,
-      content: adminText,
+      text: adminText,
       html: adminHtml,
       attachments,
     });
 
     // Confirmation to customer
     try {
-      await client.send({
+      await sendSmtpMail({
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        username: SMTP_USER,
+        password: SMTP_PASSWORD,
         from: SMTP_FROM,
-        to: email,
+        to: [email],
         subject: customerSubject,
-        content: customerText,
+        text: customerText,
         html: customerHtml,
       });
     } catch (confirmErr) {
       console.error("Customer confirmation failed:", confirmErr);
       // do not fail the whole request
     }
-
-    await client.close();
 
     return new Response(
       JSON.stringify({ ok: true, id: inquiryId }),
@@ -315,11 +476,6 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("SMTP send error:", err);
-    try {
-      await client.close();
-    } catch {
-      /* ignore */
-    }
     return new Response(
       JSON.stringify({
         error: "Email send failed",
