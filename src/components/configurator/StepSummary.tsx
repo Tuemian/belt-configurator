@@ -683,12 +683,9 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       const pdfBase64 = await blobToBase64(pdfBlob);
 
-      const response = await fetch('/api/send-inquiry', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('send-inquiry', {
+        body: {
+          type: 'belt',
           lang,
           form: {
             name: form.name,
@@ -697,19 +694,21 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
             phone: form.phone,
             message: form.message,
           },
-          config,
+          configuration: config,
           summary: generatePdfContent(identity),
           attachment: {
             filename: getPdfFilename(identity),
             contentType: 'application/pdf',
             contentBase64: pdfBase64,
           },
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`Inquiry request failed with status ${response.status}: ${errorBody}`);
+      if (error) {
+        throw new Error(`Inquiry request failed: ${error.message}`);
+      }
+      if (data && (data as { error?: string }).error) {
+        throw new Error((data as { error: string }).error);
       }
 
       setForm({ name: '', company: '', email: '', phone: '', message: '', privacy: false });
