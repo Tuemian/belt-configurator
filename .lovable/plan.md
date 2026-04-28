@@ -1,104 +1,98 @@
-## Konfigurator-Analyse (kurz)
+## Problem
 
-**Stark:**
-- Klarer 5-Schritt-Wizard mit gutem Progress-Indikator und Mobile-Tab-Navigation.
-- Saubere Trennung von Daten (`ConveyorConfig`), 3D-Library (`conveyor-3d-library.ts`) und Render-Schicht (`ConveyorViewer3D.tsx`).
-- Mehrsprachig (DE/EN/IT), STEP-/PDF-Export, Anfrage-Versand und Fallback-Geometrie wenn GLBs fehlen – sehr robust.
-- MOTIS40/MOTIS80-Logik bereits über `frameWidth > 500` integriert und in der Library als Variant-Rules sauber abgebildet.
+Der Button **"Anfrage per E-Mail senden"** im Profil-Konfigurator verwendet aktuell `window.location.href = 'mailto:...'`. Das ist der Grund, warum es nicht funktioniert:
 
-**Schwächen / Empfehlungen (umgesetzt im Plan unten):**
-1. Direktantrieb rechts ist um 180° verdreht (Motor zeigt nach oben statt unten) – Bug.
-2. Das Band wird aktuell als ein durchgehender Block gerendert. Realistischer wäre, es aus den eigentlichen Aluminium-Seitenprofilen + Querstreben zu bauen, sodass MOTIS40 ↔ MOTIS80 sichtbar wechselt.
-3. Es fehlt eine vierte, in der Praxis sehr nachgefragte Antriebsvariante: **Trommelmotor**.
-4. Es gibt keinen indikativen Preis – Kunden wollen früh eine Hausnummer.
-5. Komponenten-Workflow für eigene STEP-Dateien (Umlenkeinheit, Antriebe usw.) ist unklar dokumentiert.
+- Auf Geräten ohne konfigurierten Mail-Client passiert nichts.
+- Es kann **kein PDF-Anhang** mitgegeben werden (mailto unterstützt keine Attachments).
+- Es gibt **keine Speicherung** in Supabase.
+- Auf dem Smartphone landet man im falschen Mail-Account.
 
----
+Im Gurtförderer-Konfigurator funktioniert es bereits sauber über `/api/send-inquiry` (Microsoft Graph) + `/api/create-configuration` (Supabase). Das übertragen wir 1:1 auf den Profil-Konfigurator.
 
-## Geplante Änderungen
+## Lösung im Überblick
 
-### 1. Motorstellung Direktantrieb rechts (180°-Bug)
-In `src/lib/conveyor-3d-library.ts` (Block `if (config.driveType === 'direct')`, ca. Zeile 539-566) wird der zusätzliche `rotateAroundLocalXAxis(finalRot, Math.PI)` für die rechte Seite umgekehrt bzw. entfernt, sodass `motorAngle = 0°` den Motor nach unten zeigt – konsistent mit der linken Seite. Verifizierung mit allen vier Stellungen (0/90/180/270).
+1. Statt `mailto:` öffnet der Button einen **Anfrage-Dialog** (Name, Firma, E-Mail, Telefon, Nachricht, Datenschutz-Checkbox) – analog zum Gurtförderer-Step "Summary".
+2. Beim Absenden:
+   - PDF des aktuellen Warenkorbs wird im Browser generiert.
+   - PDF + Formulardaten + Konfigurationsübersicht werden an `/api/send-inquiry` geschickt → es geht eine E-Mail an `office@novamotis.com` (mit PDF-Anhang) **und** eine Bestätigung an den Kunden.
+   - Die Konfiguration wird in einer neuen Supabase-Tabelle `profile_configurations` gespeichert.
+3. Erfolg/Fehler werden per Toast angezeigt.
 
-### 2. 3D-Vorschau: Band aus Aluminium-Profilen
-In `ConveyorViewer3D.tsx` wird das einzelne Frame-Box-Paar (Zeile ~961-963) durch eine modulare Konstruktion ersetzt:
-- **Zwei Seitenprofile** (links/rechts) – nutzen die bereits in `library.json` hinterlegten `profiles.sideRails` GLBs (40×40 für `frameWidth ≤ 500`, 80×40 für > 500). Skalierung wird über echte Bounding-Box statt fixem Faktor korrigiert, damit die Länge sauber zur Bandlänge passt.
-- **Querstreben** alle ~500 mm aus dünneren Profilen (parametrisch als `Box`).
-- **Sichtbarer Höhenunterschied** zwischen MOTIS40 (40 mm) und MOTIS80 (80 mm) über die bestehende `usesWideProfile`-Logik, plus Material-Farbe gebürstetes Alu (`#c5cdd6`, metalness 0.7).
-- Fallback (Box) bleibt erhalten, falls GLB nicht lädt.
+## Was wird gebaut
 
-### 3. Trommelmotor als 4. Antriebsart
-- `ConveyorConfig.driveType` erweitern: `'direct' | 'indirect' | 'center' | 'drum'`.
-- `StepDrive.tsx`: vierte Karte „Trommelmotor / Motore a tamburo / Drum motor" mit Beschreibung „Antrieb integriert in Umlenktrommel".
-- Bei `driveType === 'drum'`:
-  - Motorstellung-Block ausblenden (gibt es nicht).
-  - Stattdessen neuer Block **„Kabelausgang"** mit zwei Optionen: Links / Rechts (mappt auf `motorPosition`).
-- 3D-Render: `ParametricDrumMotor` zeigt eine größere, dunklere Umlenktrommel am Bandende mit kleinem Kabelstummel auf der gewählten Seite. Sobald GLB vorhanden, lädt die Library `motors.drum.<left|right>` analog zu Direktantrieb.
-- `library.json` und `defaultLibrary` bekommen `motors.drum: { left: [...], right: [...] }` mit Pfad `/models/motors/drum-motor.glb`.
-- STEP-Wireframe (`api/_lib/step-wireframe.ts`) und `step-solid-service` ergänzen `'drum'` so, dass kein Außen-Motor exportiert wird.
-- i18n: neue Keys `driveDrum`, `driveDrumDesc`, `cableExit`, `cableLeft`, `cableRight` in DE/EN/IT.
+### 1. Profil-PDF-Generator (neu)
+Neue Datei `src/lib/profile-pdf.ts` mit `buildProfilePdfBlob(cart, total)`:
+- Nutzt `jsPDF` (bereits Dependency).
+- NOVAMOTIS-Header mit Logo, Datum, Anfragen-Nr.
+- Tabelle aller Warenkorb-Positionen (Profil, Länge, Menge, Bohrungen, Gewinde, Verbinder, Schrägschnitt, Positionspreis).
+- Gesamtpreis als Richtwert + Hinweis "unverbindliches Angebot".
+- Liefert `Blob` zurück, dazu Helper `getProfilePdfFilename()`.
 
-### 4. Einzelne STEP-Komponenten reinladen (Drop-Ordner)
-Wir legen folgende Struktur an:
+### 2. Anfrage-Dialog (neu)
+Neue Komponente `src/components/configurator/ProfileInquiryDialog.tsx`:
+- Shadcn `Dialog` mit Formular: Name*, Firma, E-Mail*, Telefon, Nachricht, Datenschutz-Checkbox*.
+- Validierung clientseitig.
+- Beim Submit: PDF generieren → base64 → `POST /api/send-inquiry` aufrufen.
+- Parallel: `POST /api/create-profile-configuration` für DB-Speicherung.
+- Loading-State, Toast-Feedback, Reset nach Erfolg.
 
-```text
-public/models/
-├── components/
-│   ├── deflection-unit/      (Umlenkeinheit)
-│   ├── direct-drive/
-│   ├── indirect-drive/
-│   ├── center-drive/
-│   ├── drum-motor/
-│   └── README.md             (Anleitung + Naming-Konvention)
-└── library.json              (verweist auf neue Pfade)
-```
+### 3. Profil-Konfigurator-Seite anpassen
+In `src/pages/ProfileConfigurator.tsx`:
+- `sendInquiry` (mailto) entfernen.
+- State `inquiryOpen` einführen, Button öffnet den Dialog statt mailto.
+- `<ProfileInquiryDialog>` einbinden, bekommt `cart` und `cartTotal` als Props.
 
-- README erklärt: Datei als `.step/.stp` ablegen → `npm run convert:step <ordner>` ausführen → erzeugt `.glb` mit gleichem Basisnamen → Eintrag in `library.json` ergänzen (Beispiel-Snippet im README).
-- Konvertierungs-Script `scripts/convert-step-components.cjs` als generalisierter Wrapper um das vorhandene `scripts/convert-step-floor-elements.cjs`.
-- Library erhält ein neues optionales Feld `components.deflectionUnit` und Variants pro Antriebsart, sodass deine STEP-Dateien sofort platziert werden können. Bis dahin greift der Fallback auf die parametrische Trommel/den Box-Motor.
-- Workflow für dich: STEP-Datei in den passenden Ordner kopieren, einmal Konvertierung laufen lassen, Pfad in `library.json` eintragen – fertig.
+### 4. Vercel-API-Route (neu)
+Neue Datei `api/create-profile-configuration.ts` (analog zu `create-configuration.ts`):
+- Nimmt `{ cart, total, lang }` entgegen.
+- Schreibt einen Datensatz pro Anfrage in Supabase-Tabelle `profile_configurations` über die REST-API mit `SUPABASE_SERVICE_ROLE_KEY`.
+- Gibt `{ configId }` zurück.
 
-### 5. Indikativer Preis aus Excel – mit „Preis auf Anfrage"-Fallback
+`api/send-inquiry.ts` muss **nicht** geändert werden – die bestehende Route akzeptiert bereits PDF-Attachment + beliebigen `summary`-Text.
 
-**Excel-Datei** `public/pricing/price-list.xlsx`, Tabellenblatt „Components". Spalten: `key`, `label_de`, `label_en`, `label_it`, `price_eur`, `unit` (z.B. `per_meter`, `per_unit`, `per_m2`, `per_mm_width`).
+### 5. Supabase-Tabelle (Migration)
+Neue Tabelle `profile_configurations`:
+- `id` (uuid, PK)
+- `created_at` (timestamptz, default now)
+- `customer_name`, `customer_company`, `customer_email`, `customer_phone` (text)
+- `customer_message` (text)
+- `lang` (text, 'de'/'en')
+- `total_eur` (numeric)
+- `items` (jsonb) — komplette Warenkorb-Positionen (Profil-ID, Länge, Menge, Bohrungen, Gewinde, Verbinder, Schnittwinkel, Preis-Breakdown)
+- `pdf_filename` (text)
 
-Beispiel-Keys, die wir erwarten:
-- `frame_motis40`, `frame_motis80`
-- `belt_standard`, `belt_grip`, `belt_heavy_grip`, `belt_food_safe`
-- `drive_direct`, `drive_indirect`, `drive_center`, `drive_drum`
-- `stand_basic`, `feet_set`, `castor_set`, `floor_bolt_set`, `height_adjust`
-- `side_guide`
+RLS aktiviert. Insert-Policy nur für service_role (über die API-Route). Eine Read-Policy lassen wir vorerst weg – Abruf läuft über Supabase-Dashboard oder eine spätere Admin-Seite.
 
-**Lade-Layer** `src/lib/pricing.ts`:
-- Liest die Excel beim ersten Aufruf via `xlsx`-Lib (Browser, kein Backend), cached im Memory.
-- Bietet `calculatePrice(config): { status: 'complete' | 'partial' | 'unavailable', total?: number, breakdown: PriceItem[], missingKeys: string[] }`.
-- Logik:
-  - Für jede aktive Komponente in der Konfiguration wird geprüft, ob in der Excel ein gültiger Preis (> 0, nicht leer) hinterlegt ist.
-  - **Alle Preise vorhanden** → `status: 'complete'`, voller Betrag wird angezeigt.
-  - **Mindestens ein Preis fehlt** → `status: 'partial'`, **kein Gesamtpreis** wird gezeigt; stattdessen Hinweisbox „Für diese Konfiguration liegt noch kein vollständiger Richtpreis vor – bitte Anfrage senden."
-  - **Excel nicht ladbar / leer** → `status: 'unavailable'`, gleicher „Preis auf Anfrage"-Hinweis ohne Liste.
-- Komponenten ohne Preis erscheinen im Breakdown mit Badge „auf Anfrage" statt einer Zahl, damit du auf einen Blick siehst, welche Position fehlt.
+## Voraussetzungen auf Vercel
 
-**UI in `StepSummary.tsx`** – neue Card „Indikativer Preis":
-- `complete`: große Summe + ausklappbare Aufstellung + Disclaimer „unverbindlich, finaler Preis nach Anfrageprüfung".
-- `partial`: keine Summe, gut sichtbarer Hinweis (Icon + Text) „Preis auf Anfrage – einzelne Komponenten noch nicht hinterlegt", optional Aufstellung mit den bekannten Positionen + „auf Anfrage"-Markierung für die fehlenden.
-- `unavailable`: schlichter Hinweis „Preis auf Anfrage" mit CTA-Verweis auf den Anfrage-Button.
-- Der Anfrage-Button bleibt in allen Fällen prominent.
+Diese Env-Vars müssen auf Vercel bereits gesetzt sein (für Gurtförderer benutzt du sie ja schon):
+- `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET`
+- `INQUIRY_TO_EMAIL` (z.B. `office@novamotis.com`)
+- `INQUIRY_FROM_EMAIL`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-**Aktualisierung der Preise:** Du tauschst einfach `public/pricing/price-list.xlsx` aus (kein Code-Deploy nötig). Sobald du eine Zelle füllst, schaltet die UI automatisch von „auf Anfrage" auf den konkreten Preis um. README in `public/pricing/` erklärt Schema und verfügbare Keys.
+→ Da der Gurtförderer-Versand laut deiner Aussage bereits läuft, sollten alle vorhanden sein. Falls die neue Tabelle nicht zugreifbar ist, liegt es nur an den Supabase-RLS-Policies (die Migration richtet das mit ein).
 
-**i18n-Keys:** `priceIndicative`, `priceTotal`, `priceBreakdown`, `priceDisclaimer`, `priceOnRequest`, `priceOnRequestHint`, `priceItemOnRequest`.
+## Geänderte / neue Dateien
 
----
+**Neu:**
+- `src/lib/profile-pdf.ts`
+- `src/components/configurator/ProfileInquiryDialog.tsx`
+- `api/create-profile-configuration.ts`
+- Supabase-Migration für `profile_configurations`
 
-## Technische Hinweise
+**Geändert:**
+- `src/pages/ProfileConfigurator.tsx` (Dialog statt mailto)
 
-- Neue Dependency: `xlsx` (SheetJS) für das Lesen der Preisliste im Browser.
-- Keine Cloud/Backend-Änderung nötig – alles bleibt clientseitig bzw. nutzt die bestehenden Vercel-Funktionen.
-- Bestehende Tests laufen weiter; Unit-Tests für Preisberechnung in `src/test/pricing.test.ts` (insbesondere `complete` / `partial` / `unavailable`-Pfade).
-- Migration `driveType: 'drum'` ist additiv und bricht keine alten Anfragen.
+## Test-Ablauf nach Umsetzung
 
-## Zu klären nach Approval
+1. Profil konfigurieren → Position(en) in den Warenkorb legen.
+2. Auf "Anfrage senden" klicken → Dialog öffnet sich.
+3. Formular ausfüllen, absenden.
+4. Erwartung: 
+   - Toast "Anfrage gesendet"
+   - Mail mit PDF-Anhang trifft bei `office@novamotis.com` ein
+   - Bestätigungsmail beim Kunden
+   - Neuer Eintrag in Supabase-Tabelle `profile_configurations`
 
-- Excel-Preisliste befüllst du selbst (Vorlage wird mit allen Keys bereitgestellt, leere Zellen → automatisch „auf Anfrage").
-- STEP-Dateien für Trommelmotor / Komponenten kannst du nach Approval direkt in die neuen Ordner legen.
+Soll ich so vorgehen?
