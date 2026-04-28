@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      belt_inquiries: {
+        Row: {
+          company: string | null
+          configuration: Json
+          created_at: string
+          email: string
+          id: string
+          lang: string
+          message: string | null
+          name: string
+          pdf_filename: string | null
+          phone: string | null
+          summary_text: string | null
+        }
+        Insert: {
+          company?: string | null
+          configuration?: Json
+          created_at?: string
+          email: string
+          id?: string
+          lang?: string
+          message?: string | null
+          name: string
+          pdf_filename?: string | null
+          phone?: string | null
+          summary_text?: string | null
+        }
+        Update: {
+          company?: string | null
+          configuration?: Json
+          created_at?: string
+          email?: string
+          id?: string
+          lang?: string
+          message?: string | null
+          name?: string
+          pdf_filename?: string | null
+          phone?: string | null
+          summary_text?: string | null
+        }
+        Relationships: []
+      }
+      profile_inquiries: {
+        Row: {
+          company: string | null
+          configuration: Json
+          created_at: string
+          email: string
+          id: string
+          lang: string
+          message: string | null
+          name: string
+          pdf_filename: string | null
+          phone: string | null
+          summary_text: string | null
+        }
+        Insert: {
+          company?: string | null
+          configuration?: Json
+          created_at?: string
+          email: string
+          id?: string
+          lang?: string
+          message?: string | null
+          name: string
+          pdf_filename?: string | null
+          phone?: string | null
+          summary_text?: string | null
+        }
+        Update: {
+          company?: string | null
+          configuration?: Json
+          created_at?: string
+          email?: string
+          id?: string
+          lang?: string
+          message?: string | null
+          name?: string
+          pdf_filename?: string | null
+          phone?: string | null
+          summary_text?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
