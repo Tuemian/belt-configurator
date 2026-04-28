@@ -15,6 +15,7 @@ import headerBackground from '@/assets/Hintergrund_Kopfzeile.png';
 import footerBackground from '@/assets/Hintergrund_Fusszeile.png';
 import { buildSharedConfiguratorUrl, getOrReserveCurrentConfiguratorId } from '@/lib/configurator-share';
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from '@/lib/pricing';
+import { supabase } from '@/integrations/supabase/client';
 
 const ConveyorViewer3D = lazy(() =>
   import('@/components/configurator/ConveyorViewer3D').then((m) => ({ default: m.ConveyorViewer3D }))
