@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, ShoppingCart, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,9 +26,7 @@ import {
 } from '@/lib/profile-configurator-types';
 import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
 
-const ProfileViewer3D = lazy(() =>
-  import('@/components/configurator/ProfileViewer3D').then((m) => ({ default: m.ProfileViewer3D }))
-);
+import { ProfileViewer2D } from '@/components/configurator/ProfileViewer2D';
 
 // ---------------------------------------------------------------------------
 // Default config
@@ -546,25 +544,17 @@ export default function ProfileConfigurator() {
           </div>
         </aside>
 
-        {/* 3D Viewer */}
+        {/* 2D Viewer (Querschnitt + Seitenansicht) */}
         <main className="flex-1 relative flex flex-col bg-slate-50">
-          <div className="flex-1">
-            <Suspense
-              fallback={
-                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                  3D-Ansicht wird geladen…
-                </div>
-              }
-            >
-              <ProfileViewer3D
-                section={section}
-                length={config.length}
-                angleStart={config.angleStart}
-                angleEnd={config.angleEnd}
-                holes={config.holes}
-                connectors={config.connectors}
-              />
-            </Suspense>
+          <div className="flex-1 min-h-0">
+            <ProfileViewer2D
+              section={section}
+              length={config.length}
+              angleStart={config.angleStart}
+              angleEnd={config.angleEnd}
+              holes={config.holes}
+              connectors={config.connectors}
+            />
           </div>
 
           {/* Profile info overlay */}
