@@ -1,73 +1,53 @@
-## Analyse
+## Ziel
 
-### 1. E-Mail-Versand dauert zu lange
-Aktuell wartet der Frontend-Aufruf, bis **beide** Resend-Calls (Admin + Kunde) komplett durchgelaufen sind. In den Edge-Function-Logs ist erkennbar, dass der Resend-Gateway-Call manchmal in einen Timeout läuft (`upstream connect... connection timeout` nach ~4,5s). Insgesamt sieht der Nutzer 5-10 Sekunden Wartezeit, bevor die Bestätigung erscheint.
+Den **Profil-/Zuschnittskonfigurator** exakt auf den Stand von Commit `a5c127a` (vor 2 Tagen) zurücksetzen. Der **Fördertechnik-Konfigurator** und der asynchrone Mailversand der Edge-Function bleiben unverändert.
 
-### 2. Profil-Konfigurator zeigt 3D statt 2D
-In `src/pages/ProfileConfigurator.tsx` wird aktuell `ProfileViewer3D` (Three.js, Canvas-basiert) geladen. Die frühere 2D-SVG-Querschnittsansicht (Schnitt durch das Profil mit T-Nuten, Bohrungen und bemaßter Seitenansicht) ist nicht mehr eingebunden. Dadurch wirkt der Konfigurator visuell anders als zuvor und ist deutlich schwerer/langsamer.
+## Befund nach Vergleich mit GitHub
 
----
+Von den 4 relevanten Dateien des alten Commits ist nur **eine** verändert:
 
-## Plan
+| Datei | Status |
+|---|---|
+| `src/lib/profile-configurator-types.ts` | identisch (MD5 match) — nichts zu tun |
+| `src/components/configurator/ProfileViewer3D.tsx` | identisch — nichts zu tun |
+| `src/lib/i18n.ts` | identisch — nichts zu tun |
+| `src/pages/ProfileConfigurator.tsx` | **verändert** (alt 698 Z., neu 682 Z.) |
 
-### A) Versand beschleunigen (Edge Function `send-inquiry`)
+Außerdem existieren im jetzigen Code zwei Dateien, die im alten Commit **nicht** vorhanden waren:
+- `src/components/configurator/ProfileViewer2D.tsx`
+- `src/components/configurator/ProfileInquiryDialog.tsx`
 
-**Ziel:** Antwort an den Browser unter ~1 Sekunde, E-Mail-Versand läuft im Hintergrund weiter.
+## Was geändert wird
 
-1. DB-Insert wie bisher synchron ausführen (damit wir sofort die Referenznummer `FT-YYYYMMDD-XXX` zurückgeben können).
-2. Den eigentlichen Resend-Versand (Admin + Kunde) in einen `EdgeRuntime.waitUntil(...)`-Background-Task verschieben.
-3. Sofort `200 OK` mit `{ ok: true, reference: "FT-..." }` zurückgeben — der Nutzer sieht direkt die Erfolgsmeldung.
-4. Resend-Fetch-Calls bekommen ein `AbortSignal.timeout(20000)`, damit hängende Verbindungen den Background-Task nicht blockieren.
-5. Fehler im Background werden weiterhin geloggt (`console.error`), bleiben für den Nutzer aber transparent (Anfrage ist in der DB persistiert und kann manuell nachverfolgt werden).
+### 1. `src/pages/ProfileConfigurator.tsx` → 1:1 durch alte Version ersetzen
+Konkrete Rückbau-Punkte (entsprechen exakt dem Diff):
+- Import wieder auf **`lazy` + `Suspense`** umstellen, `ProfileViewer3D` als Lazy-Import
+- Imports von `ProfileInquiryDialog` und `ProfileViewer2D` **entfernen**
+- State `inquiryOpen` **entfernen**
+- `sendInquiry()` wieder auf **`mailto:`-Link** mit vorgefülltem Body umstellen (öffnet E-Mail-Programm an `info@novamotis.com`)
+- Im Hauptbereich `<ProfileViewer2D … />` **ersetzen durch** `<Suspense><ProfileViewer3D … /></Suspense>` (3D-Vorschau)
+- Button-Text wieder auf **„Anfrage per E-Mail senden"**
+- `<ProfileInquiryDialog … />` am Ende der Komponente **entfernen**
 
-**Trade-off (transparent für den Nutzer):** Falls Resend wirklich ausfällt, sieht der Kunde trotzdem "Anfrage erfolgreich". Da die Anfrage aber in der DB liegt und auf dem Admin-Backend einsehbar ist, geht nichts verloren. Bei Bedarf könnte später ein Status-Feld in der DB ergänzt werden.
+### 2. Verwaiste Dateien löschen
+Da `ProfileConfigurator.tsx` sie nach dem Rückbau nicht mehr referenziert:
+- `src/components/configurator/ProfileViewer2D.tsx` löschen
+- `src/components/configurator/ProfileInquiryDialog.tsx` löschen
 
-### B) 2D-Ansicht im Profil-Konfigurator wiederherstellen
+### 3. Alles andere bleibt unangetastet
+**Nicht** angefasst werden:
+- `src/pages/BeltConfigurator.tsx` und alle `Step*.tsx` (Dimensions, BeltSpeed, Drive, Stand, Summary)
+- `ConveyorPreview.tsx`, `ConveyorViewer3D.tsx`
+- `supabase/functions/send-inquiry/index.ts` (asynchroner Mailversand bleibt für die Fördertechnik aktiv)
+- Alle DB-Migrations und das ID-Format `FT-YYYYMMDD-INDEX`
+- `i18n.ts`, `profile-configurator-types.ts`, `ProfileViewer3D.tsx` (sind ohnehin schon auf altem Stand)
 
-1. Neue Komponente `src/components/configurator/ProfileViewer2D.tsx` erstellen — reines SVG (kein Three.js):
-   - **Querschnitt** (Front-Ansicht): Profil-Außenkontur mit abgerundeten Ecken, T-Nuten auf allen vier Seiten gemäß `numModulesW × numModulesH`, Zentralbohrung pro Modulzelle, Maßlinien für Breite/Höhe.
-   - **Seitenansicht**: Profil als Rechteck `length × h`, Schrägschnitte (`angleStart`, `angleEnd`) als abgeschnittene Ecken, eingezeichnete Bohrungen (`holes` mit Z-Position) und Verbinder (`connectors`), Maßlinie für Länge.
-   - Farben passend zur NOVAMOTIS-Identity (Primary HSL 199 100% 40%), dezente Maßlinien.
-2. In `src/pages/ProfileConfigurator.tsx`:
-   - Lazy-Import von `ProfileViewer3D` auf `ProfileViewer2D` umstellen.
-   - 2D-Komponente nutzt keine `Suspense`-Heavy-Loads, lädt sofort.
-3. `ProfileViewer3D.tsx` bleibt im Repo erhalten (nicht gelöscht), falls später wieder umgeschaltet werden soll. Außerdem behebt das die `forwardRef`-Konsolenwarnungen (3D wird nicht mehr gemountet).
+## Auswirkung für dich
 
----
+- Der Profil-/Zuschnittskonfigurator zeigt wieder die **3D-Vorschau** wie früher
+- Der „Anfrage senden"-Button öffnet wieder das **E-Mail-Programm** mit vorbefüllter Nachricht (kein Dialog, keine Edge-Function-Anfrage über die Profilseite)
+- Der Fördertechnik-Konfigurator bleibt so, wie er heute ist — inklusive des verbesserten asynchronen Mailversands
 
-## Technische Details
+## Technischer Anhang
 
-**Edge Function Snippet (Kern):**
-```ts
-// nach erfolgreichem DB-Insert:
-const sendTask = (async () => {
-  try {
-    await Promise.allSettled([
-      sendResendEmail(..., { signal: AbortSignal.timeout(20000) }),
-      sendResendEmail(..., { signal: AbortSignal.timeout(20000) }),
-    ]);
-  } catch (e) { console.error("background send error", e); }
-})();
-// @ts-ignore - Deno Edge Runtime
-EdgeRuntime.waitUntil(sendTask);
-
-return new Response(JSON.stringify({ ok: true, reference: inquiryRef }), { status: 200, ... });
-```
-
-**2D-Viewer Aufbau (vereinfacht):**
-```text
-┌─────────────────────────┐  ┌──────────────────────────────┐
-│   Querschnitt (Front)   │  │     Seitenansicht (Top)      │
-│   ┌───┬───┐             │  │  ╲────────────────╱          │
-│   │ ⊙ │ ⊙ │  W=80mm    │  │   │   • • •        │  L=500mm│
-│   ├───┼───┤             │  │   │                │         │
-│   │ ⊙ │ ⊙ │  H=80mm    │  │  ╱────────────────╲          │
-│   └───┴───┘             │  │                              │
-└─────────────────────────┘  └──────────────────────────────┘
-```
-
-**Geänderte/neue Dateien:**
-- `supabase/functions/send-inquiry/index.ts` (geändert)
-- `src/components/configurator/ProfileViewer2D.tsx` (neu)
-- `src/pages/ProfileConfigurator.tsx` (geänderter Import)
-- `src/components/configurator/ProfileViewer3D.tsx` (bleibt, nicht mehr eingebunden)
+Dateien werden direkt aus `https://raw.githubusercontent.com/Tuemian/belt-configurator/a5c127acd50078fdf903f4dd3010ccb0465561e2/src/pages/ProfileConfigurator.tsx` übernommen (bereits lokal in `/tmp/old/` vorliegend, 698 Zeilen). Die zwei zu löschenden Komponenten werden vor dem Löschen mit `rg` nochmal auf andere Importer geprüft — falls irgendwo sonst referenziert, fasse ich vorher Rücksprache.
