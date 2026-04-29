@@ -26,6 +26,7 @@ export type Database = {
           name: string
           pdf_filename: string | null
           phone: string | null
+          reference: string | null
           summary_text: string | null
         }
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           name: string
           pdf_filename?: string | null
           phone?: string | null
+          reference?: string | null
           summary_text?: string | null
         }
         Update: {
@@ -52,6 +54,7 @@ export type Database = {
           name?: string
           pdf_filename?: string | null
           phone?: string | null
+          reference?: string | null
           summary_text?: string | null
         }
         Relationships: []
@@ -68,6 +71,7 @@ export type Database = {
           name: string
           pdf_filename: string | null
           phone: string | null
+          reference: string | null
           summary_text: string | null
         }
         Insert: {
@@ -81,6 +85,7 @@ export type Database = {
           name: string
           pdf_filename?: string | null
           phone?: string | null
+          reference?: string | null
           summary_text?: string | null
         }
         Update: {
@@ -94,6 +99,7 @@ export type Database = {
           name?: string
           pdf_filename?: string | null
           phone?: string | null
+          reference?: string | null
           summary_text?: string | null
         }
         Relationships: []
@@ -103,7 +109,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_inquiry_reference: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
