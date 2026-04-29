@@ -229,13 +229,21 @@ Deno.serve(async (req) => {
       summary_text: summary || null,
       pdf_filename: body.attachment?.filename ?? null,
     })
-    .select("id")
+    .select("id, reference")
     .single();
 
   if (insertErr) {
     console.error("DB insert error:", insertErr);
+    return new Response(
+      JSON.stringify({ error: "Could not save inquiry" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
   const inquiryId = insertData?.id ?? "n/a";
+  const inquiryRef = (insertData as { reference?: string } | null)?.reference ?? inquiryId;
 
   // Build emails
   const productLabel =
@@ -243,11 +251,11 @@ Deno.serve(async (req) => {
       ? "Gurtförderer-Konfigurator"
       : "Profil-Konfigurator";
 
-  const adminSubject = `Neue Anfrage (${productLabel}) – ${name}${company ? " / " + company : ""}`;
+  const adminSubject = `Neue Anfrage ${inquiryRef} (${productLabel}) – ${name}${company ? " / " + company : ""}`;
 
   const adminText = [
     `Neue Anfrage aus dem ${productLabel}`,
-    `Anfrage-ID: ${inquiryId}`,
+    `Anfrage-Nr.: ${inquiryRef}`,
     ``,
     `Name:    ${name}`,
     `Firma:   ${company || "-"}`,
@@ -265,7 +273,7 @@ Deno.serve(async (req) => {
   const adminHtml = `
     <div style="font-family: Arial, sans-serif; color: #111;">
       <h2 style="color: #003366;">Neue Anfrage – ${escapeHtml(productLabel)}</h2>
-      <p><strong>Anfrage-ID:</strong> ${escapeHtml(inquiryId)}</p>
+      <p><strong>Anfrage-Nr.:</strong> ${escapeHtml(inquiryRef)}</p>
       <table style="border-collapse: collapse; margin: 12px 0;">
         <tr><td style="padding:4px 12px 4px 0;"><strong>Name</strong></td><td>${escapeHtml(name)}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;"><strong>Firma</strong></td><td>${escapeHtml(company || "-")}</td></tr>
@@ -287,8 +295,8 @@ Deno.serve(async (req) => {
 
   const customerText =
     lang === "en"
-      ? `Hello ${name},\n\nthank you for your inquiry via the ${productLabel}. We have received your request (ID: ${inquiryId}) and one of our specialists will get back to you personally within a maximum of two business days.\n\nBest regards,\nNOVAMOTIS Team`
-      : `Hallo ${name},\n\nvielen Dank für Ihre Anfrage über den ${productLabel}. Wir haben Ihre Anfrage erhalten (ID: ${inquiryId}) und einer unserer Spezialisten meldet sich innerhalb von maximal zwei Arbeitstagen persönlich bei Ihnen.\n\nMit freundlichen Grüßen\nIhr NOVAMOTIS Team`;
+      ? `Hello ${name},\n\nthank you for your inquiry via the ${productLabel}. We have received your request (Reference no.: ${inquiryRef}) and one of our specialists will get back to you personally within a maximum of two business days.\n\nBest regards,\nNOVAMOTIS Team`
+      : `Hallo ${name},\n\nvielen Dank für Ihre Anfrage über den ${productLabel}. Wir haben Ihre Anfrage erhalten (Anfrage-Nr.: ${inquiryRef}) und einer unserer Spezialisten meldet sich innerhalb von maximal zwei Arbeitstagen persönlich bei Ihnen.\n\nMit freundlichen Grüßen\nIhr NOVAMOTIS Team`;
 
   const customerHtml = `
     <div style="font-family: Arial, sans-serif; color: #111; max-width: 560px;">
@@ -299,7 +307,7 @@ Deno.serve(async (req) => {
           ? `we have received your inquiry via the <strong>${escapeHtml(productLabel)}</strong>. One of our specialists will get back to you personally <strong>within a maximum of two business days</strong>.`
           : `wir haben Ihre Anfrage über den <strong>${escapeHtml(productLabel)}</strong> erhalten. Einer unserer Spezialisten meldet sich <strong>innerhalb von maximal zwei Arbeitstagen</strong> persönlich bei Ihnen.`
       }</p>
-      <p style="color: #666; font-size: 12px;">${lang === "en" ? "Inquiry reference" : "Anfrage-Referenz"}: ${escapeHtml(inquiryId)}</p>
+      <p style="color: #666; font-size: 12px;">${lang === "en" ? "Reference no." : "Anfrage-Nr."}: <strong>${escapeHtml(inquiryRef)}</strong></p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;"/>
       <p style="color: #555; font-size: 13px;">NOVAMOTIS<br/>www.novamotis.com<br/>office@novamotis.com</p>
     </div>
@@ -313,7 +321,7 @@ Deno.serve(async (req) => {
       }]
     : undefined;
 
-  console.log(`Sending inquiry ${inquiryId} via Resend from "${RESEND_FROM}" to "${INQUIRY_TO}"`);
+  console.log(`Sending inquiry ${inquiryRef} via Resend`);
 
   try {
     // Beide Mails parallel versenden – spart spürbar Zeit
@@ -346,7 +354,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, id: inquiryId }),
+      JSON.stringify({ ok: true, id: inquiryId, reference: inquiryRef }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
