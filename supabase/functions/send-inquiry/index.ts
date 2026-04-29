@@ -316,29 +316,33 @@ Deno.serve(async (req) => {
   console.log(`Sending inquiry ${inquiryId} via Resend from "${RESEND_FROM}" to "${INQUIRY_TO}"`);
 
   try {
-    // Mail to NOVAMOTIS
-    await sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
-      from: RESEND_FROM,
-      to: splitRecipients(INQUIRY_TO),
-      reply_to: email,
-      subject: adminSubject,
-      text: adminText,
-      html: adminHtml,
-      attachments,
-    });
-
-    // Confirmation to customer (don't fail request if this errors)
-    try {
-      await sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
+    // Beide Mails parallel versenden – spart spürbar Zeit
+    const [adminResult, customerResult] = await Promise.allSettled([
+      sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
+        from: RESEND_FROM,
+        to: splitRecipients(INQUIRY_TO),
+        reply_to: email,
+        subject: adminSubject,
+        text: adminText,
+        html: adminHtml,
+        attachments,
+      }),
+      sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
         from: RESEND_FROM,
         to: [email],
         subject: customerSubject,
         text: customerText,
         html: customerHtml,
         attachments,
-      });
-    } catch (confirmErr) {
-      console.error("Customer confirmation failed:", confirmErr);
+      }),
+    ]);
+
+    if (customerResult.status === "rejected") {
+      console.error("Customer confirmation failed:", customerResult.reason);
+    }
+
+    if (adminResult.status === "rejected") {
+      throw adminResult.reason;
     }
 
     return new Response(
