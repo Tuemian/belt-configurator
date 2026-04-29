@@ -335,6 +335,7 @@ Deno.serve(async (req) => {
         subject: customerSubject,
         text: customerText,
         html: customerHtml,
+        attachments,
       });
     } catch (confirmErr) {
       console.error("Customer confirmation failed:", confirmErr);
