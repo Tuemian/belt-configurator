@@ -35,7 +35,7 @@ const translations = {
     hubToolDoorDesc: 'Geplantes Modul für Schnelllauftore mit technischer Vorauswahl und Anfrageprozess.',
     hubToolRollerTitle: 'Rollenbahnen',
     hubToolRollerDesc: 'Geplante Übersicht für angetriebene und nicht angetriebene Rollenbahnen inklusive Variantenwahl.',
-    hubToolProfileTitle: 'Aluminium-Profile',
+    hubToolProfileTitle: 'Profilzuschnitte',
     hubToolProfileDesc: 'Systemprofile konfigurieren: Länge, Schrägschnitte, Bohrungen und Bearbeitungen mit Live-Preiskalkulation.',
 
     // Navigation
