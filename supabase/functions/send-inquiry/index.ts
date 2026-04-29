@@ -287,8 +287,8 @@ Deno.serve(async (req) => {
 
   const customerText =
     lang === "en"
-      ? `Hello ${name},\n\nthank you for your inquiry via the ${productLabel}. We have received your request (ID: ${inquiryId}) and will get back to you shortly.\n\nBest regards,\nNOVAMOTIS Team`
-      : `Hallo ${name},\n\nvielen Dank für Ihre Anfrage über den ${productLabel}. Wir haben Ihre Anfrage erhalten (ID: ${inquiryId}) und melden uns in Kürze bei Ihnen.\n\nMit freundlichen Grüßen\nIhr NOVAMOTIS Team`;
+      ? `Hello ${name},\n\nthank you for your inquiry via the ${productLabel}. We have received your request (ID: ${inquiryId}) and one of our specialists will get back to you personally within a maximum of two business days.\n\nBest regards,\nNOVAMOTIS Team`
+      : `Hallo ${name},\n\nvielen Dank für Ihre Anfrage über den ${productLabel}. Wir haben Ihre Anfrage erhalten (ID: ${inquiryId}) und einer unserer Spezialisten meldet sich innerhalb von maximal zwei Arbeitstagen persönlich bei Ihnen.\n\nMit freundlichen Grüßen\nIhr NOVAMOTIS Team`;
 
   const customerHtml = `
     <div style="font-family: Arial, sans-serif; color: #111; max-width: 560px;">
@@ -296,8 +296,8 @@ Deno.serve(async (req) => {
       <p>${lang === "en" ? `Hello ${escapeHtml(name)},` : `Hallo ${escapeHtml(name)},`}</p>
       <p>${
         lang === "en"
-          ? `we have received your inquiry via the <strong>${escapeHtml(productLabel)}</strong> and will get back to you shortly.`
-          : `wir haben Ihre Anfrage über den <strong>${escapeHtml(productLabel)}</strong> erhalten und melden uns in Kürze bei Ihnen.`
+          ? `we have received your inquiry via the <strong>${escapeHtml(productLabel)}</strong>. One of our specialists will get back to you personally <strong>within a maximum of two business days</strong>.`
+          : `wir haben Ihre Anfrage über den <strong>${escapeHtml(productLabel)}</strong> erhalten. Einer unserer Spezialisten meldet sich <strong>innerhalb von maximal zwei Arbeitstagen</strong> persönlich bei Ihnen.`
       }</p>
       <p style="color: #666; font-size: 12px;">${lang === "en" ? "Inquiry reference" : "Anfrage-Referenz"}: ${escapeHtml(inquiryId)}</p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;"/>
@@ -316,29 +316,33 @@ Deno.serve(async (req) => {
   console.log(`Sending inquiry ${inquiryId} via Resend from "${RESEND_FROM}" to "${INQUIRY_TO}"`);
 
   try {
-    // Mail to NOVAMOTIS
-    await sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
-      from: RESEND_FROM,
-      to: splitRecipients(INQUIRY_TO),
-      reply_to: email,
-      subject: adminSubject,
-      text: adminText,
-      html: adminHtml,
-      attachments,
-    });
-
-    // Confirmation to customer (don't fail request if this errors)
-    try {
-      await sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
+    // Beide Mails parallel versenden – spart spürbar Zeit
+    const [adminResult, customerResult] = await Promise.allSettled([
+      sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
+        from: RESEND_FROM,
+        to: splitRecipients(INQUIRY_TO),
+        reply_to: email,
+        subject: adminSubject,
+        text: adminText,
+        html: adminHtml,
+        attachments,
+      }),
+      sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
         from: RESEND_FROM,
         to: [email],
         subject: customerSubject,
         text: customerText,
         html: customerHtml,
         attachments,
-      });
-    } catch (confirmErr) {
-      console.error("Customer confirmation failed:", confirmErr);
+      }),
+    ]);
+
+    if (customerResult.status === "rejected") {
+      console.error("Customer confirmation failed:", customerResult.reason);
+    }
+
+    if (adminResult.status === "rejected") {
+      throw adminResult.reason;
     }
 
     return new Response(
