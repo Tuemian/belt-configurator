@@ -35,8 +35,8 @@ describe('configurator share helpers', () => {
     const firstId = createNewCurrentConfiguratorId();
     const secondId = createNewCurrentConfiguratorId();
 
-    expect(firstId).toMatch(/^FT1-\d{8}-\d{3}$/);
-    expect(secondId).toMatch(/^FT1-\d{8}-\d{3}$/);
+    expect(firstId).toMatch(/^FT-\d{8}-\d{3}$/);
+    expect(secondId).toMatch(/^FT-\d{8}-\d{3}$/);
     expect(secondId).not.toBe(firstId);
   });
 });
