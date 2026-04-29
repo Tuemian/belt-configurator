@@ -144,7 +144,7 @@ function buildNextConfiguratorId(): string {
   const dateStamp = getDateStamp();
 
   if (typeof window === 'undefined') {
-    return `FT1-${dateStamp}-001`;
+    return `FT-${dateStamp}-001`;
   }
 
   try {
@@ -152,9 +152,9 @@ function buildNextConfiguratorId(): string {
     const currentValue = Number(window.localStorage.getItem(counterKey) ?? '0');
     const nextValue = Number.isFinite(currentValue) && currentValue >= 0 ? currentValue + 1 : 1;
     window.localStorage.setItem(counterKey, String(nextValue));
-    return `FT1-${dateStamp}-${String(nextValue).padStart(3, '0')}`;
+    return `FT-${dateStamp}-${String(nextValue).padStart(3, '0')}`;
   } catch {
-    return `FT1-${dateStamp}-001`;
+    return `FT-${dateStamp}-001`;
   }
 }
 
