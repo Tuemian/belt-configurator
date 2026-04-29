@@ -1244,16 +1244,34 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
                   metalness={0.5}
                   roughness={0.45}
                 />
-                {/* Kabelausgang auf gewählter Seite */}
-                <Cyl
-                  pos={[0, -drumRadius * 0.4, motorPosition === 'left' ? -(frameWidth / 2 + 18) : frameWidth / 2 + 18]}
-                  rot={[Math.PI / 2, 0, 0]}
-                  r={4}
-                  h={36}
-                  color="#1a1d24"
-                  metalness={0.2}
-                  roughness={0.9}
-                />
+                {/* Kabelausgang auf gewählter Seite – Signalrot für bessere Sichtbarkeit */}
+                {(() => {
+                  const sideSign = motorPosition === 'left' ? -1 : 1;
+                  const connectorZ = sideSign * (frameWidth / 2 + 8);
+                  const cableZ = sideSign * (frameWidth / 2 + 30);
+                  return (
+                    <>
+                      {/* Anschlussblock am Motor */}
+                      <Box
+                        pos={[0, -drumRadius * 0.35, connectorZ]}
+                        size={[24, 22, 18]}
+                        color="#dc2626"
+                        metalness={0.25}
+                        roughness={0.55}
+                      />
+                      {/* Kabel – dicker und ebenfalls rot */}
+                      <Cyl
+                        pos={[0, -drumRadius * 0.4, cableZ]}
+                        rot={[Math.PI / 2, 0, 0]}
+                        r={6}
+                        h={48}
+                        color="#dc2626"
+                        metalness={0.15}
+                        roughness={0.8}
+                      />
+                    </>
+                  );
+                })()}
               </group>
             }
           />

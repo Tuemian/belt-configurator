@@ -802,27 +802,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
               </div>
             )}
 
-            {pricing.breakdown.length > 0 && (
-              <details className="rounded-md border border-border/70 p-2">
-                <summary className="cursor-pointer text-sm font-medium text-foreground">
-                  {t('priceBreakdown', lang)}
-                </summary>
-                <div className="mt-2 space-y-1">
-                  {pricing.breakdown.map((item) => (
-                    <div key={item.key} className="flex justify-between gap-3 text-sm py-1 border-b border-border/40 last:border-0">
-                      <span className="text-muted-foreground">
-                        {getPriceItemLabel(item)} ({numberFormatter.format(item.quantity)} {getUnitLabel(item.unit)})
-                      </span>
-                      <span className="font-medium text-right text-foreground">
-                        {item.available && item.total !== undefined
-                          ? currencyFormatter.format(item.total)
-                          : t('priceItemOnRequest', lang)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
           </CardContent>
         </Card>
 

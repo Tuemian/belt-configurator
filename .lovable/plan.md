@@ -1,39 +1,23 @@
-## Umstellung von SMTP (Office 365) auf Resend
+# Drei Anpassungen umsetzen
 
-### Ziel
-Anfrageformular soll E-Mails über **Resend** versenden statt über Office 365 SMTP — das umgeht das "Security Defaults"-Problem komplett.
+## 1. PDF auch an Kunden anhängen
+**Datei:** `supabase/functions/send-inquiry/index.ts`
+Die `attachments`-Variable ist bereits aufgebaut, wird aber nur an die Office-Mail mitgegeben. Beim zweiten `sendResendEmail`-Aufruf (Kundenbestätigung) das Feld `attachments` ebenfalls übergeben.
 
-### Voraussetzungen (vom Nutzer)
-1. Resend-Account auf [resend.com](https://resend.com) erstellen (kostenlos bis 3.000 Mails/Monat).
-2. **Domain `novamotis.com` in Resend verifizieren** (DNS-Records SPF/DKIM/DMARC bei Domain-Provider eintragen). Erst danach kann von `simon.martin@novamotis.com` gesendet werden.
-   - Alternativ für Tests: Versand über `onboarding@resend.dev` möglich (Empfänger ist dann nur die verifizierte Adresse — limitiert).
-3. Resend-Verbindung über den Lovable-Connector verknüpfen (per Klick im UI, kein API-Key-Copy/Paste nötig).
+## 2. Ausklappbare Preisaufstellung entfernen
+**Datei:** `src/components/configurator/StepSummary.tsx` (Zeilen 805–825)
+Den `<details>`-Block mit der Preisaufstellung entfernen. Die Preis-Card zeigt dann nur noch den Gesamtpreis (bzw. "Preis auf Anfrage") plus Disclaimer. Der Breakdown bleibt im PDF erhalten.
 
-### Umsetzungsschritte (durch mich)
+## 3. Trommelmotor-Kabel sichtbarer (Signalrot)
+**Datei:** `src/components/configurator/ConveyorViewer3D.tsx` (Zeilen 1247–1256)
+Den dünnen, fast schwarzen Kabel-Zylinder ersetzen durch:
+- Einen **roten Anschlussblock** (Box ~24×22×18 mm) direkt am Motor
+- Ein **dickeres rotes Kabel** dahinter (Radius 6 statt 4, Länge 48 mm)
+- Farbe: Signalrot `#dc2626`
+- Position weiterhin abhängig von `motorPosition` (links/rechts)
 
-1. **Resend-Connector verbinden**
-   - Tool `standard_connectors--connect` mit `connector_id: resend` aufrufen.
-   - Du wählst im Picker deinen Resend-Account; die Secrets `RESEND_API_KEY` + `LOVABLE_API_KEY` werden automatisch verknüpft.
+So ist auf einen Blick erkennbar, auf welcher Seite das Kabel austritt.
 
-2. **Edge Function `send-inquiry` umbauen**
-   - SMTP-Logik (nodemailer/denomailer) komplett entfernen.
-   - Stattdessen `POST` an `https://connector-gateway.lovable.dev/resend/emails` mit:
-     - `from`: `"NOVAMOTIS Anfrage <simon.martin@novamotis.com>"` (oder Resend-Test-Adresse, falls Domain noch nicht verifiziert)
-     - `to`: `INQUIRY_TO`-Secret (Empfänger der Anfrage)
-     - `reply_to`: E-Mail aus Formular (damit "Antworten" direkt zum Interessenten geht)
-     - `subject` + `html` wie bisher
-   - Saubere Fehlermeldungen mit HTTP-Status + Resend-Response-Body bei Fehlschlag.
-
-3. **Alte SMTP-Secrets**
-   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` werden nicht mehr gebraucht (lasse sie erstmal liegen, falls Rollback nötig).
-   - `SMTP_FROM` und `INQUIRY_TO` bleiben relevant (als From/To-Adressen weiterverwendet).
-
-4. **Test**
-   - Nach Deployment Anfrage senden, Edge-Function-Logs prüfen.
-
-### Wichtig zur Absender-Adresse
-- **Solange `novamotis.com` nicht in Resend verifiziert ist**, muss `from` auf `onboarding@resend.dev` gesetzt werden — sonst lehnt Resend den Versand ab.
-- Sobald die DNS-Records gesetzt und verifiziert sind, stelle ich `from` auf `simon.martin@novamotis.com` um.
-
-### Frage an dich vor Umsetzung
-Hast du die Domain `novamotis.com` schon bei Resend verifiziert, oder sollen wir vorerst mit der Resend-Test-Adresse starten und später umstellen?
+## Hinweise
+- Edge Function wird nach dem Speichern automatisch deployed.
+- Keine DB- oder Schema-Änderungen nötig.
