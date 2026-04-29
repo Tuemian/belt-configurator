@@ -1292,10 +1292,10 @@ function ConveyorModel({ config }: { config: ConveyorConfig }) {
 
           {floorElement === 'feet' && (
             <>
-              <ExternalAssetInstances
-                asset={resolvedAssets.feet}
-                fallback={<ParametricFeet positions={footPositions} />}
-              />
+              {/* Parametric stellfüße: visually reliable representation under each leg.
+                  The external foot.glb model has positioning issues, so we use the parametric
+                  fallback as the primary rendering for adjustable feet. */}
+              <ParametricFeet positions={footPositions} />
               {config.floorBolts && (
                 <ExternalAssetInstances
                   asset={resolvedAssets.floorBolts}
