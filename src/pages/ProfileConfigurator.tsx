@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, ShoppingCart, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,9 +24,10 @@ import {
   type ProfileConnector,
   type ConnectorType,
 } from '@/lib/profile-configurator-types';
-import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
 
-import { ProfileViewer2D } from '@/components/configurator/ProfileViewer2D';
+const ProfileViewer3D = lazy(() =>
+  import('@/components/configurator/ProfileViewer3D').then((m) => ({ default: m.ProfileViewer3D }))
+);
 
 // ---------------------------------------------------------------------------
 // Default config
@@ -87,7 +88,6 @@ export default function ProfileConfigurator() {
   const [newConnectorFace, setNewConnectorFace] = useState<ProfileConnector['face']>('top');
   const [newConnectorModule, setNewConnectorModule] = useState(0);
   const [newConnectorZ, setNewConnectorZ] = useState(50);
-  const [inquiryOpen, setInquiryOpen] = useState(false);
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
@@ -151,10 +151,29 @@ export default function ProfileConfigurator() {
 
   const cartTotal = cart.reduce((sum, i) => sum + i.price.total, 0);
 
-  // Inquiry — opens dialog (sends via Lovable Cloud + SMTP)
+  // Inquiry
   const sendInquiry = () => {
-    if (cart.length === 0) return;
-    setInquiryOpen(true);
+    const subject = encodeURIComponent('Anfrage Aluminium-Systemprofile – NOVAMOTIS Konfigurator');
+    const lines = cart.map((item, idx) => {
+      const s = PROFILE_SECTIONS.find((p) => p.id === item.config.sectionId)!;
+      return [
+        `Position ${idx + 1}: ${s.label}`,
+        `  Länge: ${item.config.length} mm`,
+        `  Menge: ${item.config.quantity} Stk.`,
+        item.config.angleStart !== 0 ? `  Schrägschnitt Start: ${item.config.angleStart}°` : '',
+        item.config.angleEnd !== 0   ? `  Schrägschnitt Ende:  ${item.config.angleEnd}°` : '',
+        item.config.endStart.thread  ? '  Gewinde Start: M8' : '',
+        item.config.endEnd.thread    ? '  Gewinde Ende: M8' : '',
+        item.config.holes.length > 0
+          ? `  Bohrungen: ${item.config.holes.map((h) => `${h.label} @ ${h.zPosition}mm`).join(', ')}`
+          : '',
+        `  Positionspreis: ${fmt.format(item.price.total)}`,
+      ].filter(Boolean).join('\n');
+    });
+    const body = encodeURIComponent(
+      `Sehr geehrtes NOVAMOTIS-Team,\n\nhiermit übermittle ich folgende Konfiguration:\n\n${lines.join('\n\n')}\n\nGesamtpreis (Richtwert): ${fmt.format(cartTotal)}\n\nBitte um Rückmeldung mit konkretem Angebot.\n\nMit freundlichen Grüßen`
+    );
+    window.location.href = `mailto:info@novamotis.com?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -544,17 +563,25 @@ export default function ProfileConfigurator() {
           </div>
         </aside>
 
-        {/* 2D Viewer (Querschnitt + Seitenansicht) */}
+        {/* 3D Viewer */}
         <main className="flex-1 relative flex flex-col bg-slate-50">
-          <div className="flex-1 min-h-0">
-            <ProfileViewer2D
-              section={section}
-              length={config.length}
-              angleStart={config.angleStart}
-              angleEnd={config.angleEnd}
-              holes={config.holes}
-              connectors={config.connectors}
-            />
+          <div className="flex-1">
+            <Suspense
+              fallback={
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  3D-Ansicht wird geladen…
+                </div>
+              }
+            >
+              <ProfileViewer3D
+                section={section}
+                length={config.length}
+                angleStart={config.angleStart}
+                angleEnd={config.angleEnd}
+                holes={config.holes}
+                connectors={config.connectors}
+              />
+            </Suspense>
           </div>
 
           {/* Profile info overlay */}
@@ -659,24 +686,13 @@ export default function ProfileConfigurator() {
                 </p>
                 <Button onClick={sendInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />
-                  Anfrage senden
+                  Anfrage per E-Mail senden
                 </Button>
               </div>
             )}
           </div>
         </div>
       )}
-
-      <ProfileInquiryDialog
-        open={inquiryOpen}
-        onOpenChange={setInquiryOpen}
-        cart={cart}
-        cartTotal={cartTotal}
-        onSuccess={() => {
-          setCart([]);
-          setCartOpen(false);
-        }}
-      />
     </div>
   );
 }
