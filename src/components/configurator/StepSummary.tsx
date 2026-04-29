@@ -757,9 +757,6 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
             <div className="text-xl font-bold tracking-wide text-foreground">
               {configIdentity?.shortId ?? '...'}
             </div>
-            <div className="text-xs text-muted-foreground break-all">
-              SHA-256: {configIdentity?.fullHash ?? '-'}
-            </div>
           </CardContent>
         </Card>
 
