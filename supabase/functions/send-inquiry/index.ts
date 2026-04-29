@@ -116,6 +116,7 @@ async function sendResendEmail(
       "X-Connection-Api-Key": apiKey,
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20000),
   });
 
   const body = await res.text();
@@ -321,56 +322,57 @@ Deno.serve(async (req) => {
       }]
     : undefined;
 
-  console.log(`Sending inquiry ${inquiryRef} via Resend`);
+  console.log(`Queueing inquiry ${inquiryRef} for background send via Resend`);
 
-  try {
-    // Beide Mails parallel versenden – spart spürbar Zeit
-    const [adminResult, customerResult] = await Promise.allSettled([
-      sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
-        from: RESEND_FROM,
-        to: splitRecipients(INQUIRY_TO),
-        reply_to: email,
-        subject: adminSubject,
-        text: adminText,
-        html: adminHtml,
-        attachments,
-      }),
-      sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
-        from: RESEND_FROM,
-        to: [email],
-        subject: customerSubject,
-        text: customerText,
-        html: customerHtml,
-        attachments,
-      }),
-    ]);
+  // Mail-Versand im Hintergrund — Antwort an Browser sofort zurückgeben
+  const sendTask = (async () => {
+    try {
+      const [adminResult, customerResult] = await Promise.allSettled([
+        sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
+          from: RESEND_FROM,
+          to: splitRecipients(INQUIRY_TO),
+          reply_to: email,
+          subject: adminSubject,
+          text: adminText,
+          html: adminHtml,
+          attachments,
+        }),
+        sendResendEmail(RESEND_API_KEY, LOVABLE_API_KEY, {
+          from: RESEND_FROM,
+          to: [email],
+          subject: customerSubject,
+          text: customerText,
+          html: customerHtml,
+          attachments,
+        }),
+      ]);
 
-    if (customerResult.status === "rejected") {
-      console.error("Customer confirmation failed:", customerResult.reason);
+      if (adminResult.status === "rejected") {
+        console.error(`[${inquiryRef}] Admin notification failed:`, adminResult.reason);
+      } else {
+        console.log(`[${inquiryRef}] Admin notification sent`);
+      }
+      if (customerResult.status === "rejected") {
+        console.error(`[${inquiryRef}] Customer confirmation failed:`, customerResult.reason);
+      } else {
+        console.log(`[${inquiryRef}] Customer confirmation sent`);
+      }
+    } catch (err) {
+      console.error(`[${inquiryRef}] Background send error:`, err);
     }
+  })();
 
-    if (adminResult.status === "rejected") {
-      throw adminResult.reason;
-    }
-
-    return new Response(
-      JSON.stringify({ ok: true, id: inquiryId, reference: inquiryRef }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
-  } catch (err) {
-    console.error("Resend send error:", err);
-    return new Response(
-      JSON.stringify({
-        error: "Email send failed",
-        detail: err instanceof Error ? err.message : String(err),
-      }),
-      {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+  // @ts-ignore — Deno Edge Runtime API
+  if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(sendTask);
   }
+
+  return new Response(
+    JSON.stringify({ ok: true, id: inquiryId, reference: inquiryRef }),
+    {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    },
+  );
 });
