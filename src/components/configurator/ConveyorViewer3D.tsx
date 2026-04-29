@@ -884,7 +884,12 @@ function ParametricFeet({ positions }: { positions: Vec3[] }) {
   return (
     <>
       {positions.map((position, index) => (
-        <Box key={`foot-${index}`} pos={position} size={[60, 24, 60]} color={C.frameDark} />
+        <group key={`foot-${index}`} position={position}>
+          {/* Gewindespindel (zwischen Bein und Tellerfuß) */}
+          <Cyl pos={[0, 6, 0]} rot={[0, 0, 0]} r={9} h={18} color="#9ca3af" segs={16} metalness={0.85} roughness={0.25} />
+          {/* Tellerfuß (Bodenplatte) */}
+          <Cyl pos={[0, -6, 0]} rot={[0, 0, 0]} r={28} h={6} color="#1f2937" segs={24} metalness={0.6} roughness={0.45} />
+        </group>
       ))}
     </>
   );
