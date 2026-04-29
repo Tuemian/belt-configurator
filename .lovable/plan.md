@@ -1,23 +1,32 @@
-# Drei Anpassungen umsetzen
+## Ziel
+1. Versand der Anfrage spürbar beschleunigen.
+2. Formulierung in der Kunden-Bestätigungsmail anpassen: statt „in Kürze" → „innerhalb von maximal zwei Arbeitstagen", schön formuliert (DE + EN).
 
-## 1. PDF auch an Kunden anhängen
-**Datei:** `supabase/functions/send-inquiry/index.ts`
-Die `attachments`-Variable ist bereits aufgebaut, wird aber nur an die Office-Mail mitgegeben. Beim zweiten `sendResendEmail`-Aufruf (Kundenbestätigung) das Feld `attachments` ebenfalls übergeben.
+## Änderungen in `supabase/functions/send-inquiry/index.ts`
 
-## 2. Ausklappbare Preisaufstellung entfernen
-**Datei:** `src/components/configurator/StepSummary.tsx` (Zeilen 805–825)
-Den `<details>`-Block mit der Preisaufstellung entfernen. Die Preis-Card zeigt dann nur noch den Gesamtpreis (bzw. "Preis auf Anfrage") plus Disclaimer. Der Breakdown bleibt im PDF erhalten.
+### 1. Versand beschleunigen
+Aktuell laufen zwei Mails **sequenziell** (erst Office, dann Kunde) — bei einem PDF-Anhang dauert das spürbar länger als nötig.
 
-## 3. Trommelmotor-Kabel sichtbarer (Signalrot)
-**Datei:** `src/components/configurator/ConveyorViewer3D.tsx` (Zeilen 1247–1256)
-Den dünnen, fast schwarzen Kabel-Zylinder ersetzen durch:
-- Einen **roten Anschlussblock** (Box ~24×22×18 mm) direkt am Motor
-- Ein **dickeres rotes Kabel** dahinter (Radius 6 statt 4, Länge 48 mm)
-- Farbe: Signalrot `#dc2626`
-- Position weiterhin abhängig von `motorPosition` (links/rechts)
+- Beide `sendResendEmail`-Aufrufe **parallel** mit `Promise.allSettled` ausführen, statt nacheinander mit `await`. Spart bei jeder Anfrage ~die Hälfte der Versandzeit.
+- Bei `Promise.allSettled` einzeln auswerten: Wenn die Office-Mail fehlschlägt → 502 zurückgeben. Wenn nur die Kundenmail fehlschlägt → trotzdem 200 (wie bisher), nur loggen.
+- Antwort an den Browser bleibt gleich (`{ ok: true, id }`), die UI bekommt also schneller eine Rückmeldung.
 
-So ist auf einen Blick erkennbar, auf welcher Seite das Kabel austritt.
+Optional zusätzlich (kleine Verbesserung):
+- DB-Insert (`supabase.from(table).insert(...)`) muss **vor** dem Senden laufen, weil wir die `inquiryId` in der Mail brauchen → das bleibt sequenziell, ist aber schnell.
+
+### 2. Texte anpassen — „maximal zwei Arbeitstage"
+
+**Deutsch** (`customerText`, `customerHtml`):
+- Alt: „… melden uns in Kürze bei Ihnen."
+- Neu: „… und melden uns innerhalb von maximal zwei Arbeitstagen persönlich bei Ihnen."
+
+**Englisch**:
+- Alt: „… will get back to you shortly."
+- Neu: „… and will get back to you personally within a maximum of two business days."
+
+Betrifft jeweils Plain-Text-Variante (Zeile 290–291) und HTML-Variante (Zeile 297–301).
 
 ## Hinweise
-- Edge Function wird nach dem Speichern automatisch deployed.
-- Keine DB- oder Schema-Änderungen nötig.
+- Edge Function wird nach dem Speichern automatisch neu deployed.
+- Keine DB-/Schema-Änderungen.
+- Keine Auswirkungen auf PDF-Anhang oder die Office-Mail-Inhalte.
