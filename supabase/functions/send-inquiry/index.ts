@@ -5,8 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -38,18 +37,12 @@ const RATE_LIMIT_MAX = 5;
 const rateLimitStore = new Map<string, number[]>();
 
 function getClientIp(req: Request): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("cf-connecting-ip") ??
-    "unknown"
-  );
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("cf-connecting-ip") ?? "unknown";
 }
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
-  const arr = (rateLimitStore.get(ip) ?? []).filter(
-    (t) => now - t < RATE_LIMIT_WINDOW_MS,
-  );
+  const arr = (rateLimitStore.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
   if (arr.length >= RATE_LIMIT_MAX) return false;
   arr.push(now);
   rateLimitStore.set(ip, arr);
@@ -74,7 +67,10 @@ function cleanBase64(b64: string): string {
 }
 
 function splitRecipients(value: string): string[] {
-  return value.split(/[;,]/).map((item) => item.trim()).filter(Boolean);
+  return value
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 type ResendAttachment = {
@@ -93,11 +89,7 @@ type SendEmailParams = {
   attachments?: ResendAttachment[];
 };
 
-async function sendResendEmail(
-  apiKey: string,
-  lovableApiKey: string,
-  params: SendEmailParams,
-): Promise<void> {
+async function sendResendEmail(apiKey: string, lovableApiKey: string, params: SendEmailParams): Promise<void> {
   const payload: Record<string, unknown> = {
     from: params.from,
     to: params.to,
@@ -112,7 +104,7 @@ async function sendResendEmail(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${lovableApiKey}`,
+      Authorization: `Bearer ${lovableApiKey}`,
       "X-Connection-Api-Key": apiKey,
     },
     body: JSON.stringify(payload),
@@ -171,13 +163,10 @@ Deno.serve(async (req) => {
   if (!body.configuration) errors.push("configuration");
 
   if (errors.length) {
-    return new Response(
-      JSON.stringify({ error: "Validation failed", fields: errors }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "Validation failed", fields: errors }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // Read secrets
@@ -185,36 +174,26 @@ Deno.serve(async (req) => {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   // Optional: override From-Adresse via Secret (z.B. "NOVAMOTIS <noreply@novamotis.com>")
   // Fallback: Resend Test-Adresse, funktioniert ohne verifizierte Domain.
-  const RESEND_FROM = Deno.env.get("RESEND_FROM")
-    ?? "NOVAMOTIS Konfigurator <onboarding@resend.dev>";
+  const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "NOVAMOTIS Konfigurator <onboarding@resend.dev>";
   const INQUIRY_TO = Deno.env.get("INQUIRY_TO");
 
   if (!RESEND_API_KEY || !LOVABLE_API_KEY) {
     console.error("Resend secrets missing");
-    return new Response(
-      JSON.stringify({ error: "Email service not configured (Resend)" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "Email service not configured (Resend)" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
   if (!INQUIRY_TO) {
     console.error("INQUIRY_TO secret missing");
-    return new Response(
-      JSON.stringify({ error: "Inquiry recipient not configured" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "Inquiry recipient not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // Persist to DB
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   const table = body.type === "belt" ? "belt_inquiries" : "profile_inquiries";
   const { data: insertData, error: insertErr } = await supabase
@@ -235,22 +214,16 @@ Deno.serve(async (req) => {
 
   if (insertErr) {
     console.error("DB insert error:", insertErr);
-    return new Response(
-      JSON.stringify({ error: "Could not save inquiry" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: "Could not save inquiry" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
   const inquiryId = insertData?.id ?? "n/a";
   const inquiryRef = (insertData as { reference?: string } | null)?.reference ?? inquiryId;
 
   // Build emails
-  const productLabel =
-    body.type === "belt"
-      ? "Gurtförderer-Konfigurator"
-      : "Profil-Konfigurator";
+  const productLabel = body.type === "belt" ? "Gurtförderer-Konfigurator" : "Profil-Konfigurator";
 
   const adminSubject = `Neue Anfrage ${inquiryRef} (${productLabel}) – ${name}${company ? " / " + company : ""}`;
 
@@ -290,14 +263,12 @@ Deno.serve(async (req) => {
   `;
 
   const customerSubject =
-    lang === "en"
-      ? "Thank you for your inquiry – NOVAMOTIS"
-      : "Vielen Dank für Ihre Anfrage – NOVAMOTIS";
+    lang === "en" ? "Thank you for your inquiry – NOVAMOTIS" : "Vielen Dank für Ihre Anfrage – NOVAMOTIS";
 
   const customerText =
     lang === "en"
       ? `Hello ${name},\n\nthank you for your inquiry via the ${productLabel}. We have received your request (Reference no.: ${inquiryRef}) and one of our specialists will get back to you personally within a maximum of two business days.\n\nBest regards,\nNOVAMOTIS Team`
-      : `Hallo ${name},\n\nvielen Dank für Ihre Anfrage über den ${productLabel}. Wir haben Ihre Anfrage erhalten (Anfrage-Nr.: ${inquiryRef}) und einer unserer Spezialisten meldet sich innerhalb von maximal zwei Arbeitstagen persönlich bei Ihnen.\n\nMit freundlichen Grüßen\nIhr NOVAMOTIS Team`;
+      : `Hallo ${name},\n\nvielen Dank für Ihre Anfrage über den ${productLabel}. Wir haben Ihre Anfrage erhalten (Anfrage-Nr.: ${inquiryRef}) und einer unserer Mitarbeiter meldet sich innerhalb von maximal zwei Arbeitstagen persönlich bei Ihnen.\n\nMit freundlichen Grüßen\nIhr NOVAMOTIS Team`;
 
   const customerHtml = `
     <div style="font-family: Arial, sans-serif; color: #111; max-width: 560px;">
@@ -315,11 +286,13 @@ Deno.serve(async (req) => {
   `;
 
   const attachments: ResendAttachment[] | undefined = body.attachment?.contentBase64
-    ? [{
-        filename: body.attachment.filename || "configuration.pdf",
-        content: cleanBase64(body.attachment.contentBase64),
-        content_type: body.attachment.contentType || "application/pdf",
-      }]
+    ? [
+        {
+          filename: body.attachment.filename || "configuration.pdf",
+          content: cleanBase64(body.attachment.contentBase64),
+          content_type: body.attachment.contentType || "application/pdf",
+        },
+      ]
     : undefined;
 
   console.log(`Queueing inquiry ${inquiryRef} for background send via Resend`);
@@ -368,11 +341,8 @@ Deno.serve(async (req) => {
     EdgeRuntime.waitUntil(sendTask);
   }
 
-  return new Response(
-    JSON.stringify({ ok: true, id: inquiryId, reference: inquiryRef }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    },
-  );
+  return new Response(JSON.stringify({ ok: true, id: inquiryId, reference: inquiryRef }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 });
