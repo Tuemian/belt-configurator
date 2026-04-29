@@ -1,53 +1,41 @@
-## Ziel
+## Stellfüße fehlen im Belt-Konfigurator
 
-Den **Profil-/Zuschnittskonfigurator** exakt auf den Stand von Commit `a5c127a` (vor 2 Tagen) zurücksetzen. Der **Fördertechnik-Konfigurator** und der asynchrone Mailversand der Edge-Function bleiben unverändert.
+### Befund
 
-## Befund nach Vergleich mit GitHub
+Die Konfigurations-Logik ist eigentlich intakt:
+- Default ist `withStand: true`, `floorElement: 'feet'` → Stellfüße sollten standardmäßig sichtbar sein.
+- Datei `public/models/floor-elements/foot.glb` existiert (95 KB).
+- Render-Pfad: `StepStand` → `ConveyorPreview` → `ConveyorViewer3D` → `ExternalAssetInstances` mit `ParametricFeet` als Fallback.
 
-Von den 4 relevanten Dateien des alten Commits ist nur **eine** verändert:
+**Was vermutlich passiert ist:** Bei der letzten Iteration am `floor-bolt`-Feature wurde in `ExternalAssetInstances` (Zeilen 420–468) ein neuer `useMemo`-Block mit Debug-Logs eingebaut. Dabei dürfte eine subtile Regression entstanden sein, die dazu führt, dass `clonedScenes` bei `feet` leer bleibt **und** der Fallback `<ParametricFeet>` ebenfalls nicht greift — vermutlich weil der `useMemo` synchron beim ersten Render leer zurückkehrt und die Komponente in genau dem Moment `null` rendert, ohne erneut zu re-rendern, sobald die GLB-Suspense fertig ist.
 
-| Datei | Status |
-|---|---|
-| `src/lib/profile-configurator-types.ts` | identisch (MD5 match) — nichts zu tun |
-| `src/components/configurator/ProfileViewer3D.tsx` | identisch — nichts zu tun |
-| `src/lib/i18n.ts` | identisch — nichts zu tun |
-| `src/pages/ProfileConfigurator.tsx` | **verändert** (alt 698 Z., neu 682 Z.) |
+Ein zweiter Verdachtspunkt: `useExternalScene` wirft beim Laden Suspense — wenn die feet-GLB durch eine Variante ohne passende `rules` rausgefiltert wird, könnte `selectVariant` undefined liefern und das gesamte Asset verschwindet stillschweigend.
 
-Außerdem existieren im jetzigen Code zwei Dateien, die im alten Commit **nicht** vorhanden waren:
-- `src/components/configurator/ProfileViewer2D.tsx`
-- `src/components/configurator/ProfileInquiryDialog.tsx`
+### Vorgehen
 
-## Was geändert wird
+Ich werde im Default-Modus folgendermaßen vorgehen:
 
-### 1. `src/pages/ProfileConfigurator.tsx` → 1:1 durch alte Version ersetzen
-Konkrete Rückbau-Punkte (entsprechen exakt dem Diff):
-- Import wieder auf **`lazy` + `Suspense`** umstellen, `ProfileViewer3D` als Lazy-Import
-- Imports von `ProfileInquiryDialog` und `ProfileViewer2D` **entfernen**
-- State `inquiryOpen` **entfernen**
-- `sendInquiry()` wieder auf **`mailto:`-Link** mit vorgefülltem Body umstellen (öffnet E-Mail-Programm an `info@novamotis.com`)
-- Im Hauptbereich `<ProfileViewer2D … />` **ersetzen durch** `<Suspense><ProfileViewer3D … /></Suspense>` (3D-Vorschau)
-- Button-Text wieder auf **„Anfrage per E-Mail senden"**
-- `<ProfileInquiryDialog … />` am Ende der Komponente **entfernen**
+1. **Live reproduzieren**: Browser-Konsole öffnen auf `/belt-conveyor`, Schritt 4 ansteuern, prüfen, ob:
+   - das `foot.glb`-Netzwerk-Request 200 zurückgibt
+   - die `ExternalAssetInstances`-Logs für `feet` etwas ausgeben (aktuell nur `floor-bolt` geloggt)
+   - der Fallback `ParametricFeet` (graue Boxen) sichtbar ist oder gar nichts angezeigt wird
 
-### 2. Verwaiste Dateien löschen
-Da `ProfileConfigurator.tsx` sie nach dem Rückbau nicht mehr referenziert:
-- `src/components/configurator/ProfileViewer2D.tsx` löschen
-- `src/components/configurator/ProfileInquiryDialog.tsx` löschen
+2. **Debug-Logs erweitern** (temporär) auch für `feet`, damit klar wird, ob das GLB lädt oder der Fallback greift.
 
-### 3. Alles andere bleibt unangetastet
-**Nicht** angefasst werden:
-- `src/pages/BeltConfigurator.tsx` und alle `Step*.tsx` (Dimensions, BeltSpeed, Drive, Stand, Summary)
-- `ConveyorPreview.tsx`, `ConveyorViewer3D.tsx`
-- `supabase/functions/send-inquiry/index.ts` (asynchroner Mailversand bleibt für die Fördertechnik aktiv)
-- Alle DB-Migrations und das ID-Format `FT-YYYYMMDD-INDEX`
-- `i18n.ts`, `profile-configurator-types.ts`, `ProfileViewer3D.tsx` (sind ohnehin schon auf altem Stand)
+3. **Ursache fixen** — je nach Befund eine der folgenden Korrekturen:
+   - **Wenn GLB nicht lädt**: Cache-Buster bei `foot.glb?v=4` auf `v=5` erhöhen oder URL-Pfad korrigieren.
+   - **Wenn `clonedScenes` leer bleibt trotz geladener Scene**: `ExternalAssetInstances` so umstellen, dass beim ersten Render mit asynchron noch nicht geladener Scene **immer** der Fallback gerendert wird (statt `null`).
+   - **Wenn `selectVariant` undefined liefert**: Sicherstellen, dass die `feet`-Variante mit leerem `rules: {}` immer matched (defensive Default-Auswahl der ersten Variante).
 
-## Auswirkung für dich
+4. **Debug-Logs wieder entfernen** und QA: alle 4 Kombinationen testen — Stellfüße ohne Bolts, Stellfüße mit Bolts, Castors, ohne Stand.
 
-- Der Profil-/Zuschnittskonfigurator zeigt wieder die **3D-Vorschau** wie früher
-- Der „Anfrage senden"-Button öffnet wieder das **E-Mail-Programm** mit vorbefüllter Nachricht (kein Dialog, keine Edge-Function-Anfrage über die Profilseite)
-- Der Fördertechnik-Konfigurator bleibt so, wie er heute ist — inklusive des verbesserten asynchronen Mailversands
+### Technische Details
 
-## Technischer Anhang
+Betroffene Dateien:
+- `src/components/configurator/ConveyorViewer3D.tsx` — `ExternalAssetInstances`, ggf. Render-Logik bei `floorElement === 'feet'`
+- `src/lib/conveyor-3d-library.ts` — falls `selectVariant` defensiver werden muss
+- ggf. `public/models/library.json` — Cache-Buster
 
-Dateien werden direkt aus `https://raw.githubusercontent.com/Tuemian/belt-configurator/a5c127acd50078fdf903f4dd3010ccb0465561e2/src/pages/ProfileConfigurator.tsx` übernommen (bereits lokal in `/tmp/old/` vorliegend, 698 Zeilen). Die zwei zu löschenden Komponenten werden vor dem Löschen mit `rg` nochmal auf andere Importer geprüft — falls irgendwo sonst referenziert, fasse ich vorher Rücksprache.
+Keine Änderungen an: Default-Config, `StepStand`-UI, Fördertechnik-Stepper.
+
+Soll ich loslegen?
