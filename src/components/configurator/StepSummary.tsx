@@ -65,7 +65,7 @@ type ConfigurationIdentity = {
 const FOOTER_TEXT_COLUMNS = [
   ["Erste Bank und Sparkasse", "BIC/SWIFT: DOSPAT2DXXX", "IBAN: AT10 2060 2000 0068 0215"],
   ["Gerichtsstand: Landesgericht Feldkirch", "Firmenbuchnummer: FN 669496 d", "UID-Nummer: ATU82899035"],
-  ["Geschäftsfuehrung:", "Simon Martin, Slovyana Votchyna", "M: office@novamotis.com", "W: www.novamotis.com"],
+  ["Geschäftsführung:", "Simon Martin, Slovyana Votchyna", "M: office@novamotis.com", "W: www.novamotis.com"],
 ] as const;
 
 function normalizeForHash(value: unknown): unknown {
