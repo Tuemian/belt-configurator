@@ -11,6 +11,7 @@ import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { unlockTool } from '@/lib/tool-access';
 
 type ToolIconProps = {
   className?: string;
@@ -130,8 +131,10 @@ const Index = () => {
   const handlePasswordSubmit = () => {
     if (!pwdModal) return;
     if (pwdInput === pwdModal.password) {
+      const slug = pwdModal.slug;
+      unlockTool(slug);
       setPwdModal(null);
-      navigate(`/${pwdModal.slug}`);
+      navigate(`/${slug}`);
     } else {
       setPwdError(true);
     }
