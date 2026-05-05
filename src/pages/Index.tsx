@@ -59,11 +59,12 @@ const ProfileIcon = ({ className }: ToolIconProps) => (
   </svg>
 );
 
+type TKey = Parameters<typeof t>[0];
 type Tool = {
   slug: string;
-  titleKey: string;
-  descKey: string;
-  statusKey: string;
+  titleKey: TKey;
+  descKey: TKey;
+  statusKey: TKey;
   available: boolean;
   password?: string;
   icon: (p: ToolIconProps) => JSX.Element;
