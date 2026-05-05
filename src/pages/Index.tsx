@@ -64,7 +64,6 @@ const tools = [
     descKey: 'hubToolBeltDesc',
     statusKey: 'hubAvailableNow',
     available: true,
-    password: undefined as string | undefined,
     icon: BeltConveyorIcon,
   },
   {
@@ -89,7 +88,6 @@ const tools = [
     descKey: 'hubToolDoorDesc',
     statusKey: 'hubPlanned',
     available: false,
-    password: undefined as string | undefined,
     icon: DoorConfiguratorIcon,
   },
   {
@@ -98,7 +96,6 @@ const tools = [
     descKey: 'hubToolRollerDesc',
     statusKey: 'hubPlanned',
     available: false,
-    password: undefined as string | undefined,
     icon: RollerConveyorIcon,
   },
 ] as const;
