@@ -35,14 +35,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
-                <Route
-                  path="/belt-conveyor"
-                  element={
-                    <ProtectedRoute>
-                      <BeltConfigurator />
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/belt-conveyor" element={<BeltConfigurator />} />
                 <Route
                   path="/profile-configurator"
                   element={
