@@ -1,17 +1,13 @@
 import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowRight, Globe, Lock } from 'lucide-react';
+import { ArrowRight, Globe, Lock, LogOut } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { unlockTool } from '@/lib/tool-access';
+import { Link } from 'react-router-dom';
 
 type ToolIconProps = { className?: string };
 
@@ -66,13 +62,13 @@ type Tool = {
   descKey: TKey;
   statusKey: TKey;
   available: boolean;
-  password?: string;
+  requiresAuth?: boolean;
   icon: (p: ToolIconProps) => JSX.Element;
 };
 
 const tools: Tool[] = [
   { slug: 'belt-conveyor', titleKey: 'hubToolBeltTitle', descKey: 'hubToolBeltDesc', statusKey: 'hubAvailableNow', available: true, icon: BeltConveyorIcon },
-  { slug: 'profile-configurator', titleKey: 'hubToolProfileTitle', descKey: 'hubToolProfileDesc', statusKey: 'hubBeta', available: false, password: 'nova2025', icon: ProfileIcon },
+  { slug: 'profile-configurator', titleKey: 'hubToolProfileTitle', descKey: 'hubToolProfileDesc', statusKey: 'hubBeta', available: true, requiresAuth: true, icon: ProfileIcon },
   { slug: 'deflection', titleKey: 'hubToolDeflectionTitle', descKey: 'hubToolDeflectionDesc', statusKey: 'hubPlanned', available: false, icon: DeflectionIcon },
   { slug: 'high-speed-door', titleKey: 'hubToolDoorTitle', descKey: 'hubToolDoorDesc', statusKey: 'hubPlanned', available: false, icon: DoorConfiguratorIcon },
   { slug: 'roller-conveyor', titleKey: 'hubToolRollerTitle', descKey: 'hubToolRollerDesc', statusKey: 'hubPlanned', available: false, icon: RollerConveyorIcon },
@@ -86,28 +82,7 @@ const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
 
 const Index = () => {
   const [lang, setLang] = useLanguage();
-  const navigate = useNavigate();
-  const [pwdModal, setPwdModal] = useState<{ slug: string; password: string } | null>(null);
-  const [pwdInput, setPwdInput] = useState('');
-  const [pwdError, setPwdError] = useState(false);
-
-  const openPasswordModal = (slug: string, password: string) => {
-    setPwdInput('');
-    setPwdError(false);
-    setPwdModal({ slug, password });
-  };
-
-  const handlePasswordSubmit = () => {
-    if (!pwdModal) return;
-    if (pwdInput === pwdModal.password) {
-      const slug = pwdModal.slug;
-      unlockTool(slug);
-      setPwdModal(null);
-      navigate(`/${slug}`);
-    } else {
-      setPwdError(true);
-    }
-  };
+  const { session, signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,148,204,0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)]">
@@ -118,17 +93,25 @@ const Index = () => {
               <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
             </a>
           </div>
-          <Select value={lang} onValueChange={(value) => setLang(value as Language)}>
-            <SelectTrigger className="h-9 w-[90px] gap-2">
-              <Globe className="h-4 w-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            {session && (
+              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-1" />
+                Logout
+              </Button>
+            )}
+            <Select value={lang} onValueChange={(value) => setLang(value as Language)}>
+              <SelectTrigger className="h-9 w-[90px] gap-2">
+                <Globe className="h-4 w-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </header>
 
@@ -165,7 +148,8 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {tools.map((tool) => {
               const Icon = tool.icon;
-              const isPasswordProtected = !tool.available && !!tool.password;
+              const isBeta = !!tool.requiresAuth;
+              const target = tool.requiresAuth && !session ? '/auth' : `/${tool.slug}`;
 
               return (
                 <Card key={tool.slug} className="group relative overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_50px_rgba(15,52,74,0.08)] backdrop-blur transition-transform duration-200 hover:-translate-y-1 flex flex-col">
@@ -176,16 +160,14 @@ const Index = () => {
                         <Icon className="h-8 w-8" />
                       </div>
                       <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm shadow-sm ring-1 ring-black/5 ${
-                        tool.available
-                          ? 'bg-white/80 text-muted-foreground'
-                          : isPasswordProtected
-                            ? 'bg-violet-50 text-violet-600'
-                            : 'bg-white/80 text-muted-foreground'
+                        isBeta
+                          ? 'bg-violet-50 text-violet-600'
+                          : 'bg-white/80 text-muted-foreground'
                       }`}>
-                        {isPasswordProtected
+                        {isBeta
                           ? <Lock className="h-3 w-3" />
                           : <span className={`h-2 w-2 rounded-full ${tool.available ? 'bg-emerald-500' : 'bg-amber-500'}`} />}
-                        {isPasswordProtected ? t('hubBeta', lang) : t(tool.statusKey, lang)}
+                        {isBeta ? t('hubBeta', lang) : t(tool.statusKey, lang)}
                       </span>
                     </div>
                     <div>
@@ -197,24 +179,24 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="mt-auto">
                     {tool.available ? (
-                      <Button asChild className="w-full justify-between">
-                        <Link to={`/${tool.slug}`}>
-                          {t('hubOpenTool', lang)}
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    ) : isPasswordProtected ? (
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between border-violet-200 text-violet-700 hover:bg-violet-50"
-                        onClick={() => openPasswordModal(tool.slug, tool.password!)}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Lock className="h-3.5 w-3.5" />
-                          {t('hubOpenWithPassword', lang)}
-                        </span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
+                      isBeta ? (
+                        <Button asChild variant="outline" className="w-full justify-between border-violet-200 text-violet-700 hover:bg-violet-50">
+                          <Link to={target} state={!session ? { from: `/${tool.slug}` } : undefined}>
+                            <span className="flex items-center gap-2">
+                              <Lock className="h-3.5 w-3.5" />
+                              {session ? t('hubOpenTool', lang) : t('hubOpenWithPassword', lang)}
+                            </span>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button asChild className="w-full justify-between">
+                          <Link to={`/${tool.slug}`}>
+                            {t('hubOpenTool', lang)}
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )
                     ) : (
                       <div className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
                         {t('hubPlannedHint', lang)}
@@ -227,36 +209,6 @@ const Index = () => {
           </div>
         </section>
       </main>
-
-      <Dialog open={!!pwdModal} onOpenChange={(open) => { if (!open) setPwdModal(null); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-violet-600" />
-              {t('hubPasswordTitle', lang)}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label className="text-sm">{t('hubPasswordLabel', lang)}</Label>
-            <Input
-              type="password"
-              value={pwdInput}
-              autoFocus
-              onChange={(e) => { setPwdInput(e.target.value); setPwdError(false); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordSubmit(); }}
-              className={pwdError ? 'border-red-400 focus-visible:ring-red-400' : ''}
-              placeholder="••••••••"
-            />
-            {pwdError && (
-              <p className="text-xs text-red-500">{t('hubPasswordError', lang)}</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPwdModal(null)}>{t('back', lang)}</Button>
-            <Button onClick={handlePasswordSubmit}>{t('hubOpenTool', lang)}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
