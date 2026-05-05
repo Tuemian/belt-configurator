@@ -10,7 +10,9 @@ import Index from "./pages/Index.tsx";
 import BeltConfigurator from "./pages/BeltConfigurator.tsx";
 import ProfileConfigurator from "./pages/ProfileConfigurator.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AuthPage from "./pages/Auth.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import { AuthProvider } from "./hooks/use-auth.tsx";
 
 const queryClient = new QueryClient();
 
@@ -27,15 +29,24 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AuthProvider>
           <div className="min-h-screen flex flex-col">
             <div className="flex-1">
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/belt-conveyor" element={<BeltConfigurator />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route
+                  path="/belt-conveyor"
+                  element={
+                    <ProtectedRoute>
+                      <BeltConfigurator />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/profile-configurator"
                   element={
-                    <ProtectedRoute slug="profile-configurator">
+                    <ProtectedRoute>
                       <ProfileConfigurator />
                     </ProtectedRoute>
                   }
@@ -66,6 +77,7 @@ const App = () => {
               </div>
             </footer>
           </div>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
