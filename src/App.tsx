@@ -10,7 +10,9 @@ import Index from "./pages/Index.tsx";
 import BeltConfigurator from "./pages/BeltConfigurator.tsx";
 import ProfileConfigurator from "./pages/ProfileConfigurator.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AuthPage from "./pages/Auth.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import { AuthProvider } from "./hooks/use-auth.tsx";
 
 const queryClient = new QueryClient();
 
@@ -27,34 +29,37 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <div className="flex-1">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/belt-conveyor" element={<BeltConfigurator />} />
-                <Route
-                  path="/profile-configurator"
-                  element={
-                    <ProtectedRoute slug="profile-configurator">
-                      <ProfileConfigurator />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
-            <footer className="border-t border-slate-200 bg-white/90 backdrop-blur">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm text-muted-foreground flex items-center justify-center gap-4">
-                <a href="https://www.novamotis.com/impressum" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
-                  {t('imprintLink', lang)}
-                </a>
-                <span aria-hidden="true">|</span>
-                <a href="https://www.novamotis.com/protection" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
-                  {t('privacyPolicyLink', lang)}
-                </a>
+          <AuthProvider>
+            <div className="min-h-screen flex flex-col">
+              <div className="flex-1">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/belt-conveyor" element={<BeltConfigurator />} />
+                  <Route
+                    path="/profile-configurator"
+                    element={
+                      <ProtectedRoute>
+                        <ProfileConfigurator />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
               </div>
-            </footer>
-          </div>
+              <footer className="border-t border-slate-200 bg-white/90 backdrop-blur">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm text-muted-foreground flex items-center justify-center gap-4">
+                  <a href="https://www.novamotis.com/impressum" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
+                    {t('imprintLink', lang)}
+                  </a>
+                  <span aria-hidden="true">|</span>
+                  <a href="https://www.novamotis.com/protection" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
+                    {t('privacyPolicyLink', lang)}
+                  </a>
+                </div>
+              </footer>
+            </div>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
