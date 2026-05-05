@@ -1,17 +1,13 @@
 import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowRight, Globe, Lock } from 'lucide-react';
+import { ArrowRight, Globe, Lock, LogIn, LogOut } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { unlockTool } from '@/lib/tool-access';
+import { Link } from 'react-router-dom';
 
 type ToolIconProps = {
   className?: string;
@@ -75,18 +71,16 @@ const tools = [
     slug: 'profile-configurator',
     titleKey: 'hubToolProfileTitle',
     descKey: 'hubToolProfileDesc',
-    statusKey: 'hubBeta',
-    available: false,
-    password: 'nova2025' as string | undefined,
+    statusKey: 'hubAvailableNow',
+    available: true,
     icon: ProfileIcon,
   },
   {
     slug: 'deflection',
     titleKey: 'hubToolDeflectionTitle',
     descKey: 'hubToolDeflectionDesc',
-    statusKey: 'hubBeta',
+    statusKey: 'hubPlanned',
     available: false,
-    password: 'nova2025' as string | undefined,
     icon: DeflectionIcon,
   },
   {
