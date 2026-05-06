@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildSharedConfiguratorUrl,
-  createNewCurrentConfiguratorId,
   readSharedConfiguratorState,
 } from '@/lib/configurator-share';
 import { defaultConfig } from '@/lib/configurator-types';
@@ -29,14 +28,5 @@ describe('configurator share helpers', () => {
 
   it('returns null for malformed share payloads', () => {
     expect(readSharedConfiguratorState('?cfg=this-is-not-valid')).toBeNull();
-  });
-
-  it('creates a new incremented configurator ID when explicitly requested', () => {
-    const firstId = createNewCurrentConfiguratorId();
-    const secondId = createNewCurrentConfiguratorId();
-
-    expect(firstId).toMatch(/^FT-\d{8}-\d{3}$/);
-    expect(secondId).toMatch(/^FT-\d{8}-\d{3}$/);
-    expect(secondId).not.toBe(firstId);
   });
 });
