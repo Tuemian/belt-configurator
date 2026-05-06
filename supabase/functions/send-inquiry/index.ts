@@ -25,6 +25,7 @@ interface InquiryBody {
   };
   configuration: unknown;
   summary?: string;
+  reference?: string;
   attachment?: {
     filename: string;
     contentType: string;
