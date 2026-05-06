@@ -705,11 +705,15 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
   const handleDownloadPdf = async () => {
     try {
-      const identity = await buildConfigurationIdentity(config);
+      const identity = await ensureIdentity();
       const modelImageDataUrl = await captureModelSnapshot();
       const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       triggerBlobDownload(pdfBlob, getPdfFilename(identity));
-      toast({ title: lang === "de" ? "PDF heruntergeladen" : "PDF downloaded" });
+      void markConfiguratorReference(identity.shortId, "pdf");
+      toast({
+        title: lang === "de" ? "PDF heruntergeladen" : lang === "it" ? "PDF scaricato" : "PDF downloaded",
+        description: `ID ${identity.shortId}`,
+      });
     } catch (error) {
       console.error("PDF generation error:", error);
       toast({
