@@ -13,7 +13,11 @@ import jsPDF from "jspdf";
 import { toDataURL as toQrDataUrl } from "qrcode";
 import headerBackground from "@/assets/Hintergrund_Kopfzeile.png";
 import footerBackground from "@/assets/Hintergrund_Fusszeile.png";
-import { buildSharedConfiguratorUrl, getOrReserveCurrentConfiguratorId } from "@/lib/configurator-share";
+import {
+  buildSharedConfiguratorUrl,
+  markConfiguratorReference,
+  requestConfiguratorReference,
+} from "@/lib/configurator-share";
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 
