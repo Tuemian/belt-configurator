@@ -39,7 +39,6 @@ const BeltConfigurator = () => {
 
     const sharedState = readSharedConfiguratorState(window.location.search);
     if (!sharedState) {
-      void reserveNewCurrentConfiguratorId(defaultConfig);
       return;
     }
 
