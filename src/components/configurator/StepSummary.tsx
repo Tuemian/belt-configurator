@@ -797,7 +797,13 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-bold text-foreground">{t("summaryTitle", lang)}</h3>
             <div className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-semibold tracking-wide text-primary">
-              ID {configIdentity?.shortId ?? "..."}
+              {configIdentity?.shortId
+                ? `ID ${configIdentity.shortId}`
+                : lang === "de"
+                  ? "ID folgt"
+                  : lang === "it"
+                    ? "ID in arrivo"
+                    : "ID pending"}
             </div>
           </div>
 
@@ -815,7 +821,17 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
               <div className="text-sm text-muted-foreground">
                 {lang === "de" ? "Konfigurations-ID" : lang === "it" ? "ID configurazione" : "Configuration ID"}
               </div>
-              <div className="text-xl font-bold tracking-wide text-foreground">{configIdentity?.shortId ?? "..."}</div>
+              {configIdentity?.shortId ? (
+                <div className="text-xl font-bold tracking-wide text-foreground">{configIdentity.shortId}</div>
+              ) : (
+                <div className="text-sm text-muted-foreground italic">
+                  {lang === "de"
+                    ? "Wird beim PDF-Download oder bei der Anfrage vergeben."
+                    : lang === "it"
+                      ? "Assegnato al download del PDF o all'invio della richiesta."
+                      : "Issued when downloading the PDF or sending the inquiry."}
+                </div>
+              )}
             </CardContent>
           </Card>
 
