@@ -3,7 +3,6 @@ import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib
 import {
   clearSharedConfiguratorStateFromUrl,
   readSharedConfiguratorState,
-  reserveNewCurrentConfiguratorId,
 } from '@/lib/configurator-share';
 import { Language, t } from '@/lib/i18n';
 import { useLanguage } from '@/hooks/use-language';
