@@ -135,10 +135,21 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     missingKeys: [],
   });
   const [configIdentity, setConfigIdentity] = useState<ConfigurationIdentity | null>(null);
+  const identityCacheRef = useRef<ConfigurationIdentity | null>(null);
   const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
   const modelSnapshotRef = useRef<string | null>(null);
   const headerImageRef = useRef<CachedImageAsset | null>(null);
   const footerImageRef = useRef<CachedImageAsset | null>(null);
+
+  const ensureIdentity = async (): Promise<ConfigurationIdentity> => {
+    if (identityCacheRef.current) {
+      return identityCacheRef.current;
+    }
+    const identity = await buildConfigurationIdentity(config, lang);
+    identityCacheRef.current = identity;
+    setConfigIdentity(identity);
+    return identity;
+  };
 
   const summaryRows = [
     {
