@@ -87,13 +87,13 @@ function normalizeForHash(value: unknown): unknown {
   return value;
 }
 
-async function buildConfigurationIdentity(config: ConveyorConfig): Promise<ConfigurationIdentity> {
+async function buildConfigurationIdentity(
+  config: ConveyorConfig,
+  lang: Language,
+): Promise<ConfigurationIdentity> {
   const normalized = normalizeForHash(config);
   const payload = JSON.stringify(normalized);
-  const shortId = await getOrReserveCurrentConfiguratorId(
-    config,
-    typeof window !== "undefined" ? window.location.href : undefined,
-  );
+  const shortId = await requestConfiguratorReference("belt", config, lang);
   let fullHash: string;
 
   if (typeof crypto !== "undefined" && crypto.subtle) {
