@@ -59,6 +59,39 @@ export type Database = {
         }
         Relationships: []
       }
+      configurator_references: {
+        Row: {
+          configuration: Json
+          created_at: string
+          id: string
+          inquiry_sent_at: string | null
+          lang: string
+          pdf_downloaded_at: string | null
+          reference: string
+          tool: string
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          inquiry_sent_at?: string | null
+          lang?: string
+          pdf_downloaded_at?: string | null
+          reference: string
+          tool: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          inquiry_sent_at?: string | null
+          lang?: string
+          pdf_downloaded_at?: string | null
+          reference?: string
+          tool?: string
+        }
+        Relationships: []
+      }
       profile_inquiries: {
         Row: {
           company: string | null
@@ -110,6 +143,14 @@ export type Database = {
     }
     Functions: {
       generate_inquiry_reference: { Args: never; Returns: string }
+      mark_configurator_reference: {
+        Args: { _action: string; _reference: string }
+        Returns: undefined
+      }
+      reserve_configurator_reference: {
+        Args: { _config: Json; _lang: string; _tool: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
