@@ -67,7 +67,6 @@ const BeltConfigurator = () => {
     setConfig(defaultConfig);
     setStep(0);
     clearSharedConfiguratorStateFromUrl();
-    void reserveNewCurrentConfiguratorId(defaultConfig);
   }, []);
 
   const stepTitles = [
