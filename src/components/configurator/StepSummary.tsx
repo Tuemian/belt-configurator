@@ -13,7 +13,11 @@ import jsPDF from "jspdf";
 import { toDataURL as toQrDataUrl } from "qrcode";
 import headerBackground from "@/assets/Hintergrund_Kopfzeile.png";
 import footerBackground from "@/assets/Hintergrund_Fusszeile.png";
-import { buildSharedConfiguratorUrl, getOrReserveCurrentConfiguratorId } from "@/lib/configurator-share";
+import {
+  buildSharedConfiguratorUrl,
+  markConfiguratorReference,
+  requestConfiguratorReference,
+} from "@/lib/configurator-share";
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -83,13 +87,13 @@ function normalizeForHash(value: unknown): unknown {
   return value;
 }
 
-async function buildConfigurationIdentity(config: ConveyorConfig): Promise<ConfigurationIdentity> {
+async function buildConfigurationIdentity(
+  config: ConveyorConfig,
+  lang: Language,
+): Promise<ConfigurationIdentity> {
   const normalized = normalizeForHash(config);
   const payload = JSON.stringify(normalized);
-  const shortId = await getOrReserveCurrentConfiguratorId(
-    config,
-    typeof window !== "undefined" ? window.location.href : undefined,
-  );
+  const shortId = await requestConfiguratorReference("belt", config, lang);
   let fullHash: string;
 
   if (typeof crypto !== "undefined" && crypto.subtle) {
@@ -131,10 +135,21 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     missingKeys: [],
   });
   const [configIdentity, setConfigIdentity] = useState<ConfigurationIdentity | null>(null);
+  const identityCacheRef = useRef<ConfigurationIdentity | null>(null);
   const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
   const modelSnapshotRef = useRef<string | null>(null);
   const headerImageRef = useRef<CachedImageAsset | null>(null);
   const footerImageRef = useRef<CachedImageAsset | null>(null);
+
+  const ensureIdentity = async (): Promise<ConfigurationIdentity> => {
+    if (identityCacheRef.current) {
+      return identityCacheRef.current;
+    }
+    const identity = await buildConfigurationIdentity(config, lang);
+    identityCacheRef.current = identity;
+    setConfigIdentity(identity);
+    return identity;
+  };
 
   const summaryRows = [
     {
@@ -286,25 +301,11 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     };
   }, [config]);
 
+  // Reset cached identity whenever the configuration changes — next PDF/inquiry
+  // action will reserve a fresh ID.
   useEffect(() => {
-    let cancelled = false;
-
-    void buildConfigurationIdentity(config)
-      .then((identity) => {
-        if (!cancelled) {
-          setConfigIdentity(identity);
-        }
-      })
-      .catch((error) => {
-        console.error("Configuration identity error:", error);
-        if (!cancelled) {
-          setConfigIdentity(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    identityCacheRef.current = null;
+    setConfigIdentity(null);
   }, [config]);
 
   const currencyFormatter = new Intl.NumberFormat(lang === "de" ? "de-DE" : lang === "it" ? "it-IT" : "en-US", {
@@ -704,11 +705,15 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
 
   const handleDownloadPdf = async () => {
     try {
-      const identity = await buildConfigurationIdentity(config);
+      const identity = await ensureIdentity();
       const modelImageDataUrl = await captureModelSnapshot();
       const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       triggerBlobDownload(pdfBlob, getPdfFilename(identity));
-      toast({ title: lang === "de" ? "PDF heruntergeladen" : "PDF downloaded" });
+      void markConfiguratorReference(identity.shortId, "pdf");
+      toast({
+        title: lang === "de" ? "PDF heruntergeladen" : lang === "it" ? "PDF scaricato" : "PDF downloaded",
+        description: `ID ${identity.shortId}`,
+      });
     } catch (error) {
       console.error("PDF generation error:", error);
       toast({
@@ -734,7 +739,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     if (!form.privacy) return;
     setSending(true);
     try {
-      const identity = await buildConfigurationIdentity(config);
+      const identity = await ensureIdentity();
       const modelImageDataUrl = await captureModelSnapshot();
       const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       const pdfBase64 = await blobToBase64(pdfBlob);
@@ -743,6 +748,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         body: {
           type: "belt",
           lang,
+          reference: identity.shortId,
           form: {
             name: form.name,
             company: form.company,
@@ -768,7 +774,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       }
 
       setForm({ name: "", company: "", email: "", phone: "", message: "", privacy: false });
-      toast({ title: t("submitSuccess", lang) });
+      toast({ title: t("submitSuccess", lang), description: `ID ${identity.shortId}` });
     } catch (error) {
       console.error("Inquiry submit error:", error);
       toast({ title: t("submitError", lang) });
@@ -791,7 +797,13 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-bold text-foreground">{t("summaryTitle", lang)}</h3>
             <div className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-semibold tracking-wide text-primary">
-              ID {configIdentity?.shortId ?? "..."}
+              {configIdentity?.shortId
+                ? `ID ${configIdentity.shortId}`
+                : lang === "de"
+                  ? "ID folgt"
+                  : lang === "it"
+                    ? "ID in arrivo"
+                    : "ID pending"}
             </div>
           </div>
 
@@ -809,7 +821,17 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
               <div className="text-sm text-muted-foreground">
                 {lang === "de" ? "Konfigurations-ID" : lang === "it" ? "ID configurazione" : "Configuration ID"}
               </div>
-              <div className="text-xl font-bold tracking-wide text-foreground">{configIdentity?.shortId ?? "..."}</div>
+              {configIdentity?.shortId ? (
+                <div className="text-xl font-bold tracking-wide text-foreground">{configIdentity.shortId}</div>
+              ) : (
+                <div className="text-sm text-muted-foreground italic">
+                  {lang === "de"
+                    ? "Wird beim PDF-Download oder bei der Anfrage vergeben."
+                    : lang === "it"
+                      ? "Assegnato al download del PDF o all'invio della richiesta."
+                      : "Issued when downloading the PDF or sending the inquiry."}
+                </div>
+              )}
             </CardContent>
           </Card>
 

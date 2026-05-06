@@ -25,6 +25,7 @@ interface InquiryBody {
   };
   configuration: unknown;
   summary?: string;
+  reference?: string;
   attachment?: {
     filename: string;
     contentType: string;
@@ -196,19 +197,24 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   const table = body.type === "belt" ? "belt_inquiries" : "profile_inquiries";
+  const providedReference = typeof body.reference === "string" ? body.reference.trim().slice(0, 64) : "";
+  const insertPayload: Record<string, unknown> = {
+    lang,
+    name,
+    company: company || null,
+    email,
+    phone: phone || null,
+    message: message || null,
+    configuration: body.configuration,
+    summary_text: summary || null,
+    pdf_filename: body.attachment?.filename ?? null,
+  };
+  if (providedReference) {
+    insertPayload.reference = providedReference;
+  }
   const { data: insertData, error: insertErr } = await supabase
     .from(table)
-    .insert({
-      lang,
-      name,
-      company: company || null,
-      email,
-      phone: phone || null,
-      message: message || null,
-      configuration: body.configuration,
-      summary_text: summary || null,
-      pdf_filename: body.attachment?.filename ?? null,
-    })
+    .insert(insertPayload)
     .select("id, reference")
     .single();
 
@@ -221,6 +227,17 @@ Deno.serve(async (req) => {
   }
   const inquiryId = insertData?.id ?? "n/a";
   const inquiryRef = (insertData as { reference?: string } | null)?.reference ?? inquiryId;
+
+  // Mark configurator reference as used for an inquiry (if it exists in tracking table)
+  if (providedReference) {
+    const { error: markErr } = await supabase.rpc("mark_configurator_reference", {
+      _reference: providedReference,
+      _action: "inquiry",
+    });
+    if (markErr) {
+      console.warn(`[${inquiryRef}] mark_configurator_reference inquiry failed:`, markErr.message);
+    }
+  }
 
   // Build emails
   const productLabel = body.type === "belt" ? "Gurtförderer-Konfigurator" : "Profil-Konfigurator";
