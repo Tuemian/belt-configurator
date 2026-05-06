@@ -739,7 +739,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     if (!form.privacy) return;
     setSending(true);
     try {
-      const identity = await buildConfigurationIdentity(config);
+      const identity = await ensureIdentity();
       const modelImageDataUrl = await captureModelSnapshot();
       const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       const pdfBase64 = await blobToBase64(pdfBlob);
@@ -748,6 +748,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         body: {
           type: "belt",
           lang,
+          reference: identity.shortId,
           form: {
             name: form.name,
             company: form.company,
@@ -773,7 +774,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       }
 
       setForm({ name: "", company: "", email: "", phone: "", message: "", privacy: false });
-      toast({ title: t("submitSuccess", lang) });
+      toast({ title: t("submitSuccess", lang), description: `ID ${identity.shortId}` });
     } catch (error) {
       console.error("Inquiry submit error:", error);
       toast({ title: t("submitError", lang) });
