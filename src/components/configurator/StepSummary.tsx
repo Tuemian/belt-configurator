@@ -290,25 +290,11 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     };
   }, [config]);
 
+  // Reset cached identity whenever the configuration changes — next PDF/inquiry
+  // action will reserve a fresh ID.
   useEffect(() => {
-    let cancelled = false;
-
-    void buildConfigurationIdentity(config)
-      .then((identity) => {
-        if (!cancelled) {
-          setConfigIdentity(identity);
-        }
-      })
-      .catch((error) => {
-        console.error("Configuration identity error:", error);
-        if (!cancelled) {
-          setConfigIdentity(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    identityCacheRef.current = null;
+    setConfigIdentity(null);
   }, [config]);
 
   const currencyFormatter = new Intl.NumberFormat(lang === "de" ? "de-DE" : lang === "it" ? "it-IT" : "en-US", {
