@@ -3,14 +3,13 @@ import {
   type ConveyorConfig,
   defaultConfig,
 } from '@/lib/configurator-types';
+import { supabase } from '@/integrations/supabase/client';
 
 const STEP_MIN = 1;
 const STEP_MAX = 5;
 const CONFIG_PARAM = 'cfg';
 const STEP_PARAM = 'step';
 const CONFIG_ID_PARAM = 'configId';
-const CURRENT_CONFIG_ID_STORAGE_KEY = 'novamotis-current-config-id';
-const CONFIG_ID_COUNTER_STORAGE_PREFIX = 'novamotis-config-id-counter';
 
 const BELT_TYPES = new Set<ConveyorConfig['beltType']>(['standard', 'grip', 'heavy-grip', 'food-safe']);
 const DRIVE_TYPES = new Set<ConveyorConfig['driveType']>(['direct', 'indirect', 'center', 'drum']);
@@ -125,12 +124,6 @@ export function clearSharedConfiguratorStateFromUrl(): void {
   url.searchParams.delete(STEP_PARAM);
   url.searchParams.delete(CONFIG_ID_PARAM);
   window.history.replaceState({}, '', url.toString());
-
-  try {
-    window.sessionStorage.removeItem(CURRENT_CONFIG_ID_STORAGE_KEY);
-  } catch {
-    // Ignore storage access issues and keep reset functional.
-  }
 }
 
 function getDateStamp(date = new Date()): string {
@@ -140,115 +133,46 @@ function getDateStamp(date = new Date()): string {
   return `${year}${month}${day}`;
 }
 
-function buildNextConfiguratorId(): string {
-  const dateStamp = getDateStamp();
-
-  if (typeof window === 'undefined') {
-    return `FT-${dateStamp}-001`;
-  }
-
+/**
+ * Reserve a fresh configurator reference (e.g. FT-20260506-007) at the moment
+ * the user triggers PDF download or sends an inquiry. Atomic on the server.
+ * Falls back to a deterministic local id (suffix -LOCAL) only if the call fails.
+ */
+export async function requestConfiguratorReference(
+  tool: 'belt' | 'profile',
+  config: unknown,
+  lang: string,
+): Promise<string> {
   try {
-    const counterKey = `${CONFIG_ID_COUNTER_STORAGE_PREFIX}:${dateStamp}`;
-    const currentValue = Number(window.localStorage.getItem(counterKey) ?? '0');
-    const nextValue = Number.isFinite(currentValue) && currentValue >= 0 ? currentValue + 1 : 1;
-    window.localStorage.setItem(counterKey, String(nextValue));
-    return `FT-${dateStamp}-${String(nextValue).padStart(3, '0')}`;
-  } catch {
-    return `FT-${dateStamp}-001`;
-  }
-}
-
-export function createNewCurrentConfiguratorId(): string {
-  const nextId = buildNextConfiguratorId();
-
-  if (typeof window === 'undefined') {
-    return nextId;
-  }
-
-  try {
-    window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, nextId);
-  } catch {
-    // Ignore storage access issues and still return the generated ID.
-  }
-
-  return nextId;
-}
-
-export async function reserveNewCurrentConfiguratorId(config?: ConveyorConfig): Promise<string> {
-  if (typeof window === 'undefined') {
-    return createNewCurrentConfiguratorId();
-  }
-
-  try {
-    const response = await fetch('/api/create-configuration', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ config }),
+    const { data, error } = await supabase.functions.invoke('reserve-configurator-reference', {
+      body: { action: 'reserve', tool, config, lang },
     });
-
-    if (response.ok) {
-      const payload = await response.json() as { configId?: string };
-      const apiId = typeof payload.configId === 'string' ? payload.configId.trim() : '';
-
-      if (apiId) {
-        window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, apiId);
-        return apiId;
-      }
+    if (error) {
+      throw error;
     }
-  } catch {
-    // Ignore API errors and use deterministic local fallback.
+    const ref = (data as { reference?: string } | null)?.reference;
+    if (typeof ref === 'string' && ref.trim()) {
+      return ref;
+    }
+  } catch (err) {
+    console.error('reserve-configurator-reference failed:', err);
   }
-
-  return createNewCurrentConfiguratorId();
+  return `FT-${getDateStamp()}-LOCAL`;
 }
 
-export async function getOrReserveCurrentConfiguratorId(config?: ConveyorConfig, currentUrl?: string): Promise<string> {
-  if (typeof window !== 'undefined') {
-    try {
-      const url = new URL(currentUrl ?? window.location.href);
-      const sharedConfigId = url.searchParams.get(CONFIG_ID_PARAM);
-      if (sharedConfigId) {
-        window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, sharedConfigId);
-        return sharedConfigId;
-      }
-
-      const existingId = window.sessionStorage.getItem(CURRENT_CONFIG_ID_STORAGE_KEY);
-      if (existingId) {
-        return existingId;
-      }
-    } catch {
-      // Continue with reservation fallback.
-    }
+/** Mark a previously reserved reference as having been used for PDF download / inquiry. */
+export async function markConfiguratorReference(
+  reference: string,
+  mark: 'pdf' | 'inquiry',
+): Promise<void> {
+  if (!reference || reference.endsWith('-LOCAL')) {
+    return;
   }
-
-  return await reserveNewCurrentConfiguratorId(config);
-}
-
-export function getOrCreateCurrentConfiguratorId(currentUrl?: string): string {
-  if (typeof window === 'undefined') {
-    return buildNextConfiguratorId();
-  }
-
   try {
-    const url = new URL(currentUrl ?? window.location.href);
-    const sharedConfigId = url.searchParams.get(CONFIG_ID_PARAM);
-
-    if (sharedConfigId) {
-      window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, sharedConfigId);
-      return sharedConfigId;
-    }
-
-    const existingId = window.sessionStorage.getItem(CURRENT_CONFIG_ID_STORAGE_KEY);
-    if (existingId) {
-      return existingId;
-    }
-
-    const nextId = buildNextConfiguratorId();
-    window.sessionStorage.setItem(CURRENT_CONFIG_ID_STORAGE_KEY, nextId);
-    return nextId;
-  } catch {
-    return buildNextConfiguratorId();
+    await supabase.functions.invoke('reserve-configurator-reference', {
+      body: { action: 'mark', reference, mark },
+    });
+  } catch (err) {
+    console.warn('mark configurator reference failed:', err);
   }
 }
