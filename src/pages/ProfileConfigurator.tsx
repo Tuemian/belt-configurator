@@ -450,7 +450,7 @@ export default function ProfileConfigurator() {
 
         {/* Main stage: 2D Workbench (primary) + 3D Viewer (collapsible) */}
         <main className="flex-1 relative flex flex-col bg-slate-100 overflow-hidden">
-          <div className="flex-1 p-3 min-h-0">
+          <div className="flex-1 p-3 md:p-5 min-h-0 pb-[280px] lg:pb-5">
             <ProfileWorkbench2D
               section={section}
               length={config.length}
@@ -467,44 +467,45 @@ export default function ProfileConfigurator() {
             />
           </div>
 
-
-
-          {/* Price bar */}
-          <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-6">
-            <div className="grid grid-cols-5 gap-6 text-xs">
-              <div>
-                <div className="text-muted-foreground">Material</div>
-                <div className="text-foreground font-medium">{fmt.format(price.material)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Schrägschnitte</div>
-                <div className="text-foreground font-medium">{fmt.format(price.miterCuts)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Bohrungen</div>
-                <div className="text-foreground font-medium">{fmt.format(price.holes)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Stirngewinde</div>
-                <div className="text-foreground font-medium">{fmt.format(price.endThreads)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Verbinder</div>
-                <div className="text-foreground font-medium">{fmt.format(price.connectors)}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6 shrink-0">
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground">Gesamtpreis (netto)</div>
-                <div className="text-2xl font-bold text-primary">{fmt.format(price.total)}</div>
-                <div className="text-[10px] text-muted-foreground">Richtpreis · {config.quantity} Stk. · zzgl. Versand &amp; MwSt.</div>
-              </div>
-              <Button onClick={addToCart} size="lg" className="gap-2 px-6 font-semibold">
-                <ShoppingCart className="h-4 w-4" />
-                In den Warenkorb
-              </Button>
-            </div>
+          {/* Floating Price Card */}
+          <div className="absolute z-30 left-3 right-3 bottom-3 lg:left-auto lg:right-6 lg:bottom-6 lg:w-[340px]">
+            <Card className="shadow-2xl border-slate-200/80 bg-white/95 backdrop-blur">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center justify-between">
+                  <span>Preis-Übersicht</span>
+                  <span className="text-[10px] normal-case tracking-normal text-muted-foreground">{config.quantity} Stk.</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-2">
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Material</span>
+                    <span className="font-mono text-foreground">{fmt.format(price.material)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Bearbeitung</span>
+                    <span className="font-mono text-foreground">{fmt.format(processingTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>MwSt. (19 %)</span>
+                    <span className="font-mono text-foreground">{fmt.format(tax)}</span>
+                  </div>
+                </div>
+                <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (brutto)</div>
+                    <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(grossTotal)}</div>
+                  </div>
+                  <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
+                    Richtpreis · zzgl. Versand
+                  </div>
+                </div>
+                <Button onClick={addToCart} size="lg" className="w-full gap-2 font-semibold mt-1">
+                  <ShoppingCart className="h-4 w-4" />
+                  In den Warenkorb
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
