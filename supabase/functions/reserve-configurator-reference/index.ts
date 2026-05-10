@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     });
     if (error) {
       console.error("reserve error:", error);
-      return jsonResponse(500, { error: "reserve failed", details: error.message });
+      return jsonResponse(500, { error: "reserve failed" });
     }
     return jsonResponse(200, { reference: data });
   }
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     });
     if (error) {
       console.error("mark error:", error);
-      return jsonResponse(500, { error: "mark failed", details: error.message });
+      return jsonResponse(500, { error: "mark failed" });
     }
     return jsonResponse(200, { ok: true });
   }
