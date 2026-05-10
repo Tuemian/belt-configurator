@@ -90,7 +90,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="https://www.novamotis.com/" target="_blank" rel="noreferrer" className="hover:opacity-80 transition-opacity">
-              <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
+              <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" width={142} height={80} />
             </a>
           </div>
           <div className="flex items-center gap-2">
