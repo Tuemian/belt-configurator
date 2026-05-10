@@ -121,6 +121,285 @@ export default function ProfileConfigurator() {
     setInquiryOpen(true);
   };
 
+  // ---------------------------------------------------------------------------
+  // Sidebar body — wiederverwendet für Desktop-Aside und Mobile-Drawer
+  // ---------------------------------------------------------------------------
+  const sidebarBody = (
+    <div className="flex flex-col h-full">
+      <div className="p-5 md:p-6 flex-1 overflow-y-auto">
+        <Accordion
+          type="multiple"
+          defaultValue={['basis']}
+          className="w-full space-y-2"
+        >
+          {/* 1. Basis-Konfiguration */}
+          <AccordionItem value="basis" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
+            <AccordionTrigger className="text-sm font-semibold text-foreground py-3 hover:no-underline">
+              1. Basis-Konfiguration
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Profilgröße</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PROFILE_SIZES.map((sz) => {
+                      const isActive = section.sizeKey === sz.key;
+                      const tile = PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
+                      return (
+                        <button
+                          key={sz.key}
+                          onClick={() => {
+                            const next =
+                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === section.variant) ??
+                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === 'leicht') ??
+                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
+                            update({ sectionId: next.id });
+                          }}
+                          className={`flex flex-col items-center justify-center gap-1.5 rounded-lg p-2 border-2 transition-all ${
+                            isActive
+                              ? 'bg-primary/10 border-primary shadow-sm'
+                              : 'bg-white border-slate-200 hover:border-primary/40 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="pointer-events-none">
+                            <ProfileCrossSection2D
+                              section={tile}
+                              activeSlot="A"
+                              activeModuleIndex={0}
+                              onSelectSlot={() => { /* visual only */ }}
+                              size={42}
+                              showLabels={false}
+                            />
+                          </div>
+                          <span className={`text-[10px] font-mono leading-none ${isActive ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{sz.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Variante</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(['eco', 'leicht', 'schwer'] as const).map((v) => {
+                      const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
+                      const isActive = section.variant === v;
+                      return (
+                        <button
+                          key={v}
+                          disabled={!available}
+                          onClick={() => available && update({ sectionId: available.id })}
+                          className={`rounded-md px-2 py-2.5 text-xs font-semibold border transition-colors ${
+                            !available
+                              ? 'opacity-30 cursor-not-allowed border-slate-200 text-muted-foreground'
+                              : isActive
+                              ? 'bg-primary/10 border-primary text-primary'
+                              : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
+                          }`}
+                        >
+                          {v === 'eco' ? 'ECO' : v === 'leicht' ? 'Leicht' : 'Schwer'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between text-[11px] text-muted-foreground mt-2">
+                    <span>{section.label}</span>
+                    <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Länge</Label>
+                    <div className="flex items-center gap-1">
+                      <NumericInput
+                        min={50}
+                        max={6000}
+                        step={5}
+                        value={config.length}
+                        onCommit={(v) => update({
+                          length: v,
+                          holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
+                        })}
+                        className="h-8 w-24 text-right text-sm"
+                      />
+                      <span className="text-muted-foreground text-xs">mm</span>
+                    </div>
+                  </div>
+                  <Slider
+                    min={50}
+                    max={6000}
+                    step={5}
+                    value={[config.length]}
+                    onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>50 mm</span><span>6000 mm</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Stückzahl</Label>
+                  <NumericInput
+                    min={1}
+                    max={9999}
+                    value={config.quantity}
+                    onCommit={(v) => update({ quantity: v })}
+                    className="h-8 w-24 text-right"
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 2. Enden-Bearbeitung */}
+          <AccordionItem value="enden" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
+            <AccordionTrigger className="text-sm font-semibold text-foreground py-3 hover:no-underline">
+              2. Enden-Bearbeitung
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Schrägschnitte (0–45°)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {(['Anfang', 'Ende'] as const).map((end) => {
+                      const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
+                      const val = config[key];
+                      return (
+                        <div key={end} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-foreground">{end}</span>
+                            <div className="flex items-center gap-1">
+                              <NumericInput
+                                min={0}
+                                max={45}
+                                step={1}
+                                value={val}
+                                onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
+                                className="h-8 w-14 text-right text-sm"
+                              />
+                              <span className="text-muted-foreground text-xs">°</span>
+                            </div>
+                          </div>
+                          <Slider
+                            min={0}
+                            max={45}
+                            step={1}
+                            value={[val]}
+                            onValueChange={([v]) => update({ [key]: v })}
+                          />
+                          {val > 0 && (
+                            <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Stirnseiten-Gewinde</Label>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
+                    Detail-Auswahl direkt im 2D-Editor (Klick auf Kernzug = M8-Gewinde).
+                  </p>
+                  <div className="space-y-2">
+                    {(['endStart', 'endEnd'] as const).map((endKey) => {
+                      const label = endKey === 'endStart' ? 'Anfang' : 'Ende';
+                      const val = config[endKey];
+                      const scope = val.scope ?? 'all';
+                      const scopeText = !val.thread
+                        ? 'kein Gewinde'
+                        : scope === 'all' ? 'alle Kernzüge'
+                        : scope === 'center' ? 'nur Mitte'
+                        : 'Auswahl';
+                      return (
+                        <div key={endKey} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <div>
+                            <div className="text-[11px] font-medium text-foreground">{label}</div>
+                            <div className="text-[10px] text-muted-foreground">{scopeText}</div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
+                            <Checkbox
+                              checked={val.thread}
+                              onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v, scope: val.scope ?? 'all' } })}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* 3. Übersicht Bearbeitungen */}
+          <AccordionItem value="bearbeitungen" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
+            <AccordionTrigger className="text-sm font-semibold text-foreground py-3 hover:no-underline">
+              <span className="flex items-center gap-2">
+                3. Übersicht Bearbeitungen
+                {(config.holes.length + config.connectors.length) > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/15 text-primary text-[10px] font-mono font-semibold">
+                    {config.holes.length + config.connectors.length}
+                  </span>
+                )}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-3 text-xs text-foreground space-y-2">
+                <div className="flex items-center gap-2 text-primary font-semibold">
+                  <Plus className="h-3.5 w-3.5" />
+                  Drag &amp; Drop in der 2D-Werkbank
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  Klicke direkt auf das Profil, um Bohrungen oder Verbinder zu setzen.
+                </p>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-primary/10">
+                  <div className="text-center bg-white rounded p-2">
+                    <div className="text-[10px] text-muted-foreground uppercase">Bohrungen</div>
+                    <div className="font-mono font-bold text-base text-foreground">{config.holes.length}</div>
+                  </div>
+                  <div className="text-center bg-white rounded p-2">
+                    <div className="text-[10px] text-muted-foreground uppercase">Verbinder</div>
+                    <div className="font-mono font-bold text-base text-foreground">{config.connectors.length}</div>
+                  </div>
+                </div>
+                {(config.holes.length > 0 || config.connectors.length > 0) && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => update({ holes: [], connectors: [] })}
+                    className="w-full h-8 text-[11px] text-muted-foreground hover:text-red-600"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Alle entfernen
+                  </Button>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+      <div className="p-4 border-t border-slate-200 shrink-0">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setConfig(DEFAULT_CONFIG)}
+          className="w-full gap-2 text-muted-foreground text-xs"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Konfiguration zurücksetzen
+        </Button>
+      </div>
+    </div>
+  );
+
+  // VAT 19 % zur Anzeige in der Floating-Card
+  const tax = +(price.total * 0.19).toFixed(2);
+  const grossTotal = +(price.total + tax).toFixed(2);
+  const processingTotal = +(price.miterCuts + price.holes + price.endThreads + price.connectors).toFixed(2);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <ProfileOnboarding />
