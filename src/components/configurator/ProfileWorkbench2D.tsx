@@ -11,6 +11,8 @@ import {
   HOLE_TYPES,
   CONNECTOR_TYPES,
   SLOT_SIDE_DE,
+  SLOT_LABEL_DE,
+  MIN_EDGE_DISTANCE,
   getModulePitch,
   getSlotCounts,
   getSlotNumber,
