@@ -617,6 +617,27 @@ export function ProfileWorkbench2D({
                     className="h-8 text-xs"
                   />
                 </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">Schnell-Position</Label>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[
+                      { lbl: '20→', z: 20, title: '20 mm vom Anfang' },
+                      { lbl: '50→', z: 50, title: '50 mm vom Anfang' },
+                      { lbl: 'Mitte', z: Math.round(length / 2), title: 'Mitte des Profils' },
+                      { lbl: '←50', z: length - 50, title: '50 mm vom Ende' },
+                      { lbl: '←20', z: length - 20, title: '20 mm vom Ende' },
+                    ].map((q) => (
+                      <button
+                        key={q.lbl}
+                        onClick={() => updateHole({ zPosition: Math.max(1, Math.min(length - 1, q.z)) })}
+                        title={q.title}
+                        className="h-7 text-[10px] rounded border border-slate-200 bg-white hover:bg-primary/10 hover:border-primary text-foreground font-medium"
+                      >
+                        {q.lbl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
 
