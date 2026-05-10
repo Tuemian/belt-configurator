@@ -992,8 +992,13 @@ function SideRow({
               if (laneIdx < 0) return null;
               const cy = laneCy(laneIdx);
               const isSel = selectedId === h.id;
+              const isDragging = draggingId === h.id;
               const r = Math.max(3, Math.min(8, h.diameter * 0.6));
-              const color = holeColor(h.type);
+              const distStart = h.zPosition;
+              const distEnd = length - h.zPosition;
+              const tooClose = distStart < MIN_EDGE_DISTANCE || distEnd < MIN_EDGE_DISTANCE;
+              const color = tooClose ? '#dc2626' : holeColor(h.type);
+              const ringColor = tooClose ? '#dc2626' : isSel ? 'hsl(var(--primary))' : '#cbd5e1';
               const hx = dx(h.zPosition);
               return (
                 <g
@@ -1003,13 +1008,38 @@ function SideRow({
                   onClick={(e) => { e.stopPropagation(); onSelectMarker(h.id); }}
                   style={{ cursor: 'grab' }}
                 >
-                  {(isSel || draggingId === h.id) && (
-                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill="hsl(var(--primary))" fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
+                  {/* Echtzeit-Maßlinien während Drag: Abstand zu Anfang und Ende */}
+                  {isDragging && (
+                    <g pointerEvents="none">
+                      {/* Linie zum Anfang (rechts) */}
+                      <line x1={hx} y1={cy} x2={length} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
+                      {/* Linie zum Ende (links) */}
+                      <line x1={hx} y1={cy} x2={0} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
+                      {/* Label zum Anfang */}
+                      <rect x={(hx + length) / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
+                      <text x={(hx + length) / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distStart)} mm</text>
+                      {/* Label zum Ende */}
+                      <rect x={hx / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
+                      <text x={hx / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distEnd)} mm</text>
+                    </g>
+                  )}
+                  {(isSel || isDragging) && (
+                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill={tooClose ? '#dc2626' : 'hsl(var(--primary))'} fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
                       {Math.round(h.zPosition)} mm
                     </text>
                   )}
-                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={isSel ? 'hsl(var(--primary))' : '#cbd5e1'} strokeWidth={isSel ? 1.4 : 0.6} />
+                  {/* Warn-Glow bei Mindestabstand-Verletzung */}
+                  {tooClose && (
+                    <circle cx={hx} cy={cy} r={r + 4} fill="none" stroke="#dc2626" strokeWidth="0.6" opacity="0.45">
+                      <animate attributeName="r" values={`${r + 3};${r + 6};${r + 3}`} dur="1.4s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.6;0.15;0.6" dur="1.4s" repeatCount="indefinite" />
+                    </circle>
+                  )}
+                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={ringColor} strokeWidth={isSel || tooClose ? 1.4 : 0.6} />
                   <circle data-role="marker" cx={hx} cy={cy} r={r} fill={color} />
+                  {tooClose && (
+                    <title>Mindestabstand zum Rand unterschritten ({MIN_EDGE_DISTANCE} mm)</title>
+                  )}
                 </g>
               );
             })}
