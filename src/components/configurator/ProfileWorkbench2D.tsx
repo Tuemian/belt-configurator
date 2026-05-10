@@ -438,8 +438,8 @@ export function ProfileWorkbench2D({
             </aside>
           )}
 
-          {/* Center: stacked side rows */}
-          <div className="flex-1 min-w-0 overflow-auto p-3 space-y-2 relative">
+          {/* Center: focus view — only the active side is rendered, plus side switcher */}
+          <div className="flex-1 min-w-0 overflow-auto p-4 md:p-6 space-y-4 relative">
             {overlapWarning && (
               <div className="sticky top-0 z-10 inline-flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
                 <AlertTriangle className="h-3 w-3" />
@@ -447,11 +447,55 @@ export function ProfileWorkbench2D({
               </div>
             )}
 
+            {/* Side switcher header: clickable cross-section + active-side title */}
+            <div className="flex items-center gap-4 md:gap-6 bg-white rounded-lg border border-slate-200 p-3 md:p-4 shadow-sm">
+              <div className="shrink-0 flex flex-col items-center gap-1">
+                <ProfileCrossSection2D
+                  section={section}
+                  activeSlot={activeKey.slot}
+                  activeModuleIndex={activeKey.moduleIndex}
+                  selectedKeys={new Set([keyOf(activeKey.slot, activeKey.moduleIndex), ...multiSelected])}
+                  onSelectSlot={(slot, mi, additive) => {
+                    if (additive) {
+                      const k = keyOf(slot, mi);
+                      const cur = keyOf(activeKey.slot, activeKey.moduleIndex);
+                      if (k === cur) return;
+                      setMultiSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(k)) next.delete(k); else next.add(k);
+                        return next;
+                      });
+                    } else {
+                      setActiveKey({ slot, moduleIndex: mi });
+                      setMultiSelected(new Set());
+                      setSelectedId(null);
+                    }
+                  }}
+                  size={88}
+                  showLabels
+                  showSideLabels
+                />
+                <span className="text-[9px] text-muted-foreground">Klick = Seite wählen</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Aktive Bearbeitungs-Seite</div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mt-0.5">
+                  Seite {activeKey.slot} – <span className="uppercase">{SLOT_LABEL_DE[activeKey.slot]}</span>
+                </h2>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Nut {getSlotNumber(section, activeKey.slot, activeKey.moduleIndex)}
+                  {multiSelected.size > 0 && (
+                    <> · <span className="text-primary font-medium">{multiSelected.size + 1} Nuten gleichzeitig</span> · <button onClick={() => setMultiSelected(new Set())} className="underline hover:text-foreground">aufheben</button></>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div
               style={detailView ? { minWidth: `${Math.max(800, length * 0.6 + 80)}px` } : undefined}
               className="space-y-2"
             >
-            {sideRows.map((side) => {
+            {sideRows.filter((s) => s.slot === activeKey.slot).map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
               // Bohrungen von der gegenüberliegenden Seite (A↔C, B↔D) als Geister-Marker
@@ -505,7 +549,7 @@ export function ProfileWorkbench2D({
             {holes.length === 0 && connectors.length === 0 && (
               <div className="text-center text-[11px] text-muted-foreground py-3">
                 <Plus className="h-3 w-3 inline mr-1" />
-                Klicke auf eine Nut, um eine Bohrung zu setzen. Mit Shift-Klick zusätzliche Nuten gleichzeitig auswählen.
+                Klicke auf das Profil, um eine Bohrung zu setzen. Über das Querschnitt-Icon links wechselst du die Seite.
               </div>
             )}
           </div>
