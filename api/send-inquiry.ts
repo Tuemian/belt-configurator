@@ -308,7 +308,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     const errMessage = err instanceof Error ? err.message : String(err);
     Sentry.captureException(err);
     console.error('Graph mail error:', errMessage);
-    response.status(502).json({ error: 'Mail delivery failed', detail: errMessage });
+    response.status(502).json({ error: 'Mail delivery failed' });
     return;
   }
 

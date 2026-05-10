@@ -89,7 +89,8 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
     if (!insertResponse.ok) {
       const details = await insertResponse.text();
-      response.status(502).json({ error: 'Supabase insert failed', details });
+      console.error('Supabase insert failed:', details);
+      response.status(502).json({ error: 'Unable to create configuration' });
       return;
     }
 
@@ -111,6 +112,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    response.status(500).json({ error: 'Unexpected server error', details: message });
+    console.error('Unexpected server error:', message);
+    response.status(500).json({ error: 'Unexpected server error' });
   }
 }
