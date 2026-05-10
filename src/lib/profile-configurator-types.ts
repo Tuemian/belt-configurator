@@ -341,6 +341,9 @@ export function getBoreNumber(section: ProfileSection, ix: number, iy: number): 
 // Pricing (Fallback, wenn Excel nicht geladen)
 // ---------------------------------------------------------------------------
 
+/** Mindestabstand vom Bohrungs-Mittelpunkt zur Profilkante (mm) */
+export const MIN_EDGE_DISTANCE = 15;
+
 export const PRICE_MITER_CUT = 4.50;
 export const PRICE_HOLE = 1.80;
 export const PRICE_CONNECTOR = 3.50;

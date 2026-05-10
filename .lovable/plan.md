@@ -1,81 +1,76 @@
+# Plan: UI/UX-Refactoring Profil-Konfigurator
+
 ## Ziel
+Aus der aktuellen vier-Reihen-Werkbank (parallele Ansicht aller Profilseiten A/B/C/D) wird ein laienfreundliches Tool mit Fokus-Ansicht, gruppierten Eingaben, Echtzeit-Feedback und responsivem Layout.
 
-Den **Profilzuschnitt-Konfigurator** vollständig auf den Stand von Commit `c1413f5` zurücksetzen (alte 2D-Workbench-Visualisierung mit Querschnitts-Editor, Onboarding und eigenem PDF-/Anfrage-Dialog). Der **Fördertechnik-Konfigurator** und die gemeinsame Backend-Infrastruktur bleiben **unverändert**.
+---
 
-## Was sich seit c1413f5 verändert hat
+## 1. Fokus-Ansicht (eine Seite zur Zeit)
 
-Ein Vergleich der Profil-Dateien im Commit `c1413f5` mit dem aktuellen Stand zeigt: Der Profilzuschnitt-Konfigurator wurde nach `c1413f5` stark vereinfacht. Mehrere Komponenten wurden gelöscht, andere komplett neu geschrieben.
+**Komponente:** `ProfileWorkbench2D.tsx`
 
-| Datei | c1413f5 | aktuell |
-|---|---|---|
-| `src/pages/ProfileConfigurator.tsx` | 24,5 KB / reichhaltig | 698 Zeilen / vereinfacht |
-| `src/components/configurator/ProfileViewer3D.tsx` | 12,5 KB | 283 Zeilen / vereinfacht |
-| `src/components/configurator/ProfileCrossSection2D.tsx` | 10,6 KB | **fehlt** |
-| `src/components/configurator/ProfileWorkbench2D.tsx` | 55,6 KB | **fehlt** |
-| `src/components/configurator/ProfileInquiryDialog.tsx` | 12,3 KB | **fehlt** |
-| `src/components/configurator/ProfileOnboarding.tsx` | 3,5 KB | **fehlt** |
-| `src/lib/profile-pdf.ts` | 30,5 KB | **fehlt** |
-| `src/lib/profile-configurator-types.ts` | 16,4 KB | 193 Zeilen / vereinfacht |
+- Statt 4 paralleler Reihen wird nur die aktive Profilseite (A/B/C oder D) groß dargestellt — über die volle Breite der Bühne.
+- Über dem Profil prominenter Titel: **„Seite A – OBEN“** (analog für B/RECHTS, C/UNTEN, D/LINKS).
+- Neue Komponente **`ProfileSideSwitcher.tsx`**: zeigt einen Querschnitt (basierend auf `ProfileCrossSection2D`) mit klickbaren Hotspots auf den vier Seiten. Aktive Seite wird im Querschnitt blau hervorgehoben.
+- Bei Profilen mit mehreren Nuten pro Seite (z. B. 80×80) bleibt eine schmale Lane-Auswahl unter dem Switcher (Tabs „Nut 1 / Nut 2“).
+- Multi-Select bleibt über Modifier-Klick im Switcher erhalten (Shift = mehrere Seiten gleichzeitig bearbeiten).
 
-Außerdem in `c1413f5` vorhanden, im aktuellen Repo nicht: zwei GLB-Modelle unter `public/models/profiles/` und zwei STEP-Dateien unter `step-solid-service/profile/`.
+## 2. Modernisierte Sidebar
 
-## Plan
+**Komponente:** `src/pages/ProfileConfigurator.tsx`
 
-### 1. Dateien aus `c1413f5` direkt von GitHub holen und ins Projekt übernehmen
+- Drei `Accordion`-Sektionen (`@/components/ui/accordion`):
+  1. **Basis-Konfiguration** — Profilgröße (visuell), Variante, Länge (Slider + Input), Menge.
+  2. **Enden-Bearbeitung** — Schrägschnitte (Anfang/Ende mit Winkel-Slidern), Stirnseiten-Gewinde.
+  3. **Übersicht Bearbeitungen** — Liste aller Bohrungen/Verbinder mit Position, Typ, Seite. Klick fokussiert das Element in der Werkbank, Mülleimer-Button entfernt es.
+- **Visuelle Profil-Auswahl:** Größen-Buttons werden zu Kacheln mit kleinem SVG-Querschnitt (verkleinerte `ProfileCrossSection2D`) + Label darunter. Neue Komponente **`ProfileSizeTile.tsx`**.
+- Standardmäßig ist nur Sektion 1 aufgeklappt.
 
-Per `curl https://raw.githubusercontent.com/Tuemian/belt-configurator/c1413f5320e9caeb0d8572e5e5ef6402a357cbf8/<pfad>`:
+## 3. Echtzeit-Maße & Validierung
 
-**Überschreiben:**
-- `src/pages/ProfileConfigurator.tsx`
-- `src/components/configurator/ProfileViewer3D.tsx`
-- `src/lib/profile-configurator-types.ts`
+**Komponente:** `ProfileWorkbench2D.tsx`
 
-**Neu anlegen (aktuell gelöscht):**
-- `src/components/configurator/ProfileCrossSection2D.tsx`
-- `src/components/configurator/ProfileWorkbench2D.tsx`
-- `src/components/configurator/ProfileInquiryDialog.tsx`
-- `src/components/configurator/ProfileOnboarding.tsx`
-- `src/lib/profile-pdf.ts`
+- Beim Drag einer Bohrung: zwei dynamische Maßlinien (SVG) vom Bohrungsmittelpunkt zu Profilanfang und -ende, mit mm-Label in der Mitte.
+- **Validierung:** wenn `zPosition < 15` oder `zPosition > length - 15`, wird die Bohrung rot eingefärbt (`fill` und `stroke`), zusätzlich pulsierender Glow. Tooltip: „Mindestabstand zum Rand unterschritten (15 mm)“.
+- Schwellwert als Konstante `MIN_EDGE_DISTANCE = 15` in `profile-configurator-types.ts`.
+- Validierungsstatus wird auch in der Sidebar-Liste (Sektion 3) als Warnsymbol angezeigt.
 
-**Binär-Assets neu anlegen:**
-- `public/models/profiles/1108038_profil_a8_40x40_leicht.glb`
-- `public/models/profiles/1108055_profil_a8_80x40_leicht.glb`
-- `step-solid-service/profile/1108038_profil_a8_40x40_leicht.step`
-- `step-solid-service/profile/1108055_profil_a8_80x40_leicht.step`
-- `step-solid-service/profile/README.md`
+## 4. Design-Finish, Floating Cart & Mobile
 
-### 2. Kompatibilitäts-Check nach dem Zurückschreiben
+- **Branding-Blau #2D89C7** (HSL ≈ 203 65% 48%) als `--primary` in `src/index.css` setzen — alle Primärbuttons/Highlights nutzen das automatisch (es wird kein Hardcode in Komponenten geschrieben).
+- Großzügigere Abstände in Sidebar und Werkbank (Padding `p-6`, Gaps `gap-6`).
+- **Floating Price Card** (neue Komponente `FloatingPriceCard.tsx`) unten rechts in der Werkbank, schwebend mit Schatten:
+  - Aufschlüsselung: Material / Bearbeitung / Steuer (19 % MwSt.)
+  - Gesamtpreis fett
+  - Buttons „In Warenkorb“ + „Anfrage senden“
+- **Mobile/Tablet:**
+  - Unter `lg` (1024 px): Sidebar wird zu `Sheet`-Drawer (`@/components/ui/sheet`), Trigger-Button im Header.
+  - Floating Card wird auf Mobile zu Bottom-Sheet (volle Breite, ausklappbar).
+  - Side-Switcher-Querschnitt rückt unter den Profiltitel.
 
-Nur falls die alten Dateien neue Imports/Calls erwarten, die heute nicht mehr existieren, kleinste Anpassungen vornehmen:
+## 5. Quick-Action-Buttons an Bohrungen
 
-- **shadcn/ui-Komponenten**, **`@/integrations/supabase/client`**, **`use-toast`**, **`use-language`**, **`i18n`**, **`pricing`** prüfen — alle sollten weiterhin verfügbar sein.
-- **`profile-pdf.ts`** nutzt vermutlich `jspdf` / `jspdf-autotable`. Falls nicht installiert: `bun add jspdf jspdf-autotable` (das sind Frontend-Libraries, keine Backend-Änderung).
-- **`ProfileInquiryDialog`**: Ruft mit hoher Wahrscheinlichkeit die existierende `send-inquiry` Edge Function auf — diese existiert weiterhin und wird **nicht** verändert.
-- **`reserve-configurator-reference`** (nach c1413f5 hinzugekommen): wird im alten `ProfileConfigurator.tsx` nicht referenziert. Heißt: nach dem Revert hat der Profil-Konfigurator **keine fortlaufende Referenz-ID mehr**. Das ist die logische Konsequenz aus „Stand c1413f5". Der Fördertechnik-Konfigurator behält die Referenz-ID weiterhin.
+- Bei selektierter Bohrung erscheint ein kleines Popover/Floating-Toolbar direkt am Bohrloch mit Schnellpositionen:
+  - **„20 mm Anfang“**, **„50 mm Anfang“**, **„Mitte“**, **„50 mm Ende“**, **„20 mm Ende“**
+- Klick setzt `zPosition` exakt. Implementierung über bestehende `updateHole`-Funktion.
 
-### 3. Routing prüfen
+---
 
-`src/App.tsx` lädt `ProfileConfigurator` per `React.lazy`. Pfad und Default-Export bleiben gleich → kein Eingriff nötig.
+## Technische Details
 
-### 4. Was explizit NICHT angefasst wird
+- Neue Dateien:
+  - `src/components/configurator/ProfileSideSwitcher.tsx`
+  - `src/components/configurator/ProfileSizeTile.tsx`
+  - `src/components/configurator/FloatingPriceCard.tsx`
+  - `src/components/configurator/HoleQuickActions.tsx`
+- Bestehende Dateien:
+  - `src/components/configurator/ProfileWorkbench2D.tsx` (große Refactorierung — vier Reihen → eine Reihe + Side-Switcher; Drag-Maßlinien; Validierungs-Styling; Quick-Actions integrieren)
+  - `src/pages/ProfileConfigurator.tsx` (Sidebar in Accordion umbauen; Mobile-Drawer; Floating Card statt Inline-Preis)
+  - `src/index.css` (`--primary` auf #2D89C7 anpassen)
+  - `src/lib/profile-configurator-types.ts` (`MIN_EDGE_DISTANCE` exportieren)
+- Bestehende Tools (Tool-Palette, Liste-Dialog, Detail-Zoom, Stirnseiten-Panels) bleiben erhalten und werden in die neue Fokus-Ansicht integriert.
+- Keine Änderungen an Backend, Pricing-Logik oder Datenmodell.
 
-- `src/pages/BeltConfigurator.tsx`
-- alle `Step*.tsx` (Dimensions, BeltSpeed, Drive, Stand, Summary)
-- `ConveyorViewer3D.tsx`, `ConveyorPreview.tsx`, `conveyor-3d-library.ts`
-- `src/lib/configurator-share.ts`, `src/lib/configurator-types.ts`, `src/lib/pricing.ts`, `src/lib/step-export.ts`
-- `supabase/functions/send-inquiry`, `supabase/functions/reserve-configurator-reference`
-- alle Migrations, `supabase/config.toml`
-- `src/App.tsx`, `src/pages/Index.tsx`, `src/pages/Auth.tsx`, Auth-Flow
-- Hero-Bild- und Code-Splitting-Optimierungen
+## Credits-Schätzung
 
-### 5. Verifikation
-
-- Build ausführen lassen, Konsole auf fehlende Imports prüfen.
-- Vorschau: `/profile-konfigurator` (oder die jeweilige Route) öffnet die alte Workbench-Ansicht mit 2D-Querschnitt + 3D-Viewer + Onboarding-Dialog.
-- `/belt-konfigurator` öffnet unverändert den 5-Step-Wizard mit Reservierungs-ID, Anfrage-Versand und PDF-Download.
-
-## Hinweise zu Risiken
-
-- **PDF-Generator** (`profile-pdf.ts`) ist groß (30 KB). Falls darin Imports auf seitdem entfernte Helpers verweisen, muss ich das beim Reintegrieren nachziehen — wird beim Build sofort sichtbar.
-- **GLB/STEP-Dateien** werden aus dem Repo via raw-URL geholt; sie sind binär und müssen mit `curl -o` als Binärdaten gespeichert werden.
-- Die alte `profile-configurator-types.ts` definiert deutlich mehr Typen als die heutige. Das überschreibt das aktuelle `PROFILE_SECTIONS`-Schema vollständig — gewünschtes Verhalten gemäß Anweisung „kompletter Stand c1413f5".
+Genaue Credit-Kosten kann ich nicht vorhersagen — der Verbrauch in Build-Mode ist nutzungsabhängig (Komplexität, Iterationen, Datei-Reads/Writes). Für die Größenordnung dieses Refactorings (~4 neue Komponenten, 3 größere Datei-Umbauten, responsive Layout, neues Theme-Token, mehrere Iterationsrunden zu erwarten) ist es ein **mittelgroßes bis großes Feature**. Plan-Modus selbst kostet 1 Credit pro Nachricht. Den aktuellen Stand siehst du im Workspace-Menü oben links bzw. unter Settings → Plans & Credits.

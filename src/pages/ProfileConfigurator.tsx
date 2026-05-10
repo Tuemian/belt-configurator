@@ -1,18 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw, Menu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
 import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
 import { NumericInput } from '@/components/configurator/NumericInput';
+import { ProfileCrossSection2D } from '@/components/configurator/ProfileCrossSection2D';
 import {
   PROFILE_SECTIONS,
   PROFILE_SIZES,
@@ -118,54 +121,30 @@ export default function ProfileConfigurator() {
     setInquiryOpen(true);
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <ProfileOnboarding />
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-28 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <img src={logo} alt="NOVAMOTIS" className="h-20 w-auto" />
-            <span className="text-slate-300 text-xl font-light hidden sm:block">|</span>
-            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden sm:block">Profilzuschnitte</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCartOpen((v) => !v)}
-              className="gap-2"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>{cart.length}</span>
-              {cart.length > 0 && (
-                <span className="text-primary font-semibold">{fmt.format(cartTotal)}</span>
-              )}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-80 shrink-0 border-r border-slate-200 bg-white overflow-y-auto flex flex-col">
-          <div className="p-4 space-y-4 flex-1">
-
-            {/* Profile selection */}
-            <div>
-              <SectionDivider label="Profil" />
-              <div className="mt-3 space-y-4">
-
-                {/* Step 1: Size */}
+  // ---------------------------------------------------------------------------
+  // Sidebar body — wiederverwendet für Desktop-Aside und Mobile-Drawer
+  // ---------------------------------------------------------------------------
+  const sidebarBody = (
+    <div className="flex flex-col h-full">
+      <div className="p-5 md:p-6 flex-1 overflow-y-auto">
+        <Accordion
+          type="multiple"
+          defaultValue={['basis']}
+          className="w-full space-y-2"
+        >
+          {/* 1. Basis-Konfiguration */}
+          <AccordionItem value="basis" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
+            <AccordionTrigger className="text-sm font-semibold text-foreground py-3 hover:no-underline">
+              1. Basis-Konfiguration
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              <div className="space-y-6">
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Größe</Label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Profilgröße</Label>
+                  <div className="grid grid-cols-3 gap-2">
                     {PROFILE_SIZES.map((sz) => {
                       const isActive = section.sizeKey === sz.key;
+                      const tile = PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
                       return (
                         <button
                           key={sz.key}
@@ -174,25 +153,33 @@ export default function ProfileConfigurator() {
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === section.variant) ??
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === 'leicht') ??
                               PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
-                            // Bearbeitung (Bohrungen / Verbinder) bewusst erhalten – User wechselt oft die Variante
                             update({ sectionId: next.id });
                           }}
-                          className={`rounded-md px-2 py-2 text-xs font-mono border transition-colors ${
+                          className={`flex flex-col items-center justify-center gap-1.5 rounded-lg p-2 border-2 transition-all ${
                             isActive
-                              ? 'bg-primary/10 border-primary text-primary font-semibold'
-                              : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
+                              ? 'bg-primary/10 border-primary shadow-sm'
+                              : 'bg-white border-slate-200 hover:border-primary/40 hover:bg-slate-50'
                           }`}
                         >
-                          {sz.label}
+                          <div className="pointer-events-none">
+                            <ProfileCrossSection2D
+                              section={tile}
+                              activeSlot="A"
+                              activeModuleIndex={0}
+                              onSelectSlot={() => { /* visual only */ }}
+                              size={42}
+                              showLabels={false}
+                            />
+                          </div>
+                          <span className={`text-[10px] font-mono leading-none ${isActive ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{sz.label}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Step 2: Variant */}
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Variante</Label>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Variante</Label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {(['eco', 'leicht', 'schwer'] as const).map((v) => {
                       const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
@@ -215,196 +202,255 @@ export default function ProfileConfigurator() {
                       );
                     })}
                   </div>
-                </div>
-
-                {/* Price indicator */}
-                <div className="flex justify-between text-[11px] text-muted-foreground px-0.5">
-                  <span>{section.label}</span>
-                  <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Length */}
-            <div>
-              <SectionDivider label="Länge" />
-              <div className="mt-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">Länge (mm)</Label>
-                  <div className="flex items-center gap-1">
-                    <NumericInput
-                      min={50}
-                      max={6000}
-                      step={5}
-                      value={config.length}
-                      onCommit={(v) => update({
-                        length: v,
-                        holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
-                      })}
-                      className="h-8 w-24 text-right text-sm"
-                    />
-                    <span className="text-muted-foreground text-xs">mm</span>
+                  <div className="flex justify-between text-[11px] text-muted-foreground mt-2">
+                    <span>{section.label}</span>
+                    <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
                   </div>
                 </div>
-                <Slider
-                  min={50}
-                  max={6000}
-                  step={5}
-                  value={[config.length]}
-                  onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>50 mm</span><span>6000 mm</span>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Länge</Label>
+                    <div className="flex items-center gap-1">
+                      <NumericInput
+                        min={50}
+                        max={6000}
+                        step={5}
+                        value={config.length}
+                        onCommit={(v) => update({
+                          length: v,
+                          holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
+                        })}
+                        className="h-8 w-24 text-right text-sm"
+                      />
+                      <span className="text-muted-foreground text-xs">mm</span>
+                    </div>
+                  </div>
+                  <Slider
+                    min={50}
+                    max={6000}
+                    step={5}
+                    value={[config.length]}
+                    onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>50 mm</span><span>6000 mm</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Stückzahl</Label>
+                  <NumericInput
+                    min={1}
+                    max={9999}
+                    value={config.quantity}
+                    onCommit={(v) => update({ quantity: v })}
+                    className="h-8 w-24 text-right"
+                  />
                 </div>
               </div>
-            </div>
+            </AccordionContent>
+          </AccordionItem>
 
-            {/* Quantity */}
-            <div>
-              <SectionDivider label="Menge" />
-              <div className="mt-3 flex items-center gap-3">
-                <Label className="text-xs text-muted-foreground shrink-0">Stückzahl</Label>
-                <NumericInput
-                  min={1}
-                  max={9999}
-                  value={config.quantity}
-                  onCommit={(v) => update({ quantity: v })}
-                  className="h-8 w-24 text-right"
-                />
-              </div>
-            </div>
-
-            {/* Miter cuts – pro Seite per Checkbox aktivieren, Winkel danach 0..45° */}
-            <div>
-              <SectionDivider label="Schrägschnitte" />
-              <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Winkel 0° = gerader Schnitt. Bereich 0–45° pro Stirnseite.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-4">
-                {(['Anfang', 'Ende'] as const).map((end) => {
-                  const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
-                  const val = config[key];
-                  return (
-                    <div key={end} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-foreground">{end}</span>
-                        <div className="flex items-center gap-1">
-                          <NumericInput
+          {/* 2. Enden-Bearbeitung */}
+          <AccordionItem value="enden" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
+            <AccordionTrigger className="text-sm font-semibold text-foreground py-3 hover:no-underline">
+              2. Enden-Bearbeitung
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Schrägschnitte (0–45°)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {(['Anfang', 'Ende'] as const).map((end) => {
+                      const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
+                      const val = config[key];
+                      return (
+                        <div key={end} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-foreground">{end}</span>
+                            <div className="flex items-center gap-1">
+                              <NumericInput
+                                min={0}
+                                max={45}
+                                step={1}
+                                value={val}
+                                onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
+                                className="h-8 w-14 text-right text-sm"
+                              />
+                              <span className="text-muted-foreground text-xs">°</span>
+                            </div>
+                          </div>
+                          <Slider
                             min={0}
                             max={45}
                             step={1}
-                            value={val}
-                            onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
-                            className="h-8 w-16 text-right text-sm"
+                            value={[val]}
+                            onValueChange={([v]) => update({ [key]: v })}
                           />
-                          <span className="text-muted-foreground text-xs">°</span>
+                          {val > 0 && (
+                            <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
+                          )}
                         </div>
-                      </div>
-                      <Slider
-                        min={0}
-                        max={45}
-                        step={1}
-                        value={[val]}
-                        onValueChange={([v]) => update({ [key]: v })}
-                      />
-                      {val > 0 && (
-                        <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* End treatments – Status + Hinweis. Detail-Auswahl erfolgt im Stirnseiten-Overlay (2D-Werkbank). */}
-            <div>
-              <SectionDivider label="Stirnseitenbearbeitung" />
-              <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
-                Die Stirnseiten Anfang/Ende werden rechts neben der Profilansicht permanent angezeigt. Klick auf einen Kernzug setzt dort ein M8-Gewinde (markiert mit ×).
-              </p>
-              <div className="mt-3 space-y-2">
-                {(['endStart', 'endEnd'] as const).map((endKey) => {
-                  const label = endKey === 'endStart' ? 'Anfang' : 'Ende';
-                  const val = config[endKey];
-                  const scope = val.scope ?? 'all';
-                  const scopeText = !val.thread
-                    ? 'kein Gewinde'
-                    : scope === 'all'
-                    ? 'alle Kernzüge'
-                    : scope === 'center'
-                    ? 'nur Mitte'
-                    : `Auswahl`;
-                  return (
-                    <div key={endKey} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-2">
-                      <div>
-                        <div className="text-[11px] font-medium text-foreground">{label}</div>
-                        <div className="text-[10px] text-muted-foreground">{scopeText}</div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
-                        <Checkbox
-                          checked={val.thread}
-                          onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v, scope: val.scope ?? 'all' } })}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Stirnseiten-Gewinde</Label>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
+                    Detail-Auswahl direkt im 2D-Editor (Klick auf Kernzug = M8-Gewinde).
+                  </p>
+                  <div className="space-y-2">
+                    {(['endStart', 'endEnd'] as const).map((endKey) => {
+                      const label = endKey === 'endStart' ? 'Anfang' : 'Ende';
+                      const val = config[endKey];
+                      const scope = val.scope ?? 'all';
+                      const scopeText = !val.thread
+                        ? 'kein Gewinde'
+                        : scope === 'all' ? 'alle Kernzüge'
+                        : scope === 'center' ? 'nur Mitte'
+                        : 'Auswahl';
+                      return (
+                        <div key={endKey} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+                          <div>
+                            <div className="text-[11px] font-medium text-foreground">{label}</div>
+                            <div className="text-[10px] text-muted-foreground">{scopeText}</div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {val.thread && <span className="text-amber-600 text-[10px] font-medium">+{fmt.format(PRICE_HOLE)}</span>}
+                            <Checkbox
+                              checked={val.thread}
+                              onCheckedChange={(v) => update({ [endKey]: { ...val, thread: !!v, scope: val.scope ?? 'all' } })}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
+            </AccordionContent>
+          </AccordionItem>
 
-            {/* Bohrungen & Verbinder Status (Bearbeitung erfolgt direkt in der 2D-Werkbank) */}
-            <div>
-              <SectionDivider label="Bearbeitung" />
-              <div className="mt-3 rounded-md bg-primary/5 border border-primary/20 px-3 py-2.5 text-xs text-foreground space-y-1.5">
+          {/* 3. Übersicht Bearbeitungen */}
+          <AccordionItem value="bearbeitungen" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
+            <AccordionTrigger className="text-sm font-semibold text-foreground py-3 hover:no-underline">
+              <span className="flex items-center gap-2">
+                3. Übersicht Bearbeitungen
+                {(config.holes.length + config.connectors.length) > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/15 text-primary text-[10px] font-mono font-semibold">
+                    {config.holes.length + config.connectors.length}
+                  </span>
+                )}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-5">
+              <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-3 text-xs text-foreground space-y-2">
                 <div className="flex items-center gap-2 text-primary font-semibold">
                   <Plus className="h-3.5 w-3.5" />
                   Drag &amp; Drop in der 2D-Werkbank
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Klicke direkt auf das Profil rechts, um Bohrungen oder Verbinder zu setzen. Ziehe sie zum Verschieben, klicke zum Bearbeiten.
+                  Klicke direkt auf das Profil, um Bohrungen oder Verbinder zu setzen.
                 </p>
-                <div className="flex items-center justify-between pt-1.5 border-t border-primary/10 text-[11px]">
-                  <span className="text-muted-foreground">Bohrungen</span>
-                  <span className="font-mono font-semibold text-foreground">{config.holes.length}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-muted-foreground">Verbinder</span>
-                  <span className="font-mono font-semibold text-foreground">{config.connectors.length}</span>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-primary/10">
+                  <div className="text-center bg-white rounded p-2">
+                    <div className="text-[10px] text-muted-foreground uppercase">Bohrungen</div>
+                    <div className="font-mono font-bold text-base text-foreground">{config.holes.length}</div>
+                  </div>
+                  <div className="text-center bg-white rounded p-2">
+                    <div className="text-[10px] text-muted-foreground uppercase">Verbinder</div>
+                    <div className="font-mono font-bold text-base text-foreground">{config.connectors.length}</div>
+                  </div>
                 </div>
                 {(config.holes.length > 0 || config.connectors.length > 0) && (
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => update({ holes: [], connectors: [] })}
-                    className="w-full h-7 text-[11px] text-muted-foreground hover:text-red-600 mt-1"
+                    className="w-full h-8 text-[11px] text-muted-foreground hover:text-red-600"
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
                     Alle entfernen
                   </Button>
                 )}
               </div>
-            </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+      <div className="p-4 border-t border-slate-200 shrink-0">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setConfig(DEFAULT_CONFIG)}
+          className="w-full gap-2 text-muted-foreground text-xs"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Konfiguration zurücksetzen
+        </Button>
+      </div>
+    </div>
+  );
+
+  // VAT 19 % zur Anzeige in der Floating-Card
+  const tax = +(price.total * 0.19).toFixed(2);
+  const grossTotal = +(price.total + tax).toFixed(2);
+  const processingTotal = +(price.miterCuts + price.holes + price.endThreads + price.connectors).toFixed(2);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <ProfileOnboarding />
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-20 md:h-28 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="lg:hidden shrink-0">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[88vw] max-w-sm p-0 bg-white">
+                {sidebarBody}
+              </SheetContent>
+            </Sheet>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <img src={logo} alt="NOVAMOTIS" className="h-12 md:h-20 w-auto" />
+            <span className="text-slate-300 text-xl font-light hidden md:block">|</span>
+            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden md:block">Profilzuschnitte</span>
           </div>
 
-          {/* Reset */}
-          <div className="p-4 border-t border-slate-200">
+          <div className="flex items-center gap-2">
             <Button
+              variant="outline"
               size="sm"
-              variant="ghost"
-              onClick={() => setConfig(DEFAULT_CONFIG)}
-              className="w-full gap-2 text-muted-foreground text-xs"
+              onClick={() => setCartOpen((v) => !v)}
+              className="gap-2"
             >
-              <RotateCcw className="h-3 w-3" />
-              Konfiguration zurücksetzen
+              <ShoppingCart className="h-4 w-4" />
+              <span>{cart.length}</span>
+              {cart.length > 0 && (
+                <span className="text-primary font-semibold">{fmt.format(cartTotal)}</span>
+              )}
             </Button>
           </div>
+        </div>
+      </header>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar — desktop only (mobile uses Sheet from header) */}
+        <aside className="hidden lg:flex w-[340px] shrink-0 border-r border-slate-200 bg-slate-50/40 overflow-hidden flex-col">
+          {sidebarBody}
         </aside>
 
         {/* Main stage: 2D Workbench (primary) + 3D Viewer (collapsible) */}
         <main className="flex-1 relative flex flex-col bg-slate-100 overflow-hidden">
-          <div className="flex-1 p-3 min-h-0">
+          <div className="flex-1 p-3 md:p-5 min-h-0 pb-[280px] lg:pb-5">
             <ProfileWorkbench2D
               section={section}
               length={config.length}
@@ -421,44 +467,45 @@ export default function ProfileConfigurator() {
             />
           </div>
 
-
-
-          {/* Price bar */}
-          <div className="border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between gap-6">
-            <div className="grid grid-cols-5 gap-6 text-xs">
-              <div>
-                <div className="text-muted-foreground">Material</div>
-                <div className="text-foreground font-medium">{fmt.format(price.material)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Schrägschnitte</div>
-                <div className="text-foreground font-medium">{fmt.format(price.miterCuts)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Bohrungen</div>
-                <div className="text-foreground font-medium">{fmt.format(price.holes)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Stirngewinde</div>
-                <div className="text-foreground font-medium">{fmt.format(price.endThreads)}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Verbinder</div>
-                <div className="text-foreground font-medium">{fmt.format(price.connectors)}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6 shrink-0">
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground">Gesamtpreis (netto)</div>
-                <div className="text-2xl font-bold text-primary">{fmt.format(price.total)}</div>
-                <div className="text-[10px] text-muted-foreground">Richtpreis · {config.quantity} Stk. · zzgl. Versand &amp; MwSt.</div>
-              </div>
-              <Button onClick={addToCart} size="lg" className="gap-2 px-6 font-semibold">
-                <ShoppingCart className="h-4 w-4" />
-                In den Warenkorb
-              </Button>
-            </div>
+          {/* Floating Price Card */}
+          <div className="absolute z-30 left-3 right-3 bottom-3 lg:left-auto lg:right-6 lg:bottom-6 lg:w-[340px]">
+            <Card className="shadow-2xl border-slate-200/80 bg-white/95 backdrop-blur">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center justify-between">
+                  <span>Preis-Übersicht</span>
+                  <span className="text-[10px] normal-case tracking-normal text-muted-foreground">{config.quantity} Stk.</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-2">
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Material</span>
+                    <span className="font-mono text-foreground">{fmt.format(price.material)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Bearbeitung</span>
+                    <span className="font-mono text-foreground">{fmt.format(processingTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>MwSt. (19 %)</span>
+                    <span className="font-mono text-foreground">{fmt.format(tax)}</span>
+                  </div>
+                </div>
+                <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (brutto)</div>
+                    <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(grossTotal)}</div>
+                  </div>
+                  <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
+                    Richtpreis · zzgl. Versand
+                  </div>
+                </div>
+                <Button onClick={addToCart} size="lg" className="w-full gap-2 font-semibold mt-1">
+                  <ShoppingCart className="h-4 w-4" />
+                  In den Warenkorb
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>

@@ -11,6 +11,8 @@ import {
   HOLE_TYPES,
   CONNECTOR_TYPES,
   SLOT_SIDE_DE,
+  SLOT_LABEL_DE,
+  MIN_EDGE_DISTANCE,
   getModulePitch,
   getSlotCounts,
   getSlotNumber,
@@ -436,8 +438,8 @@ export function ProfileWorkbench2D({
             </aside>
           )}
 
-          {/* Center: stacked side rows */}
-          <div className="flex-1 min-w-0 overflow-auto p-3 space-y-2 relative">
+          {/* Center: focus view — only the active side is rendered, plus side switcher */}
+          <div className="flex-1 min-w-0 overflow-auto p-4 md:p-6 space-y-4 relative">
             {overlapWarning && (
               <div className="sticky top-0 z-10 inline-flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-medium rounded-md px-2 py-1">
                 <AlertTriangle className="h-3 w-3" />
@@ -445,11 +447,55 @@ export function ProfileWorkbench2D({
               </div>
             )}
 
+            {/* Side switcher header: clickable cross-section + active-side title */}
+            <div className="flex items-center gap-4 md:gap-6 bg-white rounded-lg border border-slate-200 p-3 md:p-4 shadow-sm">
+              <div className="shrink-0 flex flex-col items-center gap-1">
+                <ProfileCrossSection2D
+                  section={section}
+                  activeSlot={activeKey.slot}
+                  activeModuleIndex={activeKey.moduleIndex}
+                  selectedKeys={new Set([keyOf(activeKey.slot, activeKey.moduleIndex), ...multiSelected])}
+                  onSelectSlot={(slot, mi, additive) => {
+                    if (additive) {
+                      const k = keyOf(slot, mi);
+                      const cur = keyOf(activeKey.slot, activeKey.moduleIndex);
+                      if (k === cur) return;
+                      setMultiSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(k)) next.delete(k); else next.add(k);
+                        return next;
+                      });
+                    } else {
+                      setActiveKey({ slot, moduleIndex: mi });
+                      setMultiSelected(new Set());
+                      setSelectedId(null);
+                    }
+                  }}
+                  size={88}
+                  showLabels
+                  showSideLabels
+                />
+                <span className="text-[9px] text-muted-foreground">Klick = Seite wählen</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Aktive Bearbeitungs-Seite</div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground mt-0.5">
+                  Seite {activeKey.slot} – <span className="uppercase">{SLOT_LABEL_DE[activeKey.slot]}</span>
+                </h2>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Nut {getSlotNumber(section, activeKey.slot, activeKey.moduleIndex)}
+                  {multiSelected.size > 0 && (
+                    <> · <span className="text-primary font-medium">{multiSelected.size + 1} Nuten gleichzeitig</span> · <button onClick={() => setMultiSelected(new Set())} className="underline hover:text-foreground">aufheben</button></>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div
               style={detailView ? { minWidth: `${Math.max(800, length * 0.6 + 80)}px` } : undefined}
               className="space-y-2"
             >
-            {sideRows.map((side) => {
+            {sideRows.filter((s) => s.slot === activeKey.slot).map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
               // Bohrungen von der gegenüberliegenden Seite (A↔C, B↔D) als Geister-Marker
@@ -503,7 +549,7 @@ export function ProfileWorkbench2D({
             {holes.length === 0 && connectors.length === 0 && (
               <div className="text-center text-[11px] text-muted-foreground py-3">
                 <Plus className="h-3 w-3 inline mr-1" />
-                Klicke auf eine Nut, um eine Bohrung zu setzen. Mit Shift-Klick zusätzliche Nuten gleichzeitig auswählen.
+                Klicke auf das Profil, um eine Bohrung zu setzen. Über das Querschnitt-Icon links wechselst du die Seite.
               </div>
             )}
           </div>
@@ -570,6 +616,27 @@ export function ProfileWorkbench2D({
                     onCommit={(z) => updateHole({ zPosition: z })}
                     className="h-8 text-xs"
                   />
+                </div>
+                <div>
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">Schnell-Position</Label>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[
+                      { lbl: '20→', z: 20, title: '20 mm vom Anfang' },
+                      { lbl: '50→', z: 50, title: '50 mm vom Anfang' },
+                      { lbl: 'Mitte', z: Math.round(length / 2), title: 'Mitte des Profils' },
+                      { lbl: '←50', z: length - 50, title: '50 mm vom Ende' },
+                      { lbl: '←20', z: length - 20, title: '20 mm vom Ende' },
+                    ].map((q) => (
+                      <button
+                        key={q.lbl}
+                        onClick={() => updateHole({ zPosition: Math.max(1, Math.min(length - 1, q.z)) })}
+                        title={q.title}
+                        className="h-7 text-[10px] rounded border border-slate-200 bg-white hover:bg-primary/10 hover:border-primary text-foreground font-medium"
+                      >
+                        {q.lbl}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
@@ -946,8 +1013,13 @@ function SideRow({
               if (laneIdx < 0) return null;
               const cy = laneCy(laneIdx);
               const isSel = selectedId === h.id;
+              const isDragging = draggingId === h.id;
               const r = Math.max(3, Math.min(8, h.diameter * 0.6));
-              const color = holeColor(h.type);
+              const distStart = h.zPosition;
+              const distEnd = length - h.zPosition;
+              const tooClose = distStart < MIN_EDGE_DISTANCE || distEnd < MIN_EDGE_DISTANCE;
+              const color = tooClose ? '#dc2626' : holeColor(h.type);
+              const ringColor = tooClose ? '#dc2626' : isSel ? 'hsl(var(--primary))' : '#cbd5e1';
               const hx = dx(h.zPosition);
               return (
                 <g
@@ -957,13 +1029,38 @@ function SideRow({
                   onClick={(e) => { e.stopPropagation(); onSelectMarker(h.id); }}
                   style={{ cursor: 'grab' }}
                 >
-                  {(isSel || draggingId === h.id) && (
-                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill="hsl(var(--primary))" fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
+                  {/* Echtzeit-Maßlinien während Drag: Abstand zu Anfang und Ende */}
+                  {isDragging && (
+                    <g pointerEvents="none">
+                      {/* Linie zum Anfang (rechts) */}
+                      <line x1={hx} y1={cy} x2={length} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
+                      {/* Linie zum Ende (links) */}
+                      <line x1={hx} y1={cy} x2={0} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
+                      {/* Label zum Anfang */}
+                      <rect x={(hx + length) / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
+                      <text x={(hx + length) / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distStart)} mm</text>
+                      {/* Label zum Ende */}
+                      <rect x={hx / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
+                      <text x={hx / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distEnd)} mm</text>
+                    </g>
+                  )}
+                  {(isSel || isDragging) && (
+                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill={tooClose ? '#dc2626' : 'hsl(var(--primary))'} fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
                       {Math.round(h.zPosition)} mm
                     </text>
                   )}
-                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={isSel ? 'hsl(var(--primary))' : '#cbd5e1'} strokeWidth={isSel ? 1.4 : 0.6} />
+                  {/* Warn-Glow bei Mindestabstand-Verletzung */}
+                  {tooClose && (
+                    <circle cx={hx} cy={cy} r={r + 4} fill="none" stroke="#dc2626" strokeWidth="0.6" opacity="0.45">
+                      <animate attributeName="r" values={`${r + 3};${r + 6};${r + 3}`} dur="1.4s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.6;0.15;0.6" dur="1.4s" repeatCount="indefinite" />
+                    </circle>
+                  )}
+                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={ringColor} strokeWidth={isSel || tooClose ? 1.4 : 0.6} />
                   <circle data-role="marker" cx={hx} cy={cy} r={r} fill={color} />
+                  {tooClose && (
+                    <title>Mindestabstand zum Rand unterschritten ({MIN_EDGE_DISTANCE} mm)</title>
+                  )}
                 </g>
               );
             })}
