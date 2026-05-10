@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     });
     if (error) {
       console.error("mark error:", error);
-      return jsonResponse(500, { error: "mark failed", details: error.message });
+      return jsonResponse(500, { error: "mark failed" });
     }
     return jsonResponse(200, { ok: true });
   }
