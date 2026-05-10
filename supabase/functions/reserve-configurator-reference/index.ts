@@ -31,12 +31,42 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
+// Best-effort in-memory IP rate limiter. Resets on cold start, but
+// blunts trivial flooding from a single source. For stronger guarantees,
+// move to a persistent backend (Redis/Upstash).
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 30;
+const rateLimitStore = new Map<string, number[]>();
+
+function getClientIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for") ?? "";
+  return fwd.split(",")[0]?.trim() || "unknown";
+}
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const recent = (rateLimitStore.get(key) ?? []).filter(
+    (t) => now - t < RATE_LIMIT_WINDOW_MS,
+  );
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    rateLimitStore.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  rateLimitStore.set(key, recent);
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
   if (req.method !== "POST") {
     return jsonResponse(405, { error: "Method not allowed" });
+  }
+
+  if (isRateLimited(getClientIp(req))) {
+    return jsonResponse(429, { error: "Too many requests" });
   }
 
   let body: Body;
