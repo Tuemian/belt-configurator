@@ -405,14 +405,24 @@ export default function ProfileConfigurator() {
       <ProfileOnboarding />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-28 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-20 md:h-28 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="lg:hidden shrink-0">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[88vw] max-w-sm p-0 bg-white">
+                {sidebarBody}
+              </SheetContent>
+            </Sheet>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <img src={logo} alt="NOVAMOTIS" className="h-20 w-auto" />
-            <span className="text-slate-300 text-xl font-light hidden sm:block">|</span>
-            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden sm:block">Profilzuschnitte</span>
+            <img src={logo} alt="NOVAMOTIS" className="h-12 md:h-20 w-auto" />
+            <span className="text-slate-300 text-xl font-light hidden md:block">|</span>
+            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden md:block">Profilzuschnitte</span>
           </div>
 
           <div className="flex items-center gap-2">
