@@ -33,20 +33,22 @@ const App = () => {
           <AuthProvider>
             <div className="min-h-screen flex flex-col">
               <div className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/belt-conveyor" element={<BeltConfigurator />} />
-                  <Route
-                    path="/profile-configurator"
-                    element={
-                      <ProtectedRoute>
-                        <ProfileConfigurator />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense fallback={null}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<AuthPage />} />
+                    <Route path="/belt-conveyor" element={<BeltConfigurator />} />
+                    <Route
+                      path="/profile-configurator"
+                      element={
+                        <ProtectedRoute>
+                          <ProfileConfigurator />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </div>
               <footer className="border-t border-slate-200 bg-white/90 backdrop-blur">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm text-muted-foreground flex items-center justify-center gap-4">
