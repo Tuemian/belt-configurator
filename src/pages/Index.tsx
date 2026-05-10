@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, Globe, Lock, LogOut } from 'lucide-react';
-import conveyorHero from '@/assets/conveyor-hero.jpg';
+import conveyorHero from '@/assets/conveyor-hero.webp';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
