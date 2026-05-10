@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, Globe, Lock, LogOut } from 'lucide-react';
-import conveyorHero from '@/assets/conveyor-hero.jpg';
+import conveyorHero from '@/assets/conveyor-hero.webp';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 
@@ -90,7 +90,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="https://www.novamotis.com/" target="_blank" rel="noreferrer" className="hover:opacity-80 transition-opacity">
-              <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" />
+              <img src={logo} alt="NOVAMOTIS Logo" className="h-20 w-auto" width={142} height={80} />
             </a>
           </div>
           <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ const Index = () => {
             <div className="relative">
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-sky-200/10 to-transparent blur-2xl" />
               <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
-                <img src={conveyorHero} alt="Fördertechnik" className="w-full h-auto" width={1200} height={600} />
+                <img src={conveyorHero} alt="Fördertechnik" className="w-full h-auto" width={1400} height={815} fetchPriority="high" loading="eager" decoding="async" />
               </div>
             </div>
           </div>
