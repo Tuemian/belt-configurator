@@ -18,6 +18,7 @@ import { ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 const TOTAL_STEPS = 5;
 
@@ -154,6 +155,14 @@ const BeltConfigurator = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Förderband Konfigurator – NOVAMOTIS</title>
+        <meta name="description" content="Konfigurieren Sie Ihr individuelles Förderband: Maße, Gurtgeschwindigkeit, Antrieb und Untergestell. Sofort kalkulieren und Anfrage an NOVAMOTIS senden." />
+        <link rel="canonical" href="https://konfigurator.novamotis.com/belt-conveyor" />
+        <meta property="og:title" content="Förderband Konfigurator – NOVAMOTIS" />
+        <meta property="og:description" content="Individuelles Förderband online konfigurieren – Maße, Antrieb und Optionen wählen, Preis berechnen und Anfrage senden." />
+        <meta property="og:url" content="https://konfigurator.novamotis.com/belt-conveyor" />
+      </Helmet>
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
