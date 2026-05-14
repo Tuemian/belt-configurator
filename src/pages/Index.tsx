@@ -8,6 +8,7 @@ import { ArrowRight, Globe, Lock, LogOut } from 'lucide-react';
 import conveyorHero from '@/assets/conveyor-hero.webp';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 type ToolIconProps = { className?: string };
 
