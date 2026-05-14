@@ -231,7 +231,7 @@ export default function AdminPricing() {
         })
         .filter((x): x is NonNullable<typeof x> => !!x);
       if (rulePayload.length > 0) {
-        const ins = await supabase.from('pricing_rules').insert(rulePayload);
+        const ins = await supabase.from('pricing_rules').insert(rulePayload as never);
         if (ins.error) throw new Error(ins.error.message);
       }
       toast({ title: 'Import erfolgreich' });
