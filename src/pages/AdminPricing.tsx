@@ -126,7 +126,7 @@ export default function AdminPricing() {
       return;
     }
     const { id, ...rest } = rule;
-    const { error } = await supabase.from('pricing_rules').update(rest).eq('id', id);
+    const { error } = await supabase.from('pricing_rules').update(rest as never).eq('id', id);
     if (error) {
       toast({ title: 'Speichern fehlgeschlagen', description: error.message, variant: 'destructive' });
       return;
