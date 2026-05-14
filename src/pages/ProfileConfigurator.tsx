@@ -403,6 +403,14 @@ export default function ProfileConfigurator() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Helmet>
+        <title>Profilzuschnitte Konfigurator – NOVAMOTIS</title>
+        <meta name="description" content="Profilzuschnitte online konfigurieren: Profilgröße, Länge, Bohrungen und Endenbearbeitung wählen. Preis sofort kalkulieren und Anfrage an NOVAMOTIS senden." />
+        <link rel="canonical" href="https://konfigurator.novamotis.com/profile-configurator" />
+        <meta property="og:title" content="Profilzuschnitte Konfigurator – NOVAMOTIS" />
+        <meta property="og:description" content="Profilzuschnitte online konfigurieren – Größe, Länge, Bohrungen, Endenbearbeitung. Preis berechnen und anfragen." />
+        <meta property="og:url" content="https://konfigurator.novamotis.com/profile-configurator" />
+      </Helmet>
       <ProfileOnboarding />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
