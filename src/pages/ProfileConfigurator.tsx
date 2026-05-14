@@ -409,7 +409,7 @@ export default function ProfileConfigurator() {
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="lg:hidden shrink-0">
+                <Button variant="outline" size="icon" className="lg:hidden shrink-0" aria-label="Menü öffnen">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -417,12 +417,12 @@ export default function ProfileConfigurator() {
                 {sidebarBody}
               </SheetContent>
             </Sheet>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex" aria-label="Zurück zur Startseite">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <img src={logo} alt="NOVAMOTIS" className="h-12 md:h-20 w-auto" />
+            <img src={logo} alt="NOVAMOTIS Logo" className="h-12 md:h-20 w-auto" />
             <span className="text-slate-300 text-xl font-light hidden md:block">|</span>
-            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden md:block">Profilzuschnitte</span>
+            <h1 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden md:block">Profilzuschnitte Konfigurator</h1>
           </div>
 
           <div className="flex items-center gap-2">
