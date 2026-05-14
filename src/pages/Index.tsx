@@ -87,6 +87,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,148,204,0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)]">
+      <Helmet>
+        <title>NOVAMOTIS Configurator – Industrielle Komponenten online konfigurieren</title>
+        <meta name="description" content="Konfigurieren Sie Förderbänder, Profilzuschnitte und industrielle Komponenten von NOVAMOTIS online. Maße, Antrieb und Optionen wählen, Preis berechnen und Anfrage senden." />
+        <link rel="canonical" href="https://konfigurator.novamotis.com/" />
+        <meta property="og:title" content="NOVAMOTIS Configurator – Industrielle Komponenten online konfigurieren" />
+        <meta property="og:description" content="Förderbänder, Profilzuschnitte und industrielle Komponenten von NOVAMOTIS online konfigurieren und anfragen." />
+        <meta property="og:url" content="https://konfigurator.novamotis.com/" />
+      </Helmet>
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between">
           <div className="flex items-center gap-3">
