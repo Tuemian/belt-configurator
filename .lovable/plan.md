@@ -1,76 +1,100 @@
-# Plan: UI/UX-Refactoring Profil-Konfigurator
+# Admin-Preisverwaltung + ERP-Sync
 
-## Ziel
-Aus der aktuellen vier-Reihen-Werkbank (parallele Ansicht aller Profilseiten A/B/C/D) wird ein laienfreundliches Tool mit Fokus-Ansicht, gruppierten Eingaben, Echtzeit-Feedback und responsivem Layout.
+Ziel: Preise und Mengenregeln (auch Schrauben, Klebebänder, Kleinteile) komplett im Browser pflegen — ohne Code-Änderung. Excel-Import/-Export für Backups und Massenpflege. Optional Preise per Klick aus dem [Nova Motis ERP](/projects/8f8b02ea-1db6-4e84-84b1-4cbb1ff965fe) ziehen. Vorbereitet für weitere Konfiguratoren.
 
----
+## 1. Datenmodell (Lovable Cloud)
 
-## 1. Fokus-Ansicht (eine Seite zur Zeit)
+Drei neue Tabellen, RLS-geschützt — nur User mit Rolle `admin` dürfen lesen/schreiben.
 
-**Komponente:** `ProfileWorkbench2D.tsx`
+**`pricing_components`** — Bauteil-Stammdaten
+- `tool` (`belt` | `profile` | …), `key` (z. B. `screw_m6`)
+- `label_de`, `label_en`, `label_it`
+- `unit` (`per_unit`, `per_meter`, `per_m2`, `per_mm_width`, `per_kg`)
+- `price_eur`, `active`
+- **`article_number`** (optional) — Verknüpfung zum ERP
+- **`price_source`** (`manual` | `erp`)
+- **`erp_synced_at`** (timestamp)
 
-- Statt 4 paralleler Reihen wird nur die aktive Profilseite (A/B/C oder D) groß dargestellt — über die volle Breite der Bühne.
-- Über dem Profil prominenter Titel: **„Seite A – OBEN“** (analog für B/RECHTS, C/UNTEN, D/LINKS).
-- Neue Komponente **`ProfileSideSwitcher.tsx`**: zeigt einen Querschnitt (basierend auf `ProfileCrossSection2D`) mit klickbaren Hotspots auf den vier Seiten. Aktive Seite wird im Querschnitt blau hervorgehoben.
-- Bei Profilen mit mehreren Nuten pro Seite (z. B. 80×80) bleibt eine schmale Lane-Auswahl unter dem Switcher (Tabs „Nut 1 / Nut 2“).
-- Multi-Select bleibt über Modifier-Klick im Switcher erhalten (Shift = mehrere Seiten gleichzeitig bearbeiten).
+**`pricing_rules`** — Wann & wie viel von jedem Bauteil eingerechnet wird
+- `component_id` (FK), `tool`
+- `condition` (jsonb) — z. B. `{ "withStand": true }` oder `{}` (immer)
+- `quantity_formula` (text) — z. B. `length_m * width_m`, `ceil(length_m) * 8`, `if(drive_type == "drum", 2, 1)`
+- `priority` (int)
 
-## 2. Modernisierte Sidebar
+**`user_roles`** + Enum `app_role` (`admin`, `user`) — Standard-Pattern mit `has_role()` SECURITY-DEFINER-Funktion (keine RLS-Rekursion)
 
-**Komponente:** `src/pages/ProfileConfigurator.tsx`
+## 2. Sichere Formel-Engine
 
-- Drei `Accordion`-Sektionen (`@/components/ui/accordion`):
-  1. **Basis-Konfiguration** — Profilgröße (visuell), Variante, Länge (Slider + Input), Menge.
-  2. **Enden-Bearbeitung** — Schrägschnitte (Anfang/Ende mit Winkel-Slidern), Stirnseiten-Gewinde.
-  3. **Übersicht Bearbeitungen** — Liste aller Bohrungen/Verbinder mit Position, Typ, Seite. Klick fokussiert das Element in der Werkbank, Mülleimer-Button entfernt es.
-- **Visuelle Profil-Auswahl:** Größen-Buttons werden zu Kacheln mit kleinem SVG-Querschnitt (verkleinerte `ProfileCrossSection2D`) + Label darunter. Neue Komponente **`ProfileSizeTile.tsx`**.
-- Standardmäßig ist nur Sektion 1 aufgeklappt.
+Eigener Mini-Parser (~150 LOC), kein `eval()`. Erlaubt:
+- Variablen: `length_m`, `width_m`, `height_mm`, `belt_type`, `with_stand`, `floor_element`, `drive_type`, …
+- Operatoren: `+ - * / ( )`, Vergleiche
+- Funktionen: `min`, `max`, `ceil`, `floor`, `round`, `if(cond, a, b)`
 
-## 3. Echtzeit-Maße & Validierung
+Beispiele:
+- Schrauben M6: `ceil(length_m) * 8`, Einheit `per_unit`
+- Klebeband: `length_m * 2`, Einheit `per_meter`
+- Antrieb-Kabel: `if(drive_type == "drum", 2, 1)`, Einheit `per_unit`
 
-**Komponente:** `ProfileWorkbench2D.tsx`
+## 3. Admin-UI — Route `/admin/pricing`
 
-- Beim Drag einer Bohrung: zwei dynamische Maßlinien (SVG) vom Bohrungsmittelpunkt zu Profilanfang und -ende, mit mm-Label in der Mitte.
-- **Validierung:** wenn `zPosition < 15` oder `zPosition > length - 15`, wird die Bohrung rot eingefärbt (`fill` und `stroke`), zusätzlich pulsierender Glow. Tooltip: „Mindestabstand zum Rand unterschritten (15 mm)“.
-- Schwellwert als Konstante `MIN_EDGE_DISTANCE = 15` in `profile-configurator-types.ts`.
-- Validierungsstatus wird auch in der Sidebar-Liste (Sektion 3) als Warnsymbol angezeigt.
+Login-geschützt + Rollen-geschützt. Nav-Link nur für Admins sichtbar.
 
-## 4. Design-Finish, Floating Cart & Mobile
+- **Tool-Tabs**: „Förderband" | „Profilzuschnitte" | künftige
+- **Tabelle**: Key · Bezeichnung (DE/EN/IT) · Einheit · Preis · Mengenformel · Bedingung · Artikelnummer · Quelle · Aktiv
+- Inline-Edit, neuer Eintrag, Duplizieren
+- **Live-Vorschau**: Test-Konfiguration eingeben → komplette Kostenaufstellung sofort sichtbar
+- **Validierung**: Formeln werden beim Speichern gegen Test-Werte geprüft, Fehler vor Live-Schaltung angezeigt
+- **Zweite Route `/admin/users`**: Admin-Rollen vergeben/entziehen per E-Mail
 
-- **Branding-Blau #2D89C7** (HSL ≈ 203 65% 48%) als `--primary` in `src/index.css` setzen — alle Primärbuttons/Highlights nutzen das automatisch (es wird kein Hardcode in Komponenten geschrieben).
-- Großzügigere Abstände in Sidebar und Werkbank (Padding `p-6`, Gaps `gap-6`).
-- **Floating Price Card** (neue Komponente `FloatingPriceCard.tsx`) unten rechts in der Werkbank, schwebend mit Schatten:
-  - Aufschlüsselung: Material / Bearbeitung / Steuer (19 % MwSt.)
-  - Gesamtpreis fett
-  - Buttons „In Warenkorb“ + „Anfrage senden“
-- **Mobile/Tablet:**
-  - Unter `lg` (1024 px): Sidebar wird zu `Sheet`-Drawer (`@/components/ui/sheet`), Trigger-Button im Header.
-  - Floating Card wird auf Mobile zu Bottom-Sheet (volle Breite, ausklappbar).
-  - Side-Switcher-Querschnitt rückt unter den Profiltitel.
+## 4. Excel-Import / -Export
 
-## 5. Quick-Action-Buttons an Bohrungen
+Buttons oben rechts im Admin-Bereich.
 
-- Bei selektierter Bohrung erscheint ein kleines Popover/Floating-Toolbar direkt am Bohrloch mit Schnellpositionen:
-  - **„20 mm Anfang“**, **„50 mm Anfang“**, **„Mitte“**, **„50 mm Ende“**, **„20 mm Ende“**
-- Klick setzt `zPosition` exakt. Implementierung über bestehende `updateHole`-Funktion.
+- **Export**: `.xlsx` mit zwei Sheets pro Tool — `Components` + `Rules`. Roundtrip-fähig.
+- **Import**: Diff-Vorschau (neu/geändert/gelöscht/unverändert) → Bestätigung → Transaktion. Bei Formelfehler kompletter Abbruch.
 
----
+## 5. ERP-Sync (Nova Motis ERP)
+
+**Im ERP-Projekt**: neue Edge Function `get-articles-by-numbers`
+- Input: `{ article_numbers: string[], sync_token: string }`
+- Output: `[{ article_number, name, price_eur, unit, updated_at }]`
+- Liest aus `artikel`-Tabelle, geschützt per Sync-Token (Secret)
+
+**Im Konfigurator-UI**:
+- Pro Zeile Button **„Aus ERP holen"** (sofortiger Einzelabruf)
+- Oben Button **„Alle ERP-Preise aktualisieren"** (Bulk: alle Zeilen mit Artikelnummer)
+- Badge zeigt „ERP" + letztes Sync-Datum
+- Manuell überschriebene Preise werden auf `manual` gesetzt und beim Bulk-Sync übersprungen (mit Warnhinweis)
+
+**Resilient gegen ERP-Änderungen**: Nur die Edge Function im ERP kennt das echte Schema. Wenn sich Spalten/Namen im ERP ändern, wird ausschließlich diese Funktion angepasst — der Konfigurator bleibt unberührt.
+
+## 6. Konfigurator anpassen
+
+`src/lib/pricing.ts` wird umgeschrieben:
+- Lädt Bauteile + Regeln aus DB statt aus `price-list.xlsx`
+- Wertet Formeln pro Konfiguration aus
+- Browser-Cache 5 min für Performance
+- Verhalten unverändert: alle Preise vorhanden → Total; eines fehlt → „Preis auf Anfrage"
+- Aktuelle `public/pricing/price-list.xlsx` wird einmalig automatisch in die DB migriert (Initialdaten)
 
 ## Technische Details
 
-- Neue Dateien:
-  - `src/components/configurator/ProfileSideSwitcher.tsx`
-  - `src/components/configurator/ProfileSizeTile.tsx`
-  - `src/components/configurator/FloatingPriceCard.tsx`
-  - `src/components/configurator/HoleQuickActions.tsx`
-- Bestehende Dateien:
-  - `src/components/configurator/ProfileWorkbench2D.tsx` (große Refactorierung — vier Reihen → eine Reihe + Side-Switcher; Drag-Maßlinien; Validierungs-Styling; Quick-Actions integrieren)
-  - `src/pages/ProfileConfigurator.tsx` (Sidebar in Accordion umbauen; Mobile-Drawer; Floating Card statt Inline-Preis)
-  - `src/index.css` (`--primary` auf #2D89C7 anpassen)
-  - `src/lib/profile-configurator-types.ts` (`MIN_EDGE_DISTANCE` exportieren)
-- Bestehende Tools (Tool-Palette, Liste-Dialog, Detail-Zoom, Stirnseiten-Panels) bleiben erhalten und werden in die neue Fokus-Ansicht integriert.
-- Keine Änderungen an Backend, Pricing-Logik oder Datenmodell.
+- **Migrationen**: Tabellen + Enum + `user_roles` + `has_role()` + RLS + Initialdaten-Migration
+- **Secrets**: ein Sync-Token wird in beiden Projekten als Secret hinterlegt
+- **Edge Functions**: `get-articles-by-numbers` im ERP, `sync-erp-prices` im Konfigurator (Wrapper, der Token einsetzt)
+- **UI**: shadcn-Komponenten in NOVAMOTIS-Blau
+- **Tool-Diskriminator**: neuer Konfigurator = neuer Tab, kein Schema-Change
 
-## Credits-Schätzung
+## Was du nach dem Bauen tun musst
 
-Genaue Credit-Kosten kann ich nicht vorhersagen — der Verbrauch in Build-Mode ist nutzungsabhängig (Komplexität, Iterationen, Datei-Reads/Writes). Für die Größenordnung dieses Refactorings (~4 neue Komponenten, 3 größere Datei-Umbauten, responsive Layout, neues Theme-Token, mehrere Iterationsrunden zu erwarten) ist es ein **mittelgroßes bis großes Feature**. Plan-Modus selbst kostet 1 Credit pro Nachricht. Den aktuellen Stand siehst du im Workspace-Menü oben links bzw. unter Settings → Plans & Credits.
+1. Mir deine Login-E-Mail nennen → ich vergebe dir die Admin-Rolle
+2. App neu publizieren
+3. Im Admin-UI Artikelnummern eintragen, einmal „Alle ERP-Preise aktualisieren" — fertig
+
+## Nicht enthalten (kann später kommen)
+
+- Versionierung/History der Preisänderungen
+- Mehrwertsteuer/Margen-Aufschläge, Mengenrabatte
+- Audit-Log
+- Auto-Sync per Cron (Preise jede Nacht ziehen)
+- Webhook vom ERP an Konfigurator bei Preisänderung (Push statt Pull)

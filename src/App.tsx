@@ -9,11 +9,14 @@ import { t } from "@/lib/i18n";
 import Index from "./pages/Index.tsx";
 import { AuthProvider } from "./hooks/use-auth.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import AdminRoute from "./components/AdminRoute.tsx";
 
 const BeltConfigurator = lazy(() => import("./pages/BeltConfigurator.tsx"));
 const ProfileConfigurator = lazy(() => import("./pages/ProfileConfigurator.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
+const AdminPricing = lazy(() => import("./pages/AdminPricing.tsx"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers.tsx"));
 
 const queryClient = new QueryClient();
 
