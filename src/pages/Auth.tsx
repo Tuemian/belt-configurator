@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
 import { t } from '@/lib/i18n';
 import logo from '@/assets/logo.svg';
+import { Helmet } from 'react-helmet-async';
 
 const AuthPage = () => {
   const [lang] = useLanguage();
