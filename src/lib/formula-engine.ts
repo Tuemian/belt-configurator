@@ -254,7 +254,9 @@ export function evalCondition(condition: Record<string, unknown> | null | undefi
   return true;
 }
 
-export function validateFormula(expr: string): { ok: true } | { ok: false; error: string } {
+export type ValidationResult = { ok: true; error?: undefined } | { ok: false; error: string };
+
+export function validateFormula(expr: string): ValidationResult {
   try {
     const tokens = tokenize(expr);
     const parser = new Parser(tokens);
