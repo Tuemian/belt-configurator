@@ -49,6 +49,22 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     />
+                    <Route
+                      path="/admin/pricing"
+                      element={
+                        <AdminRoute>
+                          <AdminPricing />
+                        </AdminRoute>
+                      }
+                    />
+                    <Route
+                      path="/admin/users"
+                      element={
+                        <AdminRoute>
+                          <AdminUsers />
+                        </AdminRoute>
+                      }
+                    />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
