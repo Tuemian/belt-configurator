@@ -37,6 +37,12 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_hsl(var(--primary)/0.18),_transparent_35%),linear-gradient(180deg,_#f8fcff_0%,_#eef6fb_48%,_#ffffff_100%)] px-4">
+      <Helmet>
+        <title>Login – NOVAMOTIS Configurator</title>
+        <meta name="description" content="Melden Sie sich am NOVAMOTIS Configurator an, um geschützte Werkzeuge wie den Profilzuschnitt-Konfigurator zu nutzen." />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="canonical" href="https://konfigurator.novamotis.com/auth" />
+      </Helmet>
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl p-8">
         <div className="flex flex-col items-center gap-3 mb-6">
           <img src={logo} alt="NOVAMOTIS Logo" className="h-14 w-auto" />
