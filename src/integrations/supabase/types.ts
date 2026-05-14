@@ -92,6 +92,98 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_components: {
+        Row: {
+          active: boolean
+          article_number: string | null
+          created_at: string
+          erp_synced_at: string | null
+          id: string
+          key: string
+          label_de: string
+          label_en: string
+          label_it: string
+          price_eur: number | null
+          price_source: string
+          tool: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          article_number?: string | null
+          created_at?: string
+          erp_synced_at?: string | null
+          id?: string
+          key: string
+          label_de: string
+          label_en: string
+          label_it: string
+          price_eur?: number | null
+          price_source?: string
+          tool: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          article_number?: string | null
+          created_at?: string
+          erp_synced_at?: string | null
+          id?: string
+          key?: string
+          label_de?: string
+          label_en?: string
+          label_it?: string
+          price_eur?: number | null
+          price_source?: string
+          tool?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_rules: {
+        Row: {
+          component_id: string
+          condition: Json
+          created_at: string
+          id: string
+          priority: number
+          quantity_formula: string
+          tool: string
+          updated_at: string
+        }
+        Insert: {
+          component_id: string
+          condition?: Json
+          created_at?: string
+          id?: string
+          priority?: number
+          quantity_formula?: string
+          tool: string
+          updated_at?: string
+        }
+        Update: {
+          component_id?: string
+          condition?: Json
+          created_at?: string
+          id?: string
+          priority?: number
+          quantity_formula?: string
+          tool?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_inquiries: {
         Row: {
           company: string | null
@@ -137,12 +229,40 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       generate_inquiry_reference: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       mark_configurator_reference: {
         Args: { _action: string; _reference: string }
         Returns: undefined
@@ -153,7 +273,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -280,6 +400,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
