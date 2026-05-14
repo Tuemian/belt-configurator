@@ -46,16 +46,22 @@ type Rule = {
 const UNITS = ['per_unit', 'per_meter', 'per_m2', 'per_mm_width', 'per_kg'];
 
 const DEFAULT_TEST_CONFIG: ConveyorConfig = {
-  beltLength: 2000,
   frameWidth: 400,
+  beltLength: 2000,
+  sideGuideHeight: 0,
+  inclineAngle: 0,
   beltType: 'standard',
-  beltSpeed: 0.5,
+  speed: 0.5,
+  loadCapacity: 50,
   driveType: 'direct',
+  motorPosition: 'left',
+  motorAngle: 0,
+  centerDriveOffset: 0,
   withStand: true,
+  standHeight: 800,
   floorElement: 'feet',
   heightAdjust: false,
   floorBolts: false,
-  sideGuideHeight: 0,
 };
 
 export default function AdminPricing() {
