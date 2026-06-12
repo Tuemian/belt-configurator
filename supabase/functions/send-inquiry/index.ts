@@ -170,6 +170,27 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Attachment validation (PDF only, max 8 MB) — mirrors api/send-inquiry.ts
+  const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+  if (body.attachment?.contentBase64) {
+    const ct = (body.attachment.contentType ?? "").toString().trim().toLowerCase();
+    if (ct && ct !== "application/pdf") {
+      return new Response(JSON.stringify({ error: "Unsupported attachment type" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const cleaned = cleanBase64(body.attachment.contentBase64);
+    const estimatedBytes = Math.floor((cleaned.length * 3) / 4);
+    if (estimatedBytes > MAX_ATTACHMENT_BYTES) {
+      return new Response(JSON.stringify({ error: "Attachment too large" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+
   // Read secrets
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
