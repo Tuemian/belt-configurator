@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import type { ConveyorConfig } from '@/lib/configurator-types';
 import { evalCondition, evalNumber, type FormulaContext } from '@/lib/formula-engine';
