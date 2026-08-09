@@ -92,6 +92,42 @@ export type Database = {
         }
         Relationships: []
       }
+      hole_types: {
+        Row: {
+          active: boolean
+          created_at: string
+          diameter_mm: number
+          id: string
+          label_de: string
+          label_en: string
+          label_it: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          diameter_mm: number
+          id: string
+          label_de: string
+          label_en?: string
+          label_it?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          diameter_mm?: number
+          id?: string
+          label_de?: string
+          label_en?: string
+          label_it?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pricing_components: {
         Row: {
           active: boolean
