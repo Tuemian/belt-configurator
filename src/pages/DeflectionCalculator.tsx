@@ -33,8 +33,11 @@ const bigInput = 'h-11 w-28 text-right text-base font-semibold border-2 border-s
 export default function DeflectionCalculator() {
   const navigate = useNavigate();
 
-  const [series, setSeries] = useState<ProfileSeries>(DEFLECTION_PROFILES[0].series);
-  const [articleNumber, setArticleNumber] = useState(DEFLECTION_PROFILES[0].articleNumber);
+  // Vorerst nur A8 wählbar (siehe Nut-Buttons unten) — A5/A6/A10 haben zwar echte
+  // Tragfähigkeitsdaten, aber kein 1:1-Referenzbild auf dem Alvaris-Blatt.
+  const defaultProfile = DEFLECTION_PROFILES.find((p) => p.series === 'A8') ?? DEFLECTION_PROFILES[0];
+  const [series, setSeries] = useState<ProfileSeries>(defaultProfile.series);
+  const [articleNumber, setArticleNumber] = useState(defaultProfile.articleNumber);
 
   const profilesInSeries = useMemo(() => DEFLECTION_PROFILES.filter((p) => p.series === series), [series]);
 
@@ -114,11 +117,16 @@ export default function DeflectionCalculator() {
                   {SERIES_ORDER.map(({ series: s, label }) => (
                     <button
                       key={s}
+                      disabled={s !== 'A8'}
                       onClick={() => changeSeries(s)}
+                      title={s === 'A8' ? label : 'Bald verfügbar'}
                       className={`rounded-lg px-2 py-2 text-xs font-semibold border-2 transition-all ${
-                        series === s ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-slate-200 text-foreground hover:border-primary/40'
+                        s === 'A8'
+                          ? series === s
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-white border-slate-200 text-foreground hover:border-primary/40'
+                          : 'bg-white border-slate-200 text-muted-foreground opacity-40 cursor-not-allowed'
                       }`}
-                      title={label}
                     >
                       {s}
                     </button>
