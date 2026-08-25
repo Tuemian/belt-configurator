@@ -94,18 +94,21 @@ It sends:
 - the inquiry to `office@novamotis.com` (or `INQUIRY_TO_EMAIL`)
 - a confirmation email to the sender address entered in the form
 
+Mail is sent via the Microsoft Graph API (client-credentials OAuth), not SMTP.
 Set these environment variables in your runtime (local and production):
 
-- `SMTP_HOST`
-- `SMTP_PORT` (for example `587`)
-- `SMTP_USER`
-- `SMTP_PASS`
-- `SMTP_SECURE` (`true` for SMTPS/465, otherwise `false`)
+- `GRAPH_TENANT_ID`
+- `GRAPH_CLIENT_ID`
+- `GRAPH_CLIENT_SECRET`
+
+The app registration needs `Mail.Send` (application) permission for the mailbox
+used as `INQUIRY_FROM_EMAIL`. Without all three variables set, the endpoint
+returns `500 Mail service is not configured`.
 
 Optional:
 
 - `INQUIRY_TO_EMAIL` (default: `office@novamotis.com`)
-- `INQUIRY_FROM_EMAIL` (default: `SMTP_USER`)
+- `INQUIRY_FROM_EMAIL` (default: `INQUIRY_TO_EMAIL`)
 
 ## Monitoring Setup (Optional)
 

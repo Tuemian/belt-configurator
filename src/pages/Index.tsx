@@ -70,7 +70,7 @@ type Tool = {
 const tools: Tool[] = [
   { slug: 'belt-conveyor', titleKey: 'hubToolBeltTitle', descKey: 'hubToolBeltDesc', statusKey: 'hubAvailableNow', available: true, icon: BeltConveyorIcon },
   { slug: 'profile-configurator', titleKey: 'hubToolProfileTitle', descKey: 'hubToolProfileDesc', statusKey: 'hubBeta', available: true, requiresAuth: true, icon: ProfileIcon },
-  { slug: 'deflection', titleKey: 'hubToolDeflectionTitle', descKey: 'hubToolDeflectionDesc', statusKey: 'hubPlanned', available: false, icon: DeflectionIcon },
+  { slug: 'deflection', titleKey: 'hubToolDeflectionTitle', descKey: 'hubToolDeflectionDesc', statusKey: 'hubAvailableNow', available: true, icon: DeflectionIcon },
   { slug: 'high-speed-door', titleKey: 'hubToolDoorTitle', descKey: 'hubToolDoorDesc', statusKey: 'hubPlanned', available: false, icon: DoorConfiguratorIcon },
   { slug: 'roller-conveyor', titleKey: 'hubToolRollerTitle', descKey: 'hubToolRollerDesc', statusKey: 'hubPlanned', available: false, icon: RollerConveyorIcon },
 ];
@@ -158,7 +158,7 @@ const Index = () => {
             {tools.map((tool) => {
               const Icon = tool.icon;
               const isBeta = !!tool.requiresAuth;
-              const target = tool.requiresAuth && !session ? '/auth' : `/${tool.slug}`;
+              const target = `/${tool.slug}`;
 
               return (
                 <Card key={tool.slug} className="group relative overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_50px_rgba(15,52,74,0.08)] backdrop-blur transition-transform duration-200 hover:-translate-y-1 flex flex-col">
@@ -190,10 +190,10 @@ const Index = () => {
                     {tool.available ? (
                       isBeta ? (
                         <Button asChild variant="outline" className="w-full justify-between border-violet-200 text-violet-700 hover:bg-violet-50">
-                          <Link to={target} state={!session ? { from: `/${tool.slug}` } : undefined}>
+                          <Link to={target}>
                             <span className="flex items-center gap-2">
                               <Lock className="h-3.5 w-3.5" />
-                              {session ? t('hubOpenTool', lang) : t('hubOpenWithPassword', lang)}
+                              {t('hubOpenWithPassword', lang)}
                             </span>
                             <ArrowRight className="h-4 w-4" />
                           </Link>

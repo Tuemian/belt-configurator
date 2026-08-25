@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { Plus, Trash2, Copy, FlipHorizontal2, X, AlertTriangle, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  HOLE_TYPES,
   CONNECTOR_TYPES,
   SLOT_SIDE_DE,
   SLOT_LABEL_DE,
@@ -27,6 +26,7 @@ import {
 } from '@/lib/profile-configurator-types';
 import { ProfileCrossSection2D } from './ProfileCrossSection2D';
 import { NumericInput } from './NumericInput';
+import { useHoleTypes } from '@/hooks/use-hole-types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,6 +110,7 @@ export function ProfileWorkbench2D({
   onUpdateEndStart,
   onUpdateEndEnd,
 }: Props) {
+  const HOLE_TYPES = useHoleTypes();
   const [activeKey, setActiveKey] = useState<SlotKey>({ slot: 'A', moduleIndex: 0 });
   /** Multi-Select: zusätzliche Nuten für Batch-Bearbeitung (enthält die aktive Nut nicht) */
   const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
@@ -124,7 +125,25 @@ export function ProfileWorkbench2D({
   const MODULE = getModulePitch(section);
 
   // View modes & dialogs
-  const [detailView, setDetailView] = useState(false);  // false = Anpassen, true = Detail (1mm ≈ 0.6px, scrollbar)
+  // Zoom/Pan der Zeichenfläche: zoom=1 zeigt das ganze Profil, panMm ist der
+  // linke Rand des sichtbaren Fensters (mm). Ersetzt den alten Anpassen/Detail-
+  // Umschalter durch echtes Zoomen (Mausrad) + Verschieben (Ziehen auf leerer Fläche).
+  const [zoom, setZoom] = useState(1);
+  const [panMm, setPanMm] = useState(0);
+  const visibleWidthMm = length / zoom;
+  const maxPanMm = Math.max(0, length - visibleWidthMm);
+  const clampedPanMm = Math.min(Math.max(panMm, 0), maxPanMm);
+  const resetView = () => { setZoom(1); setPanMm(0); };
+  /** Zoomt um `factor`, hält dabei die Mitte des aktuell sichtbaren Ausschnitts stabil (für die +/- Buttons, ohne Cursor-Bezug). */
+  const zoomByFactor = (factor: number) => {
+    const nextZoom = Math.min(20, Math.max(1, zoom * factor));
+    const prevVisible = length / zoom;
+    const nextVisible = length / nextZoom;
+    const centerMm = clampedPanMm + prevVisible / 2;
+    const nextPan = Math.min(Math.max(centerMm - nextVisible / 2, 0), Math.max(0, length - nextVisible));
+    setZoom(nextZoom);
+    setPanMm(nextPan);
+  };
   const [listDialogOpen, setListDialogOpen] = useState(false);
 
   /** Eine Reihe pro Profilseite (A/B/C/D); jede Reihe hat 1..n Nut-Spuren */
@@ -341,67 +360,81 @@ export function ProfileWorkbench2D({
           </div>
 
           {/* Tool palette */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-white rounded-md border border-slate-200 p-0.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white rounded-md border border-slate-200 p-0.5">
+                <button
+                  onClick={() => setTool('select')}
+                  className={`px-2 py-1 text-xs rounded ${tool === 'select' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                >
+                  Auswahl
+                </button>
+                <button
+                  onClick={() => setTool('hole')}
+                  className={`px-2 py-1 text-xs rounded ${tool === 'hole' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                >
+                  + Bohrung
+                </button>
+                <button
+                  onClick={() => setTool('connector')}
+                  className={`px-2 py-1 text-xs rounded ${tool === 'connector' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                >
+                  + Verbinder
+                </button>
+              </div>
+
+              {tool === 'hole' && (
+                <Select value={holeType} onValueChange={(v) => setHoleType(v as ProfileHole['type'])}>
+                  <SelectTrigger className="h-7 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {HOLE_TYPES.map((t) => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {tool === 'connector' && (
+                <Select value={connType} onValueChange={(v) => setConnType(v as ConnectorType)}>
+                  <SelectTrigger className="h-7 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CONNECTOR_TYPES.map((t) => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div className="hidden sm:block w-px h-6 bg-slate-200" />
+
+            {/* Zoom / Pan: Mausrad zoomt zum Cursor, Ziehen auf leerer Fläche verschiebt */}
+            <div className="flex items-center gap-0.5 bg-white rounded-md border border-slate-200 p-0.5">
               <button
-                onClick={() => setTool('select')}
-                className={`px-2 py-1 text-xs rounded ${tool === 'select' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                onClick={() => zoomByFactor(1 / 1.5)}
+                disabled={zoom <= 1}
+                className="w-6 h-6 flex items-center justify-center text-sm rounded text-muted-foreground hover:text-foreground hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Rauszoomen"
               >
-                Auswahl
+                −
               </button>
               <button
-                onClick={() => setTool('hole')}
-                className={`px-2 py-1 text-xs rounded ${tool === 'hole' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                onClick={resetView}
+                className="px-2 py-1 text-xs rounded text-muted-foreground hover:text-foreground font-semibold"
+                title="Ganzes Profil anzeigen (Mausrad zoomt, Ziehen verschiebt)"
               >
-                + Bohrung
+                Passend
               </button>
               <button
-                onClick={() => setTool('connector')}
-                className={`px-2 py-1 text-xs rounded ${tool === 'connector' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                onClick={() => zoomByFactor(1.5)}
+                disabled={zoom >= 20}
+                className="w-6 h-6 flex items-center justify-center text-sm rounded text-muted-foreground hover:text-foreground hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Reinzoomen"
               >
-                + Verbinder
+                +
               </button>
             </div>
 
-            {tool === 'hole' && (
-              <Select value={holeType} onValueChange={(v) => setHoleType(v as ProfileHole['type'])}>
-                <SelectTrigger className="h-7 w-[200px] text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {HOLE_TYPES.map((t) => (
-                    <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {tool === 'connector' && (
-              <Select value={connType} onValueChange={(v) => setConnType(v as ConnectorType)}>
-                <SelectTrigger className="h-7 w-[200px] text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CONNECTOR_TYPES.map((t) => (
-                    <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {/* Zoom */}
-            {/* View mode toggle: Anpassen vs. Detail */}
-            <div className="flex items-center bg-white rounded-md border border-slate-200 p-0.5">
-              <button
-                onClick={() => setDetailView(false)}
-                className={`px-2 py-1 text-xs rounded ${!detailView ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
-                title="Profil auf Fensterbreite anpassen"
-              >
-                Anpassen
-              </button>
-              <button
-                onClick={() => setDetailView(true)}
-                className={`px-2 py-1 text-xs rounded ${detailView ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
-                title="1 mm ≈ 0,6 px – horizontal scrollen für lange Profile"
-              >
-                Detail
-              </button>
-            </div>
+            <div className="hidden sm:block w-px h-6 bg-slate-200" />
 
             {/* Bohrungen als Liste eingeben */}
             <button
@@ -421,10 +454,10 @@ export function ProfileWorkbench2D({
               - 4 Reihen je Profilseite (A/B/C/D), eine pro Seite
               - Stirnseite "Anfang" rechts der Reihen
         */}
-        <div className="flex-1 min-h-0 flex overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
           {/* Left: end face "Ende" */}
           {onUpdateEndEnd && (
-            <aside className="w-40 shrink-0 border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+            <aside className="w-full lg:w-40 shrink-0 max-h-36 lg:max-h-none border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Ende</div>
               <EndFacePanel
                 label="Ende"
@@ -491,10 +524,25 @@ export function ProfileWorkbench2D({
               </div>
             </div>
 
-            <div
-              style={detailView ? { minWidth: `${Math.max(800, length * 0.6 + 80)}px` } : undefined}
-              className="space-y-2"
-            >
+            <ProfileOverviewStrip
+              length={length}
+              panMm={clampedPanMm}
+              visibleWidthMm={visibleWidthMm}
+              holes={holes.filter((h) => ensureSlot(h) === activeKey.slot)}
+              onNavigate={(mm) => {
+                const half = visibleWidthMm / 2;
+                setPanMm(Math.min(Math.max(mm - half, 0), maxPanMm));
+              }}
+            />
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200 px-2.5 py-1 text-[10px] text-muted-foreground">
+              <span>🖱️ Mausrad = Zoom</span>
+              <span className="text-slate-300">·</span>
+              <span>Ziehen auf der Zeichnung = Verschieben</span>
+              <span className="text-slate-300">·</span>
+              <span>Übersichtsstreifen oben = Springen</span>
+            </div>
+
+            <div className="space-y-2">
             {sideRows.filter((s) => s.slot === activeKey.slot).map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
@@ -510,6 +558,9 @@ export function ProfileWorkbench2D({
                   section={section}
                   side={side}
                   length={length}
+                  zoom={zoom}
+                  panMm={clampedPanMm}
+                  onViewChange={(nextZoom, nextPanMm) => { setZoom(nextZoom); setPanMm(nextPanMm); }}
                   angleStart={angleStart}
                   angleEnd={angleEnd}
                   holes={sideHoles}
@@ -556,7 +607,7 @@ export function ProfileWorkbench2D({
 
           {/* Right: end face "Anfang" */}
           {onUpdateEndStart && (
-            <aside className="w-40 shrink-0 border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+            <aside className="w-full lg:w-40 shrink-0 max-h-36 lg:max-h-none border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Anfang</div>
               <EndFacePanel
                 label="Anfang"
@@ -572,9 +623,9 @@ export function ProfileWorkbench2D({
         </div>
 
 
-        {/* Selected-item floating panel */}
+        {/* Selected-item floating panel — anchored top-right so it never collides with the page-level price card (bottom-right) */}
         {(selectedHole || selectedConn) && (
-          <div className="absolute right-52 bottom-20 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
+          <div className="absolute top-4 right-4 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg p-3 space-y-2.5 z-20">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-foreground">
                 {selectedHole ? 'Bohrung' : 'Verbinder'}
@@ -606,6 +657,19 @@ export function ProfileWorkbench2D({
                     </SelectContent>
                   </Select>
                 </div>
+                {selectedHole.type === 'custom' && (
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground mb-1 block">Durchmesser (mm)</Label>
+                    <NumericInput
+                      value={selectedHole.diameter}
+                      min={1}
+                      max={30}
+                      step={0.1}
+                      onCommit={(d) => updateHole({ diameter: d })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                )}
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Position (mm vom Anfang)</Label>
                   <NumericInput
@@ -728,6 +792,10 @@ interface SideRowProps {
     lanes: { moduleIndex: number; number: number; centerOnFace: number }[];
   };
   length: number;
+  /** Zoomstufe (1 = ganzes Profil sichtbar) und linker Rand des sichtbaren Fensters (mm) */
+  zoom: number;
+  panMm: number;
+  onViewChange: (zoom: number, panMm: number) => void;
   angleStart: number;
   angleEnd: number;
   holes: ProfileHole[];
@@ -749,11 +817,34 @@ interface SideRowProps {
 }
 
 function SideRow({
-  section, side, length, angleStart, angleEnd, holes, ghostHoles = [], connectors, tool,
+  section, side, length, zoom, panMm, onViewChange, angleStart, angleEnd, holes, ghostHoles = [], connectors, tool,
   activeModuleIndex, multiSelected, selectedId, draggingId, hoverInfo,
   onHover, onClick, onDragStart, onDragMove, onDragEnd, onSelectMarker,
 }: SideRowProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  /** Verfolgt, ob eine laufende Zeigerinteraktion (Pointer-Down auf leerer Fläche) sich zu einem Pan entwickelt hat, um den abschließenden Klick zu unterdrücken. */
+  const panState = useRef<{ startClientX: number; startClientY: number; startPanMm: number; isPanning: boolean } | null>(null);
+  const PAN_THRESHOLD_PX = 4;
+
+  // Die Zeile nutzt viewBox + preserveAspectRatio="none", damit die Höhe pro Lane
+  // konstant bleibt, egal wie lang das Profil ist. Dadurch wird die horizontale
+  // und vertikale Skalierung unterschiedlich (besonders extrem bei langen Profilen
+  // in "Anpassen"-Ansicht) — ein <circle> würde zur Ellipse/zum "Schlitz". Wir
+  // messen das reale Verhältnis über getScreenCTM() und skalieren runde Marker
+  // (Bohrungen) mit ihrem Gegenwert wieder gerade.
+  const [circleScaleX, setCircleScaleX] = useState(1);
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const update = () => {
+      const ctm = svg.getScreenCTM();
+      if (ctm && ctm.a) setCircleScaleX(Math.abs(ctm.d / ctm.a));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(svg);
+    return () => ro.disconnect();
+  });
 
   // Geometrie
   const PAD_X = 32;
@@ -767,6 +858,19 @@ function SideRow({
   // EU 1st-angle Konvention: Anfang (z=0) zeigt RECHTS, Ende (z=length) zeigt LINKS.
   // dx() bildet eine z-Position (mm) auf die Display-X-Koordinate ab.
   const dx = useCallback((z: number) => length - z, [length]);
+
+  // Sichtbares Fenster (Zoom/Pan): panMm/zoom kommen vom Elternteil, gelten
+  // seitenübergreifend. Rand schrumpft mit dem Zoom mit, damit er bei starkem
+  // Reinzoomen nicht dominiert; bei zoom=1 identisch zur alten Vollansicht.
+  const visibleWidthMm = length / zoom;
+  const marginMm = PAD_X / zoom;
+  // panMm ist der z-Wert (mm ab Anfang) des sichtbaren Fensteranfangs. Die Zeichenfläche
+  // ist gespiegelt (dx(z) = length - z), daher muss das Fenster beim Umrechnen in die
+  // lokale/viewBox-X-Achse mitgespiegelt werden — sonst zeigt der viewBox einen anderen
+  // Bereich als den, den Übersichtsstreifen/Zoom-zum-Cursor eigentlich ansteuern.
+  const windowXDispStart = length - panMm - visibleWidthMm;
+  const viewBoxX = PAD_X + windowXDispStart - marginMm;
+  const viewBoxWidth = visibleWidthMm + marginMm * 2;
 
   // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts
   const tanS = Math.tan((angleStart * Math.PI) / 180);
@@ -797,14 +901,52 @@ function SideRow({
     return { mi: side.lanes[laneIdx].moduleIndex, z };
   }, [side.lanes, length]);
 
+  // Pan per Ziehen auf leerer Fläche. Marker (Bohrung/Verbinder) rufen in ihrem
+  // eigenen onPointerDown bereits stopPropagation() auf, d.h. dieser Handler
+  // feuert nur bei Klicks/Zügen auf den Hintergrund — Repositionieren von
+  // Markern bleibt unberührt.
+  const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    const target = e.target as SVGElement;
+    if (target.dataset.role === 'marker') return;
+    panState.current = { startClientX: e.clientX, startClientY: e.clientY, startPanMm: panMm, isPanning: false };
+  };
+
   const handleMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (panState.current) {
+      const deltaPx = e.clientX - panState.current.startClientX;
+      if (!panState.current.isPanning && Math.hypot(deltaPx, e.clientY - panState.current.startClientY) > PAN_THRESHOLD_PX) {
+        panState.current.isPanning = true;
+      }
+      if (panState.current.isPanning) {
+        const ctm = svgRef.current?.getScreenCTM();
+        if (ctm && ctm.a) {
+          const mmPerPx = 1 / ctm.a;
+          // Gespiegelte Zeichenfläche: Ziehen nach rechts (deltaPx > 0) muss den z-Wert des
+          // Fensteranfangs erhöhen (weitere/höhere z liegen visuell weiter links), siehe
+          // windowXDispStart oben.
+          const nextPan = Math.min(Math.max(panState.current.startPanMm + deltaPx * mmPerPx, 0), Math.max(0, length - visibleWidthMm));
+          onViewChange(zoom, nextPan);
+        }
+        return;
+      }
+    }
     const loc = screenToLocal(e.clientX, e.clientY);
     if (!loc) return;
     if (loc.z >= 0 && loc.z <= length) onHover(loc.mi, loc.z); else onHover(loc.mi, null);
     if (draggingId) onDragMove(draggingId, loc.z);
   };
 
+  // WICHTIG: panState hier NICHT zurücksetzen — der Browser feuert nach
+  // pointerup noch ein click-Event, das in handleClick prüfen muss, ob gerade
+  // gepannt wurde (sonst würde jeder Pan zusätzlich eine Bohrung setzen).
+  // Der nächste pointerdown überschreibt panState ohnehin mit frischem State.
+  const handlePointerUp = () => {
+    onDragEnd();
+  };
+
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (panState.current?.isPanning) { panState.current = null; return; }
+    panState.current = null;
     const target = e.target as SVGElement;
     if (target.dataset.role === 'marker') return;
     const loc = screenToLocal(e.clientX, e.clientY);
@@ -812,12 +954,29 @@ function SideRow({
     onClick(loc.mi, loc.z, e.shiftKey || e.metaKey || e.ctrlKey);
   };
 
-  // Ruler — Labels zeigen z-Wert, aber an gespiegelter X-Position
-  const rulerStep = length <= 500 ? 50 : length <= 1500 ? 100 : length <= 3000 ? 250 : 500;
+  // Mausrad zoomt zum Cursor: mm-Position unter dem Cursor bleibt beim Zoomen stehen.
+  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    const loc = screenToLocal(e.clientX, e.clientY);
+    if (!loc) return;
+    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    const nextZoom = Math.min(20, Math.max(1, zoom * factor));
+    const nextVisibleWidthMm = length / nextZoom;
+    const fraction = (loc.z - panMm) / visibleWidthMm;
+    const nextPanMm = Math.min(Math.max(loc.z - fraction * nextVisibleWidthMm, 0), Math.max(0, length - nextVisibleWidthMm));
+    onViewChange(nextZoom, nextPanMm);
+  };
+
+  // Ruler — Labels zeigen z-Wert, aber an gespiegelter X-Position. Schrittweite
+  // richtet sich nach dem sichtbaren Ausschnitt, nicht der Gesamtlänge, damit
+  // beim Reinzoomen feiner bemaßt wird.
+  const rulerStep = visibleWidthMm <= 500 ? 50 : visibleWidthMm <= 1500 ? 100 : visibleWidthMm <= 3000 ? 250 : 500;
+  const tickStart = Math.floor(Math.max(0, panMm - rulerStep) / (rulerStep / 5)) * (rulerStep / 5);
+  const tickEnd = Math.min(length, panMm + visibleWidthMm + rulerStep);
   const ticks: { z: number; major: boolean; label: string | null }[] = [];
-  for (let z = 0; z <= length; z += rulerStep / 5) {
-    const major = z % rulerStep === 0;
-    ticks.push({ z, major, label: major ? `${z}` : null });
+  for (let z = tickStart; z <= tickEnd; z += rulerStep / 5) {
+    const major = Math.round(z) % rulerStep === 0;
+    ticks.push({ z, major, label: major ? `${Math.round(z)}` : null });
   }
 
 
@@ -848,18 +1007,21 @@ function SideRow({
       <div className="flex-1 min-w-0 py-1 pr-2">
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          viewBox={`${viewBoxX} 0 ${viewBoxWidth} ${VB_H}`}
           preserveAspectRatio="none"
           className="w-full select-none"
-          style={{ height: VB_H, cursor }}
+          style={{ height: VB_H, cursor: panState.current?.isPanning ? 'grabbing' : cursor }}
+          onPointerDown={handlePointerDown}
           onPointerMove={handleMove}
           onPointerLeave={() => onHover(0, null)}
-          onPointerUp={onDragEnd}
+          onPointerUp={handlePointerUp}
           onClick={handleClick}
+          onWheel={handleWheel}
         >
           <defs>
             <linearGradient id={`alu-${side.slot}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#e2e8f0" />
+              <stop offset="0%" stopColor="#f1f5f9" />
+              <stop offset="45%" stopColor="#cbd5e1" />
               <stop offset="100%" stopColor="#94a3b8" />
             </linearGradient>
           </defs>
@@ -871,7 +1033,15 @@ function SideRow({
               <g key={i}>
                 <line x1={dx(tk.z)} y1={tk.major ? RULER_H - 6 : RULER_H - 3} x2={dx(tk.z)} y2={RULER_H} stroke="#64748b" strokeWidth={tk.major ? 0.8 : 0.4} />
                 {tk.label !== null && (
-                  <text x={dx(tk.z)} y={RULER_H - 8} textAnchor="middle" fontSize="8" fill="#475569" fontFamily="ui-monospace, monospace">
+                  <text
+                    x={dx(tk.z)}
+                    y={RULER_H - 8}
+                    textAnchor="middle"
+                    fontSize="8"
+                    fill="#475569"
+                    fontFamily="ui-monospace, monospace"
+                    transform={`translate(${dx(tk.z)} 0) scale(${circleScaleX} 1) translate(${-dx(tk.z)} 0)`}
+                  >
                     {tk.label}
                   </text>
                 )}
@@ -1001,7 +1171,9 @@ function SideRow({
               const hx = dx(h.zPosition);
               return (
                 <g key={`ghost-${h.id}`} pointerEvents="none" opacity={0.55}>
-                  <circle cx={hx} cy={cy} r={r + 1} fill="none" stroke={color} strokeWidth="0.8" strokeDasharray="2 1.5" />
+                  <g transform={`translate(${hx} ${cy}) scale(${circleScaleX} 1) translate(${-hx} ${-cy})`}>
+                    <circle cx={hx} cy={cy} r={r + 1} fill="none" stroke={color} strokeWidth="0.8" strokeDasharray="2 1.5" />
+                  </g>
                   <line x1={hx - r * 0.7} y1={cy - r * 0.7} x2={hx + r * 0.7} y2={cy + r * 0.7} stroke={color} strokeWidth="0.6" strokeDasharray="1 1" />
                 </g>
               );
@@ -1049,15 +1221,18 @@ function SideRow({
                       {Math.round(h.zPosition)} mm
                     </text>
                   )}
-                  {/* Warn-Glow bei Mindestabstand-Verletzung */}
-                  {tooClose && (
-                    <circle cx={hx} cy={cy} r={r + 4} fill="none" stroke="#dc2626" strokeWidth="0.6" opacity="0.45">
-                      <animate attributeName="r" values={`${r + 3};${r + 6};${r + 3}`} dur="1.4s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.6;0.15;0.6" dur="1.4s" repeatCount="indefinite" />
-                    </circle>
-                  )}
-                  <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={ringColor} strokeWidth={isSel || tooClose ? 1.4 : 0.6} />
-                  <circle data-role="marker" cx={hx} cy={cy} r={r} fill={color} />
+                  {/* Runde Marker: Gegenskalierung, damit sie bei langen Profilen (nicht-uniform gestauchte Ansicht) als Kreis statt Schlitz erscheinen */}
+                  <g transform={`translate(${hx} ${cy}) scale(${circleScaleX} 1) translate(${-hx} ${-cy})`}>
+                    {/* Warn-Glow bei Mindestabstand-Verletzung */}
+                    {tooClose && (
+                      <circle cx={hx} cy={cy} r={r + 4} fill="none" stroke="#dc2626" strokeWidth="0.6" opacity="0.45">
+                        <animate attributeName="r" values={`${r + 3};${r + 6};${r + 3}`} dur="1.4s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.6;0.15;0.6" dur="1.4s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    <circle data-role="marker" cx={hx} cy={cy} r={r + 1.5} fill="white" stroke={ringColor} strokeWidth={isSel || tooClose ? 1.4 : 0.6} />
+                    <circle data-role="marker" cx={hx} cy={cy} r={r} fill={color} />
+                  </g>
                   {tooClose && (
                     <title>Mindestabstand zum Rand unterschritten ({MIN_EDGE_DISTANCE} mm)</title>
                   )}
@@ -1075,6 +1250,72 @@ function SideRow({
   );
 }
 
+
+// ---------------------------------------------------------------------------
+// Übersichtsstreifen: zeigt das ganze Profil, markiert den aktuell gezoomten
+// Ausschnitt, Klick/Ziehen navigiert dorthin. Bewusst eigenständig (Prozent-
+// Positionierung statt SVG-viewBox) statt die Lane-Logik von SideRow zu teilen.
+// ---------------------------------------------------------------------------
+
+interface ProfileOverviewStripProps {
+  length: number;
+  panMm: number;
+  visibleWidthMm: number;
+  holes: ProfileHole[];
+  onNavigate: (mm: number) => void;
+}
+
+function ProfileOverviewStrip({ length, panMm, visibleWidthMm, holes, onNavigate }: ProfileOverviewStripProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const navigateFromClientX = (clientX: number) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return;
+    const fraction = (clientX - rect.left) / rect.width;
+    // Gespiegelt wie die Hauptansicht: Anfang (z=0) rechts, Ende (z=length) links.
+    const z = length - fraction * length;
+    onNavigate(Math.min(Math.max(z, 0), length));
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    navigateFromClientX(e.clientX);
+    try {
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    } catch {
+      // Capture ist nur eine Komfortfunktion fürs Ziehen außerhalb des Streifens;
+      // ein Fehlschlag darf die Navigation selbst nicht verhindern.
+    }
+  };
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.buttons !== 1) return;
+    navigateFromClientX(e.clientX);
+  };
+
+  const windowStartPct = ((length - (panMm + visibleWidthMm)) / length) * 100;
+  const windowWidthPct = (visibleWidthMm / length) * 100;
+
+  return (
+    <div
+      ref={ref}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      className="relative h-7 rounded border border-slate-200 bg-gradient-to-b from-slate-100 to-slate-200 cursor-pointer overflow-hidden select-none"
+      title="Klicken oder ziehen, um im Profil zu navigieren"
+    >
+      {holes.map((h) => (
+        <div
+          key={h.id}
+          className="absolute top-0.5 bottom-0.5 w-px bg-slate-500/70"
+          style={{ left: `${((length - h.zPosition) / length) * 100}%` }}
+        />
+      ))}
+      <div
+        className="absolute top-0 bottom-0 bg-primary/15 border-x-2 border-primary pointer-events-none"
+        style={{ left: `${windowStartPct}%`, width: `${Math.max(windowWidthPct, 1.5)}%` }}
+      />
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // End face panel (Stirnseite Anfang / Ende)
@@ -1208,6 +1449,7 @@ function parsePositions(input: string, length: number): { positions: number[]; e
 }
 
 function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defaultType, onApply }: BulkHolesDialogProps) {
+  const HOLE_TYPES = useHoleTypes();
   const [text, setText] = useState('');
   const [type, setType] = useState<ProfileHole['type']>(defaultType);
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(() => new Set([keyOf(activeKey.slot, activeKey.moduleIndex)]));

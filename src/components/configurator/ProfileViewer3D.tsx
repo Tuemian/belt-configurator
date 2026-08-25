@@ -310,7 +310,13 @@ export interface ProfileViewer3DProps {
 
 export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes, connectors }: ProfileViewer3DProps) {
   return (
-    <Canvas
+    <div className="relative w-full h-full">
+      <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center gap-1.5 rounded-full bg-white/85 backdrop-blur px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm border border-slate-200">
+        <span>🖱️ Ziehen = Drehen</span>
+        <span className="text-slate-300">·</span>
+        <span>Scrollen/Pinch = Zoomen</span>
+      </div>
+      <Canvas
       shadows
       camera={{ position: [length * 0.9, length * 0.55, length * 1.3], fov: 38, near: 0.5, far: length * 30 }}
       style={{ background: 'linear-gradient(160deg, #f0f4f8 0%, #e2e8f0 100%)' }}
@@ -325,6 +331,7 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes, 
           connectors={connectors}
         />
       </Suspense>
-    </Canvas>
+      </Canvas>
+    </div>
   );
 }

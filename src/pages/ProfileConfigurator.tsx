@@ -9,10 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
+import { ProfileViewer3D } from '@/components/configurator/ProfileViewer3D';
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
 import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
 import { NumericInput } from '@/components/configurator/NumericInput';
@@ -82,6 +84,7 @@ export default function ProfileConfigurator() {
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
@@ -141,42 +144,46 @@ export default function ProfileConfigurator() {
             <AccordionContent className="pt-1 pb-5">
               <div className="space-y-6">
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Profilgröße</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {PROFILE_SIZES.map((sz) => {
-                      const isActive = section.sizeKey === sz.key;
-                      const tile = PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
-                      return (
-                        <button
-                          key={sz.key}
-                          onClick={() => {
-                            const next =
-                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === section.variant) ??
-                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key && s.variant === 'leicht') ??
-                              PROFILE_SECTIONS.find((s) => s.sizeKey === sz.key)!;
-                            update({ sectionId: next.id });
-                          }}
-                          className={`flex flex-col items-center justify-center gap-1.5 rounded-lg p-2 border-2 transition-all ${
-                            isActive
-                              ? 'bg-primary/10 border-primary shadow-sm'
-                              : 'bg-white border-slate-200 hover:border-primary/40 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className="pointer-events-none">
-                            <ProfileCrossSection2D
-                              section={tile}
-                              activeSlot="A"
-                              activeModuleIndex={0}
-                              onSelectSlot={() => { /* visual only */ }}
-                              size={42}
-                              showLabels={false}
-                            />
-                          </div>
-                          <span className={`text-[10px] font-mono leading-none ${isActive ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{sz.label}</span>
-                        </button>
-                      );
-                    })}
+                  <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Nut</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(['A5', 'A6', 'A8', 'A10'] as const).map((nut) => (
+                      <button
+                        key={nut}
+                        disabled={nut !== 'A8'}
+                        title={nut === 'A8' ? undefined : 'Bald verfügbar'}
+                        className={`rounded-lg px-2 py-2 text-xs font-semibold border-2 transition-all ${
+                          nut === 'A8'
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-white border-slate-200 text-muted-foreground opacity-40 cursor-not-allowed'
+                        }`}
+                      >
+                        {nut}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Querschnitt</Label>
+                  <Select
+                    value={section.sizeKey}
+                    onValueChange={(sizeKey) => {
+                      const next =
+                        PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === section.variant) ??
+                        PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === 'leicht') ??
+                        PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey)!;
+                      update({ sectionId: next.id });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROFILE_SIZES.map((sz) => (
+                        <SelectItem key={sz.key} value={sz.key}>{sz.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -457,23 +464,54 @@ export default function ProfileConfigurator() {
           {sidebarBody}
         </aside>
 
-        {/* Main stage: 2D Workbench (primary) + 3D Viewer (collapsible) */}
+        {/* Main stage: 2D Workbench (Bearbeiten) + 3D Viewer (Vorschau) */}
         <main className="flex-1 relative flex flex-col bg-slate-100 overflow-hidden">
-          <div className="flex-1 p-3 md:p-5 min-h-0 pb-[280px] lg:pb-5">
-            <ProfileWorkbench2D
-              section={section}
-              length={config.length}
-              angleStart={config.angleStart}
-              angleEnd={config.angleEnd}
-              holes={config.holes}
-              connectors={config.connectors}
-              endStart={config.endStart}
-              endEnd={config.endEnd}
-              onUpdateHoles={setHoles}
-              onUpdateConnectors={setConnectors}
-              onUpdateEndStart={(e) => update({ endStart: e })}
-              onUpdateEndEnd={(e) => update({ endEnd: e })}
-            />
+          <div className="shrink-0 flex items-center justify-between px-3 md:px-5 pt-3 md:pt-5 pb-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ansicht</span>
+            <div className="inline-flex items-center bg-white rounded-md border border-slate-200 p-0.5 shadow-sm">
+              <button
+                onClick={() => setViewMode('2d')}
+                className={`px-3 py-1 text-xs rounded ${viewMode === '2d' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+              >
+                2D bearbeiten
+              </button>
+              <button
+                onClick={() => setViewMode('3d')}
+                className={`px-3 py-1 text-xs rounded ${viewMode === '3d' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+              >
+                3D-Vorschau
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 px-3 md:px-5 min-h-0 pb-[280px] lg:pb-5">
+            {viewMode === '2d' ? (
+              <ProfileWorkbench2D
+                section={section}
+                length={config.length}
+                angleStart={config.angleStart}
+                angleEnd={config.angleEnd}
+                holes={config.holes}
+                connectors={config.connectors}
+                endStart={config.endStart}
+                endEnd={config.endEnd}
+                onUpdateHoles={setHoles}
+                onUpdateConnectors={setConnectors}
+                onUpdateEndStart={(e) => update({ endStart: e })}
+                onUpdateEndEnd={(e) => update({ endEnd: e })}
+              />
+            ) : (
+              <div className="w-full h-full rounded-lg overflow-hidden border border-slate-200 bg-white">
+                <ProfileViewer3D
+                  section={section}
+                  length={config.length}
+                  angleStart={config.angleStart}
+                  angleEnd={config.angleEnd}
+                  holes={config.holes}
+                  connectors={config.connectors}
+                />
+              </div>
+            )}
           </div>
 
           {/* Floating Price Card */}
@@ -502,11 +540,13 @@ export default function ProfileConfigurator() {
                 </div>
                 <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
                   <div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (brutto)</div>
-                    <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(grossTotal)}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (netto)</div>
+                    <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(price.total)}</div>
                   </div>
                   <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
                     Richtpreis · zzgl. Versand
+                    <br />
+                    inkl. MwSt.: {fmt.format(grossTotal)}
                   </div>
                 </div>
                 <Button onClick={addToCart} size="lg" className="w-full gap-2 font-semibold mt-1">

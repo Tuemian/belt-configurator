@@ -2,12 +2,15 @@ import * as Sentry from '@sentry/node';
 
 type InquiryPayload = {
   lang?: 'de' | 'en';
+  /** Anzeigename des Konfigurators, der die Anfrage ausgelöst hat (z. B. "Profilzuschnitte"). Fällt auf einen generischen Titel zurück, wenn nicht gesetzt. */
+  configuratorLabel?: string;
   form?: {
     name?: string;
     company?: string;
     email?: string;
     phone?: string;
     message?: string;
+    desiredDelivery?: string;
   };
   summary?: string;
   attachment?: {
@@ -98,14 +101,18 @@ function exceedsLength(value: string, max: number): boolean {
 
 function buildOfficeText(params: {
   lang: 'de' | 'en';
+  configuratorLabel: string;
   name: string;
   company: string;
   email: string;
   phone: string;
   message: string;
+  desiredDelivery: string;
   summary: string;
 }): string {
-  const title = params.lang === 'de' ? 'Neue Anfrage aus dem Gurtförderer-Konfigurator' : 'New inquiry from belt conveyor configurator';
+  const title = params.lang === 'de'
+    ? `Neue Anfrage aus dem ${params.configuratorLabel}-Konfigurator`
+    : `New inquiry from the ${params.configuratorLabel} configurator`;
   return [
     title,
     '',
@@ -113,6 +120,7 @@ function buildOfficeText(params: {
     `Firma: ${params.company || '-'}`,
     `E-Mail: ${params.email}`,
     `Telefon: ${params.phone || '-'}`,
+    `Wunschliefertermin: ${params.desiredDelivery || '-'}`,
     '',
     'Nachricht:',
     params.message || '-',
@@ -162,11 +170,13 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
   const body = (request.body ?? {}) as InquiryPayload;
   const lang = body.lang === 'en' ? 'en' : 'de';
+  const configuratorLabel = asNonEmptyString(body.configuratorLabel) || 'Konfigurator';
   const name = asNonEmptyString(body.form?.name);
   const company = asNonEmptyString(body.form?.company);
   const email = asNonEmptyString(body.form?.email);
   const phone = asNonEmptyString(body.form?.phone);
   const message = asNonEmptyString(body.form?.message);
+  const desiredDelivery = asNonEmptyString(body.form?.desiredDelivery);
   const summary = asNonEmptyString(body.summary);
   const attachmentFilename = asNonEmptyString(body.attachment?.filename);
   const attachmentContentType = asNonEmptyString(body.attachment?.contentType);
@@ -190,6 +200,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     || exceedsLength(email, MAX_EMAIL_LEN)
     || exceedsLength(phone, MAX_PHONE_LEN)
     || exceedsLength(message, MAX_MESSAGE_LEN)
+    || exceedsLength(desiredDelivery, MAX_PHONE_LEN)
     || exceedsLength(summary, MAX_SUMMARY_LEN)
   ) {
     response.status(400).json({ error: 'Input too long' });
@@ -295,7 +306,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     await sendMail(
       officeEmail,
       officeSubject,
-      buildOfficeText({ lang, name, company, email, phone, message, summary }),
+      buildOfficeText({ lang, configuratorLabel, name, company, email, phone, message, desiredDelivery, summary }),
       email,
     );
     await sendMail(

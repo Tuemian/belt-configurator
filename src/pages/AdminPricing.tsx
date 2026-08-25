@@ -427,8 +427,141 @@ export default function AdminPricing() {
             </TabsContent>
           ))}
         </Tabs>
+
+        <HoleTypesCard />
       </main>
     </div>
+  );
+}
+
+type HoleTypeRow = {
+  id: string;
+  label_de: string;
+  label_en: string;
+  label_it: string;
+  diameter_mm: number;
+  active: boolean;
+  sort_order: number;
+};
+
+function HoleTypesCard() {
+  const [items, setItems] = useState<HoleTypeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('hole_types').select('*').order('sort_order');
+    if (error) {
+      toast({ title: 'Fehler beim Laden', description: error.message, variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+    setItems((data as HoleTypeRow[]) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const saveItem = async (item: HoleTypeRow) => {
+    const { id, ...rest } = item;
+    const { error } = await supabase.from('hole_types').update(rest).eq('id', id);
+    if (error) {
+      toast({ title: 'Speichern fehlgeschlagen', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Gespeichert' });
+    void load();
+  };
+
+  const addItem = async () => {
+    const id = window.prompt('Eindeutige ID (z.B. d10):')?.trim();
+    if (!id) return;
+    const nextOrder = (items.at(-1)?.sort_order ?? 0) + 10;
+    const { error } = await supabase.from('hole_types').insert({ id, label_de: id, diameter_mm: 6, sort_order: nextOrder });
+    if (error) {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+      return;
+    }
+    void load();
+  };
+
+  const deleteItem = async (item: HoleTypeRow) => {
+    if (!window.confirm(`Bohrungstyp "${item.label_de}" wirklich löschen?`)) return;
+    const { error } = await supabase.from('hole_types').delete().eq('id', item.id);
+    if (error) {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+      return;
+    }
+    void load();
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle>Bohrungstypen (Zuschnittskonfigurator)</CardTitle>
+        <Button size="sm" onClick={addItem}><Plus className="w-4 h-4 mr-2" />Neuer Bohrungstyp</Button>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Lädt …</p>
+        ) : items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Noch keine Bohrungstypen angelegt.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground uppercase">
+                <tr>
+                  <th className="text-left py-2 pr-2">ID</th>
+                  <th className="text-left py-2 pr-2">Bezeichnung DE</th>
+                  <th className="text-left py-2 pr-2">Durchmesser (mm)</th>
+                  <th className="text-left py-2 pr-2">Reihenfolge</th>
+                  <th className="text-left py-2 pr-2">Aktiv</th>
+                  <th className="text-left py-2 pr-2">Aktionen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <HoleTypeRowEditor key={item.id} item={item} onSave={saveItem} onDelete={deleteItem} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground mt-3">
+          Diese Liste steuert die Standard-Bohrungstypen, die Kunden im Zuschnittskonfigurator auswählen können.
+          Kunden können zusätzlich immer einen freien Durchmesser eingeben ("Benutzerdefiniert") — das ist keine Zeile hier, sondern fest im Tool eingebaut.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HoleTypeRowEditor({
+  item, onSave, onDelete,
+}: {
+  item: HoleTypeRow;
+  onSave: (i: HoleTypeRow) => void;
+  onDelete: (i: HoleTypeRow) => void;
+}) {
+  const [i, setI] = useState(item);
+  useEffect(() => { setI(item); }, [item]);
+  const dirty = JSON.stringify(i) !== JSON.stringify(item);
+
+  return (
+    <tr className="border-t align-top">
+      <td className="py-2 pr-2 font-mono text-xs">{i.id}</td>
+      <td className="py-2 pr-2"><Input value={i.label_de} onChange={(e) => setI({ ...i, label_de: e.target.value })} className="h-8 min-w-[220px]" /></td>
+      <td className="py-2 pr-2"><Input type="number" step="0.1" value={i.diameter_mm} onChange={(e) => setI({ ...i, diameter_mm: Number(e.target.value) || 0 })} className="h-8 w-24" /></td>
+      <td className="py-2 pr-2"><Input type="number" value={i.sort_order} onChange={(e) => setI({ ...i, sort_order: Number(e.target.value) || 0 })} className="h-8 w-20" /></td>
+      <td className="py-2 pr-2"><Switch checked={i.active} onCheckedChange={(v) => setI({ ...i, active: v })} /></td>
+      <td className="py-2 pr-2">
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant={dirty ? 'default' : 'outline'} disabled={!dirty} onClick={() => onSave(i)}><Save className="w-3.5 h-3.5" /></Button>
+          <Button size="sm" variant="outline" onClick={() => onDelete(item)}><Trash2 className="w-3.5 h-3.5" /></Button>
+        </div>
+      </td>
+    </tr>
   );
 }
 

@@ -7,6 +7,7 @@
 - [Startseite](/): Übersicht aller verfügbaren NOVAMOTIS-Konfiguratoren.
 - [Förderband Konfigurator](/belt-conveyor): Förderbänder mit Maßen, Gurtgeschwindigkeit, Antrieb und Untergestell konfigurieren und Anfrage senden.
 - [Profilzuschnitte Konfigurator](/profile-configurator): Aluminium-Profile mit Länge, Bohrungen und Endenbearbeitung konfigurieren (Anmeldung erforderlich).
+- [Durchbiegungsrechner](/deflection): Aluminium-Profil, Spannweite und Last wählen und die Durchbiegung berechnen.
 
 ## Optional
 

@@ -113,6 +113,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lang: 'de',
+          configuratorLabel: 'Profilzuschnitte',
           form: {
             name: cust.name,
             company: cust.company,

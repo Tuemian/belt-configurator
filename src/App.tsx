@@ -8,11 +8,12 @@ import { useLanguage } from "@/hooks/use-language";
 import { t } from "@/lib/i18n";
 import Index from "./pages/Index.tsx";
 import { AuthProvider } from "./hooks/use-auth.tsx";
-import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import ProfilePasswordGate from "./components/ProfilePasswordGate.tsx";
 import AdminRoute from "./components/AdminRoute.tsx";
 
 const BeltConfigurator = lazy(() => import("./pages/BeltConfigurator.tsx"));
 const ProfileConfigurator = lazy(() => import("./pages/ProfileConfigurator.tsx"));
+const DeflectionCalculator = lazy(() => import("./pages/DeflectionCalculator.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const AdminPricing = lazy(() => import("./pages/AdminPricing.tsx"));
@@ -41,12 +42,13 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/belt-conveyor" element={<BeltConfigurator />} />
+                    <Route path="/deflection" element={<DeflectionCalculator />} />
                     <Route
                       path="/profile-configurator"
                       element={
-                        <ProtectedRoute>
+                        <ProfilePasswordGate>
                           <ProfileConfigurator />
-                        </ProtectedRoute>
+                        </ProfilePasswordGate>
                       }
                     />
                     <Route

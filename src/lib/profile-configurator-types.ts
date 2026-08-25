@@ -71,7 +71,7 @@ export interface ProfileHole {
   slot: SlotId;
   /** Bei Multi-Modul-Profilen (z. B. 80×40 hat 2 Nuten auf A/C): welche Spur (0..n-1). Default 0. */
   moduleIndex?: number;
-  type: 'd55' | 'd85' | 'm6-thread' | 'm8-thread' | 'step-m6' | 'step-m8';
+  type: 'd55' | 'd85' | 'm6-thread' | 'm8-thread' | 'step-m6' | 'step-m8' | 'custom';
   label: string;
 }
 
@@ -238,6 +238,7 @@ export const HOLE_TYPES = [
   { id: 'm8-thread', label: 'Gewinde M8',                   diameter: 8.0  },
   { id: 'step-m6',   label: 'Stufenbohrung M6 (Ø11/5,0)',  diameter: 11.0 },
   { id: 'step-m8',   label: 'Stufenbohrung M8 (Ø14/6,8)',  diameter: 14.0 },
+  { id: 'custom',    label: 'Benutzerdefiniert (Ø frei wählbar)', diameter: 6.0 },
 ] as const;
 
 // ---------------------------------------------------------------------------

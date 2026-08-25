@@ -7,6 +7,7 @@ import {
   type ProfileSection,
   type SlotId,
 } from '@/lib/profile-configurator-types';
+import { roundedRectPath, tSlotPathDown, tSlotPathUp, tSlotPathHorizontal } from '@/lib/profile-cross-section-shapes';
 
 interface Props {
   section: ProfileSection;
@@ -52,7 +53,7 @@ export function ProfileCrossSection2D({
   rotate90 = false,
   showSideLabels = false,
 }: Props) {
-  const { w, h, slotWidth, slotDepth, cornerR, boreRadius } = section;
+  const { w, h, slotWidth, slotDepth, grooveWidth, cornerR, boreRadius, webThickness = 3 } = section;
   const MODULE = getModulePitch(section);
   const counts = getSlotCounts(section);
   const bores = getBoreCounts(section);
@@ -66,18 +67,11 @@ export function ProfileCrossSection2D({
     return s === activeSlot && mi === activeModuleIndex;
   };
 
-  const outer = `
-    M ${PAD + cornerR} ${PAD}
-    L ${PAD + w - cornerR} ${PAD}
-    Q ${PAD + w} ${PAD} ${PAD + w} ${PAD + cornerR}
-    L ${PAD + w} ${PAD + h - cornerR}
-    Q ${PAD + w} ${PAD + h} ${PAD + w - cornerR} ${PAD + h}
-    L ${PAD + cornerR} ${PAD + h}
-    Q ${PAD} ${PAD + h} ${PAD} ${PAD + h - cornerR}
-    L ${PAD} ${PAD + cornerR}
-    Q ${PAD} ${PAD} ${PAD + cornerR} ${PAD}
-    Z
-  `;
+  const outer = roundedRectPath(PAD, PAD, w, h, cornerR);
+  // Hohle Wandung (wie beim Durchbiegungsrechner): Innenkontur per evenodd vom
+  // Außenpfad abgezogen, damit die Mitte als Hohlraum statt Vollmaterial wirkt.
+  const wall = Math.min(webThickness, Math.min(w, h) / 2 - 1);
+  const inner = roundedRectPath(PAD + wall, PAD + wall, w - wall * 2, h - wall * 2, Math.max(0, cornerR - wall));
 
   const fs = Math.max(2.4, Math.min(5, MODULE / 8));
   const boreFs = Math.max(2.2, Math.min(4.5, boreRadius * 1.1));
@@ -86,7 +80,7 @@ export function ProfileCrossSection2D({
     slot: SlotId;
     moduleIndex: number;
     number: number;
-    rect: { x: number; y: number; w: number; h: number };
+    slotPath: string;
     label: { x: number; y: number };
     hit: { x: number; y: number; w: number; h: number };
   };
@@ -98,7 +92,7 @@ export function ProfileCrossSection2D({
     slots.push({
       slot: 'A', moduleIndex: i,
       number: getSlotNumber(section, 'A', i),
-      rect: { x: cx - slotWidth / 2, y: PAD, w: slotWidth, h: slotDepth },
+      slotPath: tSlotPathDown(cx, PAD, slotWidth, grooveWidth, slotDepth),
       label: { x: cx, y: PAD + slotDepth + fs * 0.9 },
       hit: { x: cx - MODULE / 2, y: PAD - HIT, w: MODULE, h: HIT + slotDepth + fs * 1.4 },
     });
@@ -108,7 +102,7 @@ export function ProfileCrossSection2D({
     slots.push({
       slot: 'B', moduleIndex: j,
       number: getSlotNumber(section, 'B', j),
-      rect: { x: PAD + w - slotDepth, y: cy - slotWidth / 2, w: slotDepth, h: slotWidth },
+      slotPath: tSlotPathHorizontal(cy, PAD + w, slotWidth, grooveWidth, slotDepth, true),
       label: { x: PAD + w - slotDepth - fs * 0.7, y: cy + fs * 0.35 },
       hit: { x: PAD + w - slotDepth - fs * 1.4, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
     });
@@ -118,7 +112,7 @@ export function ProfileCrossSection2D({
     slots.push({
       slot: 'C', moduleIndex: i,
       number: getSlotNumber(section, 'C', i),
-      rect: { x: cx - slotWidth / 2, y: PAD + h - slotDepth, w: slotDepth, h: slotDepth },
+      slotPath: tSlotPathUp(cx, PAD + h, slotWidth, grooveWidth, slotDepth),
       label: { x: cx, y: PAD + h - slotDepth - fs * 0.4 },
       hit: { x: cx - MODULE / 2, y: PAD + h - slotDepth - fs * 0.4, w: MODULE, h: HIT + slotDepth + fs * 0.6 },
     });
@@ -128,7 +122,7 @@ export function ProfileCrossSection2D({
     slots.push({
       slot: 'D', moduleIndex: j,
       number: getSlotNumber(section, 'D', j),
-      rect: { x: PAD, y: cy - slotWidth / 2, w: slotDepth, h: slotWidth },
+      slotPath: tSlotPathHorizontal(cy, PAD, slotWidth, grooveWidth, slotDepth, false),
       label: { x: PAD + slotDepth + fs * 0.7, y: cy + fs * 0.35 },
       hit: { x: PAD - HIT, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
     });
@@ -138,10 +132,11 @@ export function ProfileCrossSection2D({
   const dispW = rotate90 ? size * (VB_H / VB_W) : size;
   const dispH = rotate90 ? size : size * (VB_H / VB_W);
 
-  // Bei rotate90 drehen wir den gesamten Inhalt im SVG via transform um VB-Mitte
-  const innerTransform = rotate90
-    ? `rotate(90 ${VB_W / 2} ${VB_H / 2}) translate(${(VB_W - VB_H) / 2} ${(VB_H - VB_W) / 2})`
-    : undefined;
+  // Bei rotate90 drehen wir den Inhalt (VB_W×VB_H) im Uhrzeigersinn in die neue
+  // Viewbox (VB_H×VB_W): erst um den Ursprung drehen, dann um VB_H nach rechts
+  // schieben. Funktioniert unabhängig vom Seitenverhältnis (kein Clipping bei
+  // nicht-quadratischen Profilen).
+  const innerTransform = rotate90 ? `translate(${VB_H} 0) rotate(90)` : undefined;
 
   return (
     <svg
@@ -153,13 +148,20 @@ export function ProfileCrossSection2D({
     >
       <defs>
         <linearGradient id={`alu-${section.id}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#e2e8f0" />
+          <stop offset="0%" stopColor="#f1f5f9" />
+          <stop offset="45%" stopColor="#cbd5e1" />
           <stop offset="100%" stopColor="#94a3b8" />
         </linearGradient>
+        <radialGradient id={`slot-shadow-${section.id}`} cx="35%" cy="35%" r="75%">
+          <stop offset="0%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#334155" />
+        </radialGradient>
       </defs>
 
       <g transform={innerTransform}>
-        <path d={outer} fill={`url(#alu-${section.id})`} stroke="#475569" strokeWidth="0.5" />
+        {/* Hohler Ring statt Vollfläche: Außenkontur minus Innenkontur (Wanddicke) */}
+        <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#alu-${section.id})`} stroke="#475569" strokeWidth="0.5" />
+        <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.4" />
 
         {/* Kernzüge */}
         {Array.from({ length: bores.x }).map((_, ix) =>
@@ -210,14 +212,11 @@ export function ProfileCrossSection2D({
         {slots.map((s, i) => {
           const sel = isSelected(s.slot, s.moduleIndex);
           return (
-            <rect
+            <path
               key={`slot-${i}`}
-              x={s.rect.x}
-              y={s.rect.y}
-              width={s.rect.w}
-              height={s.rect.h}
-              fill={sel ? 'hsl(var(--primary))' : '#475569'}
-              opacity={sel ? 0.95 : 0.6}
+              d={s.slotPath}
+              fill={sel ? 'hsl(var(--primary))' : `url(#slot-shadow-${section.id})`}
+              opacity={sel ? 0.95 : 0.92}
             />
           );
         })}
