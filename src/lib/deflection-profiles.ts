@@ -72,7 +72,6 @@ export const DEFLECTION_PROFILES: DeflectionProfile[] = [
 
   { articleNumber: '1108029', label: 'Profil A8 40x16', series: 'A8', w: 40, h: 16, areaMm2: 424, massPerMeterKg: 1.13, iUprightMm4: 68_900, iFlatMm4: 10_500 },
   { articleNumber: '1108031', label: 'Profil A8 40x16 eco', series: 'A8', w: 40, h: 16, areaMm2: 224, massPerMeterKg: 0.60, iUprightMm4: 33_400, iFlatMm4: 6_400 },
-  { articleNumber: '1108033', label: 'Profil A8 40x32 leicht', series: 'A8', w: 40, h: 32, areaMm2: 497, massPerMeterKg: 1.34, iUprightMm4: 71_900, iFlatMm4: 50_600 },
 
   { articleNumber: '1108051', label: 'Profil A8 80x40 eco', series: 'A8', w: 80, h: 40, areaMm2: 893, massPerMeterKg: 2.42, iUprightMm4: 578_100, iFlatMm4: 151_500 },
   { articleNumber: '1108055', label: 'Profil A8 80x40 leicht', series: 'A8', w: 80, h: 40, areaMm2: 1138, massPerMeterKg: 3.04, iUprightMm4: 695_400, iFlatMm4: 166_000 },
@@ -80,7 +79,6 @@ export const DEFLECTION_PROFILES: DeflectionProfile[] = [
 
   { articleNumber: '1108047', label: 'Profil A8 80x16', series: 'A8', w: 80, h: 16, areaMm2: 813, massPerMeterKg: 2.20, iUprightMm4: 507_600, iFlatMm4: 21_500 },
   { articleNumber: '1108048', label: 'Profil A8 80x16 eco', series: 'A8', w: 80, h: 16, areaMm2: 486, massPerMeterKg: 1.31, iUprightMm4: 268_000, iFlatMm4: 14_900 },
-  { articleNumber: '1108049', label: 'Profil A8 80x32 leicht', series: 'A8', w: 80, h: 32, areaMm2: 865, massPerMeterKg: 2.33, iUprightMm4: 537_300, iFlatMm4: 92_700 },
 
   { articleNumber: '1108062', label: 'Profil A8 80x80 eco', series: 'A8', w: 80, h: 80, areaMm2: 1486, massPerMeterKg: 4.01, iUprightMm4: 1_006_900, iFlatMm4: 1_006_900 },
   { articleNumber: '1108063', label: 'Profil A8 80x80 leicht', series: 'A8', w: 80, h: 80, areaMm2: 1975, massPerMeterKg: 5.33, iUprightMm4: 1_340_600, iFlatMm4: 1_340_600 },
@@ -90,19 +88,12 @@ export const DEFLECTION_PROFILES: DeflectionProfile[] = [
   { articleNumber: '1108011', label: 'Profil A8 120x40', series: 'A8', w: 120, h: 40, areaMm2: 2438, massPerMeterKg: 6.58, iUprightMm4: 3_226_600, iFlatMm4: 398_000 },
   { articleNumber: '1108016', label: 'Profil A8 120x80 leicht', series: 'A8', w: 120, h: 80, areaMm2: 3013, massPerMeterKg: 8.13, iUprightMm4: 4_216_700, iFlatMm4: 2_018_900 },
   { articleNumber: '1108014', label: 'Profil A8 120x80', series: 'A8', w: 120, h: 80, areaMm2: 4023, massPerMeterKg: 11.07, iUprightMm4: 5_776_100, iFlatMm4: 2_756_200 },
-  { articleNumber: '1108010', label: 'Profil A8 120x120', series: 'A8', w: 120, h: 120, areaMm2: 4592, massPerMeterKg: 12.39, iUprightMm4: 7_988_300, iFlatMm4: 7_988_300 },
 
   { articleNumber: '1108020', label: 'Profil A8 160x40 leicht', series: 'A8', w: 160, h: 40, areaMm2: 2090, massPerMeterKg: 5.64, iUprightMm4: 5_003_200, iFlatMm4: 318_100 },
   { articleNumber: '1108019', label: 'Profil A8 160x40', series: 'A8', w: 160, h: 40, areaMm2: 3200, massPerMeterKg: 8.64, iUprightMm4: 7_396_200, iFlatMm4: 527_200 },
   { articleNumber: '1108018', label: 'Profil A8 160x28', series: 'A8', w: 160, h: 28, areaMm2: 3107, massPerMeterKg: 8.39, iUprightMm4: 7_268_200, iFlatMm4: 204_900 },
   { articleNumber: '1108024', label: 'Profil A8 160x80 leicht', series: 'A8', w: 160, h: 80, areaMm2: 3780, massPerMeterKg: 10.21, iUprightMm4: 9_078_800, iFlatMm4: 2_670_700 },
   { articleNumber: '1108022', label: 'Profil A8 160x80', series: 'A8', w: 160, h: 80, areaMm2: 5007, massPerMeterKg: 13.52, iUprightMm4: 12_283_300, iFlatMm4: 3_608_900 },
-  { articleNumber: '1108017', label: 'Profil A8 160x160', series: 'A8', w: 160, h: 160, areaMm2: 7420, massPerMeterKg: 20.04, iUprightMm4: 23_550_000, iFlatMm4: 23_550_000 },
-
-  { articleNumber: '1108026', label: 'Profil A8 200x40', series: 'A8', w: 200, h: 40, areaMm2: 3960, massPerMeterKg: 10.69, iUprightMm4: 14_114_700, iFlatMm4: 656_200 },
-  { articleNumber: '1108025', label: 'Profil A8 200x28', series: 'A8', w: 200, h: 28, areaMm2: 3839, massPerMeterKg: 10.37, iUprightMm4: 13_835_300, iFlatMm4: 253_700 },
-
-  { articleNumber: '1108027', label: 'Profil A8 240x28', series: 'A8', w: 240, h: 28, areaMm2: 4570, massPerMeterKg: 12.29, iUprightMm4: 23_473_800, iFlatMm4: 302_500 },
 
   // --- A10 · Nut 10 -----------------------------------------------------------
   { articleNumber: '1110001', label: 'Profil A10 50x50 eco', series: 'A10', w: 50, h: 50, areaMm2: 847, massPerMeterKg: 2.29, iUprightMm4: 203_400, iFlatMm4: 203_400 },
