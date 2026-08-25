@@ -4,6 +4,34 @@
 // im Durchbiegungsrechner). Reine Geometrie, keine Interaktion/Hitboxen.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Alvaris-Referenzbilder (1:1 aus dem Profilbearbeitungscode-Blatt zugeschnitten,
+// s. scratchpad/pdf-extract). Jedes Bild wurde auf exakt (w*PX_PER_MM + 2*PAD_PX) ×
+// (h*PX_PER_MM + 2*PAD_PX) Pixel normalisiert, damit die vorhandene mm-basierte
+// Hitbox-/Label-Geometrie unverändert weiterverwendet werden kann — die SVG-viewBox
+// muss nur um PAD_MM statt der bisherigen festen Pixel-Konstante gerändert werden.
+export const ALVARIS_PX_PER_MM = 8.52;
+export const ALVARIS_PAD_PX = 20;
+export const ALVARIS_PAD_MM = ALVARIS_PAD_PX / ALVARIS_PX_PER_MM;
+
+/**
+ * Alvaris zeichnet 120er/160er-Varianten immer mit der langen Seite als Breite
+ * (Querformat); NOVAMOTIS' Katalog listet einige davon aber im Hochformat
+ * (40×120 statt 120×40 usw. — dieselbe Extrusion, nur gedreht verwendet). Für diese
+ * Fälle liefern wir das Querformat-Bild plus `rotated: true`, damit der Aufrufer es
+ * um 90° gedreht in seine (bereits korrekt hochformatige) Interaktions-viewBox legt.
+ */
+export function getAlvarisImage(sizeKey: string): { path: string; rotated: boolean } | null {
+  const native = new Set(['40x16', '40x40', '80x16', '80x40', '80x80', '160x16', '160x28']);
+  const rotatedFrom: Record<string, string> = {
+    '40x80': '80x40', '40x120': '120x40', '40x160': '160x40',
+    '80x120': '120x80', '80x160': '160x80',
+  };
+  if (native.has(sizeKey)) return { path: `/profiles/cross-sections/${sizeKey}.png`, rotated: false };
+  if (sizeKey in rotatedFrom) return { path: `/profiles/cross-sections/${rotatedFrom[sizeKey]}.png`, rotated: true };
+  return null;
+}
+
 /** Gerundetes Rechteck als SVG-Pfad, im Uhrzeigersinn. */
 export function roundedRectPath(x: number, y: number, w: number, h: number, r: number): string {
   const rr = Math.max(0, Math.min(r, w / 2, h / 2));

@@ -1,5 +1,5 @@
 import { getModulePitch, getSlotCounts, getBoreCounts, type ProfileSection } from '@/lib/profile-configurator-types';
-import { roundedRectPath, tSlotPathDown, tSlotPathHorizontal, getCellStruts } from '@/lib/profile-cross-section-shapes';
+import { roundedRectPath, tSlotPathDown, tSlotPathHorizontal, getCellStruts, getAlvarisImage, ALVARIS_PAD_MM } from '@/lib/profile-cross-section-shapes';
 
 interface Props {
   section: ProfileSection;
@@ -20,7 +20,8 @@ export function RealisticProfileCrossSection({ section, size = 140, rotate90 = f
   const counts = getSlotCounts(section);
   const bores = getBoreCounts(section);
 
-  const PAD = 16;
+  const alvarisImage = getAlvarisImage(section.sizeKey);
+  const PAD = alvarisImage ? ALVARIS_PAD_MM : 16;
   const VB_W = w + PAD * 2;
   const VB_H = h + PAD * 2;
   const wall = Math.min(webThickness, Math.min(w, h) / 2 - 1.5);
@@ -76,40 +77,52 @@ export function RealisticProfileCrossSection({ section, size = 140, rotate90 = f
       </defs>
 
       <g transform={innerTransform}>
-        {/* Hohler Ring: Außenkontur minus Innenkontur (Wanddicke geschätzt) */}
-        <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#${gradId})`} stroke="#475569" strokeWidth="0.6" />
-        {/* Zarter Glanz oben links */}
-        <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.6" />
+        {alvarisImage ? (
+          alvarisImage.rotated ? (
+            <g transform={`translate(${VB_W}, 0) rotate(90)`}>
+              <image href={alvarisImage.path} x="0" y="0" width={VB_H} height={VB_W} preserveAspectRatio="none" />
+            </g>
+          ) : (
+            <image href={alvarisImage.path} x="0" y="0" width={VB_W} height={VB_H} preserveAspectRatio="none" />
+          )
+        ) : (
+          <>
+            {/* Hohler Ring: Außenkontur minus Innenkontur (Wanddicke geschätzt) */}
+            <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#${gradId})`} stroke="#475569" strokeWidth="0.6" />
+            {/* Zarter Glanz oben links */}
+            <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.6" />
 
-        {/* Innere Stege (Kernbohrung → Modulzellen-Ecken) */}
-        {struts.map((s, i) => (
-          <line
-            key={`strut-${i}`}
-            x1={PAD + s.x1} y1={PAD + s.y1}
-            x2={PAD + s.x2} y2={PAD + s.y2}
-            stroke={`url(#${gradId})`}
-            strokeWidth={strutWidth}
-            strokeLinecap="round"
-          />
-        ))}
+            {/* Innere Stege (Kernbohrung → Modulzellen-Ecken) */}
+            {struts.map((s, i) => (
+              <line
+                key={`strut-${i}`}
+                x1={PAD + s.x1} y1={PAD + s.y1}
+                x2={PAD + s.x2} y2={PAD + s.y2}
+                stroke={`url(#${gradId})`}
+                strokeWidth={strutWidth}
+                strokeLinecap="round"
+              />
+            ))}
 
-        {/* T-Nuten */}
-        {slots.map((d, i) => (
-          <path key={`slot-${i}`} d={d} fill={`url(#${shadowId})`} opacity={0.92} />
-        ))}
+            {/* T-Nuten */}
+            {slots.map((d, i) => (
+              <path key={`slot-${i}`} d={d} fill={`url(#${shadowId})`} opacity={0.92} />
+            ))}
 
-        {/* Kernzüge / Bohrungen */}
-        {Array.from({ length: bores.x }).map((_, ix) =>
-          Array.from({ length: bores.y }).map((_, iy) => {
-            const cx = PAD + MODULE * (ix + 0.5);
-            const cy = PAD + MODULE * (iy + 0.5);
-            return (
-              <g key={`bore-${ix}-${iy}`}>
-                <circle cx={cx} cy={cy} r={boreRadius + 1.1} fill={`url(#${gradId})`} stroke="#64748b" strokeWidth="0.4" />
-                <circle cx={cx} cy={cy} r={boreRadius} fill={`url(#${shadowId})`} />
-              </g>
-            );
-          }),
+            {/* Kernzüge / Bohrungen */}
+            {Array.from({ length: bores.x }).map((_, ix) =>
+              Array.from({ length: bores.y }).map((_, iy) => {
+                const cx = PAD + MODULE * (ix + 0.5);
+                const cy = PAD + MODULE * (iy + 0.5);
+                return (
+                  <g key={`bore-${ix}-${iy}`}>
+                    <circle cx={cx} cy={cy} r={boreRadius + 1.1} fill={`url(#${gradId})`} stroke="#64748b" strokeWidth="0.4" />
+                    <circle cx={cx} cy={cy} r={boreRadius} fill={`url(#${shadowId})`} />
+                  </g>
+                );
+              }),
+            )}
+          </>
         )}
       </g>
     </svg>

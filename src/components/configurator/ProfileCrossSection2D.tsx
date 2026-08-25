@@ -7,7 +7,7 @@ import {
   type ProfileSection,
   type SlotId,
 } from '@/lib/profile-configurator-types';
-import { roundedRectPath, tSlotPathDown, tSlotPathUp, tSlotPathHorizontal, getCellStruts } from '@/lib/profile-cross-section-shapes';
+import { roundedRectPath, tSlotPathDown, tSlotPathUp, tSlotPathHorizontal, getCellStruts, getAlvarisImage, ALVARIS_PAD_MM } from '@/lib/profile-cross-section-shapes';
 
 interface Props {
   section: ProfileSection;
@@ -57,8 +57,11 @@ export function ProfileCrossSection2D({
   const MODULE = getModulePitch(section);
   const counts = getSlotCounts(section);
   const bores = getBoreCounts(section);
-
-  const PAD = 14;
+  // 1:1-Referenzbild aus dem Alvaris-Profilbearbeitungscode-Blatt (falls vorhanden) statt
+  // der schematischen Zeichnung. Dessen Rand (ALVARIS_PAD_MM) ersetzt die alte feste
+  // Konstante, damit Bild und mm-basierte Hitbox-/Label-Geometrie exakt übereinstimmen.
+  const alvarisImage = getAlvarisImage(section.sizeKey);
+  const PAD = alvarisImage ? ALVARIS_PAD_MM : 14;
   const VB_W = w + PAD * 2;
   const VB_H = h + PAD * 2;
 
@@ -163,21 +166,33 @@ export function ProfileCrossSection2D({
       </defs>
 
       <g transform={innerTransform}>
-        {/* Hohler Ring statt Vollfläche: Außenkontur minus Innenkontur (Wanddicke) */}
-        <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#alu-${section.id})`} stroke="#475569" strokeWidth="0.5" />
-        <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.4" />
-
-        {/* Innere Stege (Kernbohrung → Modulzellen-Ecken) */}
-        {struts.map((s, i) => (
-          <line
-            key={`strut-${i}`}
-            x1={PAD + s.x1} y1={PAD + s.y1}
-            x2={PAD + s.x2} y2={PAD + s.y2}
-            stroke={`url(#alu-${section.id})`}
-            strokeWidth={strutWidth}
-            strokeLinecap="round"
-          />
-        ))}
+        {alvarisImage ? (
+          alvarisImage.rotated ? (
+            // Alvaris zeichnet diese Größe im Querformat; wir drehen nur das Bild um 90°,
+            // die Hitbox-/Label-Geometrie ist bereits korrekt im Hochformat berechnet.
+            <g transform={`translate(${VB_W}, 0) rotate(90)`}>
+              <image href={alvarisImage.path} x="0" y="0" width={VB_H} height={VB_W} preserveAspectRatio="none" />
+            </g>
+          ) : (
+            <image href={alvarisImage.path} x="0" y="0" width={VB_W} height={VB_H} preserveAspectRatio="none" />
+          )
+        ) : (
+          <>
+            {/* Fallback-Schema, falls kein Alvaris-Referenzbild vorliegt: Hohler Ring + Stege */}
+            <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#alu-${section.id})`} stroke="#475569" strokeWidth="0.5" />
+            <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.4" />
+            {struts.map((s, i) => (
+              <line
+                key={`strut-${i}`}
+                x1={PAD + s.x1} y1={PAD + s.y1}
+                x2={PAD + s.x2} y2={PAD + s.y2}
+                stroke={`url(#alu-${section.id})`}
+                strokeWidth={strutWidth}
+                strokeLinecap="round"
+              />
+            ))}
+          </>
+        )}
 
         {/* Kernzüge */}
         {Array.from({ length: bores.x }).map((_, ix) =>
@@ -194,7 +209,8 @@ export function ProfileCrossSection2D({
                 onClick={clickable ? (e) => { e.stopPropagation(); onSelectBore!(num); } : undefined}
                 style={{ cursor: clickable ? 'pointer' : 'default' }}
               >
-                <circle cx={cx} cy={cy} r={boreRadius} fill="#f1f5f9" stroke="#94a3b8" strokeWidth={0.3} />
+                {/* Bei Referenzbild ist die Bohrung schon im Bild sichtbar — nur unsichtbare Klickfläche */}
+                <circle cx={cx} cy={cy} r={boreRadius} fill={alvarisImage ? 'transparent' : '#f1f5f9'} stroke={alvarisImage ? 'none' : '#94a3b8'} strokeWidth={0.3} />
                 {showLabels && !isActiveBore && (
                   <>
                     <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#1d4ed8" strokeWidth="0.4" opacity="0.95" />
@@ -224,15 +240,16 @@ export function ProfileCrossSection2D({
           }),
         )}
 
-        {/* Nut-Öffnungen */}
+        {/* Nut-Öffnungen: bei Referenzbild nur Auswahl-Hervorhebung (Textur kommt vom Bild) */}
         {slots.map((s, i) => {
           const sel = isSelected(s.slot, s.moduleIndex);
+          if (alvarisImage && !sel) return null;
           return (
             <path
               key={`slot-${i}`}
               d={s.slotPath}
               fill={sel ? 'hsl(var(--primary))' : `url(#slot-shadow-${section.id})`}
-              opacity={sel ? 0.95 : 0.92}
+              opacity={sel ? 0.55 : 0.92}
             />
           );
         })}
