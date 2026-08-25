@@ -7,7 +7,7 @@ import {
   type ProfileSection,
   type SlotId,
 } from '@/lib/profile-configurator-types';
-import { roundedRectPath, tSlotPathDown, tSlotPathUp, tSlotPathHorizontal } from '@/lib/profile-cross-section-shapes';
+import { roundedRectPath, tSlotPathDown, tSlotPathUp, tSlotPathHorizontal, getCellStruts } from '@/lib/profile-cross-section-shapes';
 
 interface Props {
   section: ProfileSection;
@@ -72,6 +72,10 @@ export function ProfileCrossSection2D({
   // Außenpfad abgezogen, damit die Mitte als Hohlraum statt Vollmaterial wirkt.
   const wall = Math.min(webThickness, Math.min(w, h) / 2 - 1);
   const inner = roundedRectPath(PAD + wall, PAD + wall, w - wall * 2, h - wall * 2, Math.max(0, cornerR - wall));
+  // Innere Verstrebungen: echte Strangpressprofile sind nicht hohl, sondern haben Stege
+  // von den Kernbohrungen zu den Modulzellen-Ecken (vgl. Alvaris-Referenzzeichnung).
+  const struts = getCellStruts(w, h, bores.x, bores.y);
+  const strutWidth = Math.max(0.8, wall * 0.55);
 
   const fs = Math.max(2.4, Math.min(5, MODULE / 8));
   const boreFs = Math.max(2.2, Math.min(4.5, boreRadius * 1.1));
@@ -162,6 +166,18 @@ export function ProfileCrossSection2D({
         {/* Hohler Ring statt Vollfläche: Außenkontur minus Innenkontur (Wanddicke) */}
         <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#alu-${section.id})`} stroke="#475569" strokeWidth="0.5" />
         <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.4" />
+
+        {/* Innere Stege (Kernbohrung → Modulzellen-Ecken) */}
+        {struts.map((s, i) => (
+          <line
+            key={`strut-${i}`}
+            x1={PAD + s.x1} y1={PAD + s.y1}
+            x2={PAD + s.x2} y2={PAD + s.y2}
+            stroke={`url(#alu-${section.id})`}
+            strokeWidth={strutWidth}
+            strokeLinecap="round"
+          />
+        ))}
 
         {/* Kernzüge */}
         {Array.from({ length: bores.x }).map((_, ix) =>

@@ -130,6 +130,8 @@ export const PROFILE_SIZES: ProfileSize[] = [
   { key: '80x120', label: '80 × 120', w: 80,  h: 120, variants: ['leicht'] },
   { key: '80x160', label: '80 × 160', w: 80,  h: 160, variants: ['leicht', 'schwer'] },
   { key: '80x240', label: '80 × 240', w: 80,  h: 240, variants: ['leicht'] },
+  { key: '160x16', label: '160 × 16', w: 160, h: 16,  variants: ['leicht'] },
+  { key: '160x28', label: '160 × 28', w: 160, h: 28,  variants: ['leicht'] },
 ];
 
 const NUT8_GEO = {
@@ -221,6 +223,17 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   { id: '80x240-leicht', sizeKey: '80x240', variant: 'leicht', label: '80 × 240 · Leicht',
     w: 80, h: 240, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 56.00,
     orderCode: 'NM-PRO-80x240-L', massPerMeter: 11.80 },
+
+  // 160 × 16 / 160 × 28 (Alvaris PRO16016 / PRO16028, aus Profilbearbeitungscode-Blatt).
+  // ACHTUNG: pricePerMeter/massPerMeter sind nicht von Alvaris bestätigt, sondern aus dem
+  // Preis/Umfang-Verhältnis der übrigen Nut-8-Größen linear interpoliert (vorläufiger
+  // Platzhalter) — vor Live-Einsatz mit echten Einkaufspreisen abgleichen.
+  { id: '160x16-leicht', sizeKey: '160x16', variant: 'leicht', label: '160 × 16 · Leicht',
+    w: 160, h: 16, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 22.50,
+    orderCode: 'NM-PRO-160x16-L', massPerMeter: 4.05 },
+  { id: '160x28-leicht', sizeKey: '160x28', variant: 'leicht', label: '160 × 28 · Leicht',
+    w: 160, h: 28, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 24.90,
+    orderCode: 'NM-PRO-160x28-L', massPerMeter: 4.61 },
 ];
 
 export const CONNECTOR_TYPES = [

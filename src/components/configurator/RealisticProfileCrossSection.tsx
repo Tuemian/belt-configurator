@@ -1,24 +1,11 @@
 import { getModulePitch, getSlotCounts, getBoreCounts, type ProfileSection } from '@/lib/profile-configurator-types';
+import { roundedRectPath, tSlotPathDown, tSlotPathHorizontal, getCellStruts } from '@/lib/profile-cross-section-shapes';
 
 interface Props {
   section: ProfileSection;
   size?: number;
   rotate90?: boolean;
   className?: string;
-}
-
-/** Rounded-rect path, clockwise, starting top-left (after the corner). */
-function roundedRectPath(x: number, y: number, w: number, h: number, r: number): string {
-  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
-  return `M ${x + rr} ${y} L ${x + w - rr} ${y} Q ${x + w} ${y} ${x + w} ${y + rr} L ${x + w} ${y + h - rr} Q ${x + w} ${y + h} ${x + w - rr} ${y + h} L ${x + rr} ${y + h} Q ${x} ${y + h} ${x} ${y + h - rr} L ${x} ${y + rr} Q ${x} ${y} ${x + rr} ${y} Z`;
-}
-
-/** T-Nut-Kanal (Öffnung schmal, dahinter breiter Fangraum) für eine Nut auf der Oberseite (A). Andere Seiten via transform gespiegelt/gedreht. */
-function tSlotPath(cx: number, yTop: number, slotWidth: number, grooveWidth: number, depth: number): string {
-  const lip = Math.min(1.8, depth * 0.25);
-  const wHalf = slotWidth / 2;
-  const gHalf = grooveWidth / 2;
-  return `M ${cx - wHalf} ${yTop} L ${cx - wHalf} ${yTop + lip} L ${cx - gHalf} ${yTop + lip} L ${cx - gHalf} ${yTop + depth} L ${cx + gHalf} ${yTop + depth} L ${cx + gHalf} ${yTop + lip} L ${cx + wHalf} ${yTop + lip} L ${cx + wHalf} ${yTop} Z`;
 }
 
 /**
@@ -40,32 +27,26 @@ export function RealisticProfileCrossSection({ section, size = 140, rotate90 = f
 
   const outer = roundedRectPath(PAD, PAD, w, h, cornerR);
   const inner = roundedRectPath(PAD + wall, PAD + wall, w - wall * 2, h - wall * 2, Math.max(0, cornerR - wall));
+  const struts = getCellStruts(w, h, bores.x, bores.y);
+  const strutWidth = Math.max(0.8, wall * 0.55);
 
   const slots: string[] = [];
   for (let i = 0; i < counts.A; i++) {
     const cx = PAD + MODULE * (i + 0.5);
-    slots.push(tSlotPath(cx, PAD, slotWidth, grooveWidth, slotDepth));
+    slots.push(tSlotPathDown(cx, PAD, slotWidth, grooveWidth, slotDepth));
   }
   for (let i = 0; i < counts.C; i++) {
     const cx = PAD + MODULE * (i + 0.5);
     // Bodenseite: gleiche Kontur, senkrecht gespiegelt an y = PAD+h
-    slots.push(tSlotPath(cx, PAD + h, slotWidth, grooveWidth, -slotDepth));
+    slots.push(tSlotPathDown(cx, PAD + h, slotWidth, grooveWidth, -slotDepth));
   }
-  const vSlot = (cy: number, fromRight: boolean) => {
-    const lip = Math.min(1.8, slotDepth * 0.25);
-    const wHalf = slotWidth / 2;
-    const gHalf = grooveWidth / 2;
-    const x0 = fromRight ? PAD + w : PAD;
-    const dir = fromRight ? -1 : 1;
-    return `M ${x0} ${cy - wHalf} L ${x0 + dir * lip} ${cy - wHalf} L ${x0 + dir * lip} ${cy - gHalf} L ${x0 + dir * slotDepth} ${cy - gHalf} L ${x0 + dir * slotDepth} ${cy + gHalf} L ${x0 + dir * lip} ${cy + gHalf} L ${x0 + dir * lip} ${cy + wHalf} L ${x0} ${cy + wHalf} Z`;
-  };
   for (let j = 0; j < counts.B; j++) {
     const cy = PAD + MODULE * (j + 0.5);
-    slots.push(vSlot(cy, true));
+    slots.push(tSlotPathHorizontal(cy, PAD + w, slotWidth, grooveWidth, slotDepth, true));
   }
   for (let j = 0; j < counts.D; j++) {
     const cy = PAD + MODULE * (j + 0.5);
-    slots.push(vSlot(cy, false));
+    slots.push(tSlotPathHorizontal(cy, PAD, slotWidth, grooveWidth, slotDepth, false));
   }
 
   const dispW = rotate90 ? size * (VB_H / VB_W) : size;
@@ -99,6 +80,18 @@ export function RealisticProfileCrossSection({ section, size = 140, rotate90 = f
         <path d={`${outer} ${inner}`} fillRule="evenodd" fill={`url(#${gradId})`} stroke="#475569" strokeWidth="0.6" />
         {/* Zarter Glanz oben links */}
         <path d={outer} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.6" />
+
+        {/* Innere Stege (Kernbohrung → Modulzellen-Ecken) */}
+        {struts.map((s, i) => (
+          <line
+            key={`strut-${i}`}
+            x1={PAD + s.x1} y1={PAD + s.y1}
+            x2={PAD + s.x2} y2={PAD + s.y2}
+            stroke={`url(#${gradId})`}
+            strokeWidth={strutWidth}
+            strokeLinecap="round"
+          />
+        ))}
 
         {/* T-Nuten */}
         {slots.map((d, i) => (
