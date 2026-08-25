@@ -1,0 +1,16 @@
+# NOVAMOTIS Configurator
+
+> Modulare Online-Konfigurationsplattform der NOVAMOTIS GmbH für industrielle Komponenten – Förderbänder und Profilzuschnitte konfigurieren, kalkulieren und anfragen.
+
+## Pages
+
+- [Startseite](/): Übersicht aller verfügbaren NOVAMOTIS-Konfiguratoren.
+- [Förderband Konfigurator](/belt-conveyor): Förderbänder mit Maßen, Gurtgeschwindigkeit, Antrieb und Untergestell konfigurieren und Anfrage senden.
+- [Profilzuschnitte Konfigurator](/profile-configurator): Aluminium-Profile mit Länge, Bohrungen und Endenbearbeitung konfigurieren (Anmeldung erforderlich).
+- [Durchbiegungsrechner](/deflection): Aluminium-Profil, Spannweite und Last wählen und die Durchbiegung berechnen.
+
+## Optional
+
+- [NOVAMOTIS Website](https://www.novamotis.com): Unternehmenswebsite der NOVAMOTIS GmbH.
+- [Impressum](https://www.novamotis.com/impressum)
+- [Datenschutz](https://www.novamotis.com/protection)

@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: novamotis-step-solid-service
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true

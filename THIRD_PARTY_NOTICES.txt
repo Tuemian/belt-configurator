@@ -1,0 +1,1992 @@
+THIRD PARTY NOTICES
+
+This file lists production third-party dependencies and their declared licenses.
+Generated: 2026-04-13T16:33:43.325Z
+
+Package: @alloc/quick-lru
+Version: 5.2.0
+License: MIT
+Repository: https://github.com/sindresorhus/quick-lru
+Publisher: Sindre Sorhus
+
+Package: @babel/runtime
+Version: 7.29.2
+License: MIT
+Repository: https://github.com/babel/babel
+Publisher: The Babel Team
+
+Package: @dimforge/rapier3d-compat
+Version: 0.12.0
+License: Apache-2.0
+Repository: https://github.com/dimforge/rapier.js
+
+Package: @floating-ui/core
+Version: 1.7.2
+License: MIT
+Repository: https://github.com/floating-ui/floating-ui
+Publisher: atomiks
+
+Package: @floating-ui/dom
+Version: 1.7.2
+License: MIT
+Repository: https://github.com/floating-ui/floating-ui
+Publisher: atomiks
+
+Package: @floating-ui/react-dom
+Version: 2.1.4
+License: MIT
+Repository: https://github.com/floating-ui/floating-ui
+Publisher: atomiks
+
+Package: @floating-ui/utils
+Version: 0.2.10
+License: MIT
+Repository: https://github.com/floating-ui/floating-ui
+Publisher: atomiks
+
+Package: @hookform/resolvers
+Version: 3.10.0
+License: MIT
+Repository: https://github.com/react-hook-form/resolvers
+Publisher: bluebill1049
+
+Package: @isaacs/cliui
+Version: 8.0.2
+License: ISC
+Repository: https://github.com/yargs/cliui
+Publisher: Ben Coe
+
+Package: @jridgewell/gen-mapping
+Version: 0.3.5
+License: MIT
+Repository: https://github.com/jridgewell/gen-mapping
+Publisher: Justin Ridgewell
+
+Package: @jridgewell/resolve-uri
+Version: 3.1.2
+License: MIT
+Repository: https://github.com/jridgewell/resolve-uri
+Publisher: Justin Ridgewell
+
+Package: @jridgewell/set-array
+Version: 1.2.1
+License: MIT
+Repository: https://github.com/jridgewell/set-array
+Publisher: Justin Ridgewell
+
+Package: @jridgewell/sourcemap-codec
+Version: 1.5.5
+License: MIT
+Repository: https://github.com/jridgewell/sourcemaps
+Publisher: Justin Ridgewell
+
+Package: @jridgewell/trace-mapping
+Version: 0.3.25
+License: MIT
+Repository: https://github.com/jridgewell/trace-mapping
+Publisher: Justin Ridgewell
+
+Package: @mediapipe/tasks-vision
+Version: 0.10.17
+License: Apache-2.0
+Publisher: mediapipe@google.com
+
+Package: @monogrid/gainmap-js
+Version: 3.4.0
+License: MIT
+Repository: https://github.com/MONOGRID/gainmap-js
+Publisher: MONOGRID
+
+Package: @napi-rs/canvas
+Version: 0.1.97
+License: MIT
+Repository: https://github.com/Brooooooklyn/canvas
+
+Package: @napi-rs/canvas-win32-x64-msvc
+Version: 0.1.97
+License: MIT
+Repository: https://github.com/Brooooooklyn/canvas
+
+Package: @nodelib/fs.scandir
+Version: 2.1.5
+License: MIT
+Repository: https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.scandir
+
+Package: @nodelib/fs.stat
+Version: 2.0.5
+License: MIT
+Repository: https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.stat
+
+Package: @nodelib/fs.walk
+Version: 1.2.8
+License: MIT
+Repository: https://github.com/nodelib/nodelib/tree/master/packages/fs/fs.walk
+
+Package: @pkgjs/parseargs
+Version: 0.11.0
+License: MIT
+Repository: https://github.com/pkgjs/parseargs
+
+Package: @radix-ui/number
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/primitive
+Version: 1.1.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-accordion
+Version: 1.2.11
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-alert-dialog
+Version: 1.1.14
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-arrow
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-aspect-ratio
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-avatar
+Version: 1.1.10
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-checkbox
+Version: 1.3.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-collapsible
+Version: 1.1.11
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-collection
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-compose-refs
+Version: 1.1.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-context
+Version: 1.1.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-context-menu
+Version: 2.2.15
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-dialog
+Version: 1.1.14
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-direction
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-dismissable-layer
+Version: 1.1.10
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-dropdown-menu
+Version: 2.1.15
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-focus-guards
+Version: 1.1.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-focus-scope
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-hover-card
+Version: 1.1.14
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-id
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-label
+Version: 2.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-menu
+Version: 2.1.15
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-menubar
+Version: 1.1.15
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-navigation-menu
+Version: 1.2.13
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-popover
+Version: 1.1.14
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-popper
+Version: 1.2.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-portal
+Version: 1.1.9
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-presence
+Version: 1.1.4
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-primitive
+Version: 2.1.3
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-progress
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-radio-group
+Version: 1.3.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-roving-focus
+Version: 1.1.10
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-scroll-area
+Version: 1.2.9
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-select
+Version: 2.2.5
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-separator
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-slider
+Version: 1.3.5
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-slot
+Version: 1.2.3
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-switch
+Version: 1.2.5
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-tabs
+Version: 1.1.12
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-toast
+Version: 1.2.14
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-toggle
+Version: 1.1.9
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-toggle-group
+Version: 1.1.10
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-tooltip
+Version: 1.2.7
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-callback-ref
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-controllable-state
+Version: 1.2.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-effect-event
+Version: 0.0.2
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-escape-keydown
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-is-hydrated
+Version: 0.1.0
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-layout-effect
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-previous
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-rect
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-use-size
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/react-visually-hidden
+Version: 1.2.3
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @radix-ui/rect
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/radix-ui/primitives
+
+Package: @react-spring/animated
+Version: 9.7.5
+License: MIT
+Repository: https://github.com/pmndrs/react-spring
+Publisher: Paul Henschel
+
+Package: @react-spring/core
+Version: 9.7.5
+License: MIT
+Repository: https://github.com/pmndrs/react-spring
+Publisher: Paul Henschel
+
+Package: @react-spring/rafz
+Version: 9.7.5
+License: MIT
+Repository: https://github.com/pmndrs/react-spring
+Publisher: Josh Ellis
+
+Package: @react-spring/shared
+Version: 9.7.5
+License: MIT
+Repository: https://github.com/pmndrs/react-spring
+Publisher: Paul Henschel
+
+Package: @react-spring/three
+Version: 9.7.5
+License: MIT
+Repository: https://github.com/pmndrs/react-spring
+Publisher: Paul Henschel
+
+Package: @react-spring/types
+Version: 9.7.5
+License: MIT
+Repository: https://github.com/pmndrs/react-spring
+Publisher: Paul Henschel
+
+Package: @react-three/drei
+Version: 9.122.0
+License: MIT
+Repository: https://github.com/pmndrs/drei
+
+Package: @react-three/fiber
+Version: 8.18.0
+License: MIT
+Repository: https://github.com/pmndrs/react-three-fiber
+Publisher: Paul Henschel
+
+Package: @remix-run/router
+Version: 1.23.0
+License: MIT
+Repository: https://github.com/remix-run/react-router
+Publisher: Remix Software
+
+Package: @tanstack/query-core
+Version: 5.83.0
+License: MIT
+Repository: https://github.com/TanStack/query
+Publisher: tannerlinsley
+
+Package: @tanstack/react-query
+Version: 5.83.0
+License: MIT
+Repository: https://github.com/TanStack/query
+Publisher: tannerlinsley
+
+Package: @tweenjs/tween.js
+Version: 23.1.3
+License: MIT
+Repository: https://github.com/tweenjs/tween.js
+Publisher: tween.js contributors
+
+Package: @types/d3-array
+Version: 3.2.1
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-color
+Version: 3.1.3
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-ease
+Version: 3.0.2
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-interpolate
+Version: 3.0.4
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-path
+Version: 3.1.0
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-scale
+Version: 4.0.8
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-shape
+Version: 3.1.6
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-time
+Version: 3.0.3
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/d3-timer
+Version: 3.0.2
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/draco3d
+Version: 1.4.10
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/node
+Version: 25.5.0
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/offscreencanvas
+Version: 2019.7.3
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/pako
+Version: 2.0.4
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/prop-types
+Version: 15.7.13
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/raf
+Version: 3.4.3
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/react
+Version: 18.3.23
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/react-dom
+Version: 18.3.7
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/react-reconciler
+Version: 0.26.7
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/react-reconciler
+Version: 0.28.9
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/stats.js
+Version: 0.17.4
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/three
+Version: 0.183.1
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/trusted-types
+Version: 2.0.7
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @types/webxr
+Version: 0.5.24
+License: MIT
+Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Package: @use-gesture/core
+Version: 10.3.1
+License: MIT
+Repository: https://github.com/pmndrs/use-gesture
+Publisher: Paul Henschel
+
+Package: @use-gesture/react
+Version: 10.3.1
+License: MIT
+Repository: https://github.com/pmndrs/use-gesture
+Publisher: Paul Henschel
+
+Package: @webgpu/types
+Version: 0.1.69
+License: BSD-3-Clause
+Repository: https://github.com/gpuweb/types
+
+Package: ansi-regex
+Version: 5.0.1
+License: MIT
+Repository: https://github.com/chalk/ansi-regex
+Publisher: Sindre Sorhus
+
+Package: ansi-regex
+Version: 6.1.0
+License: MIT
+Repository: https://github.com/chalk/ansi-regex
+Publisher: Sindre Sorhus
+
+Package: ansi-styles
+Version: 4.3.0
+License: MIT
+Repository: https://github.com/chalk/ansi-styles
+Publisher: Sindre Sorhus
+
+Package: ansi-styles
+Version: 6.2.1
+License: MIT
+Repository: https://github.com/chalk/ansi-styles
+Publisher: Sindre Sorhus
+
+Package: any-promise
+Version: 1.3.0
+License: MIT
+Repository: https://github.com/kevinbeaty/any-promise
+Publisher: Kevin Beaty
+
+Package: anymatch
+Version: 3.1.3
+License: ISC
+Repository: https://github.com/micromatch/anymatch
+Publisher: Elan Shanker
+
+Package: arg
+Version: 5.0.2
+License: MIT
+Repository: https://github.com/vercel/arg
+Publisher: Josh Junon
+
+Package: aria-hidden
+Version: 1.2.4
+License: MIT
+Repository: https://github.com/theKashey/aria-hidden
+Publisher: Anton Korzunov
+
+Package: balanced-match
+Version: 1.0.2
+License: MIT
+Repository: https://github.com/juliangruber/balanced-match
+Publisher: Julian Gruber
+
+Package: base64-arraybuffer
+Version: 1.0.2
+License: MIT
+Repository: https://github.com/niklasvh/base64-arraybuffer
+Publisher: Niklas von Hertzen
+
+Package: base64-js
+Version: 1.5.1
+License: MIT
+Repository: https://github.com/beatgammit/base64-js
+Publisher: T. Jameson Little
+
+Package: bidi-js
+Version: 1.0.3
+License: MIT
+Repository: https://github.com/lojjic/bidi-js
+Publisher: Jason Johnston
+
+Package: binary-extensions
+Version: 2.3.0
+License: MIT
+Repository: https://github.com/sindresorhus/binary-extensions
+Publisher: Sindre Sorhus
+
+Package: brace-expansion
+Version: 2.0.2
+License: MIT
+Repository: https://github.com/juliangruber/brace-expansion
+Publisher: Julian Gruber
+
+Package: braces
+Version: 3.0.3
+License: MIT
+Repository: https://github.com/micromatch/braces
+Publisher: Jon Schlinkert
+
+Package: buffer
+Version: 6.0.3
+License: MIT
+Repository: https://github.com/feross/buffer
+Publisher: Feross Aboukhadijeh
+
+Package: camelcase-css
+Version: 2.0.1
+License: MIT
+Repository: https://github.com/stevenvachon/camelcase-css
+Publisher: Steven Vachon
+
+Package: camera-controls
+Version: 2.10.1
+License: MIT
+Repository: https://github.com/yomotsu/camera-controls
+Publisher: Yomotsu
+
+Package: canvg
+Version: 3.0.11
+License: MIT
+Repository: https://github.com/canvg/canvg
+
+Package: chokidar
+Version: 3.6.0
+License: MIT
+Repository: https://github.com/paulmillr/chokidar
+Publisher: Paul Miller
+
+Package: class-variance-authority
+Version: 0.7.1
+License: Apache-2.0
+Repository: https://github.com/joe-bell/cva
+Publisher: Joe Bell
+
+Package: clsx
+Version: 2.1.1
+License: MIT
+Repository: https://github.com/lukeed/clsx
+Publisher: Luke Edwards
+
+Package: cmdk
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/pacocoursey/cmdk
+Publisher: Paco
+
+Package: color-convert
+Version: 2.0.1
+License: MIT
+Repository: https://github.com/Qix-/color-convert
+Publisher: Heather Arthur
+
+Package: color-name
+Version: 1.1.4
+License: MIT
+Repository: https://github.com/colorjs/color-name
+Publisher: DY
+
+Package: commander
+Version: 4.1.1
+License: MIT
+Repository: https://github.com/tj/commander.js
+Publisher: TJ Holowaychuk
+
+Package: core-js
+Version: 3.49.0
+License: MIT
+Repository: https://github.com/zloirock/core-js
+Publisher: Denis Pushkarev
+
+Package: core-util-is
+Version: 1.0.3
+License: MIT
+Repository: https://github.com/isaacs/core-util-is
+Publisher: Isaac Z. Schlueter
+
+Package: cross-env
+Version: 7.0.3
+License: MIT
+Repository: https://github.com/kentcdodds/cross-env
+Publisher: Kent C. Dodds
+
+Package: cross-spawn
+Version: 7.0.6
+License: MIT
+Repository: https://github.com/moxystudio/node-cross-spawn
+Publisher: André Cruz
+
+Package: css-line-break
+Version: 2.1.0
+License: MIT
+Repository: https://github.com/niklasvh/css-line-break
+Publisher: Niklas von Hertzen
+
+Package: cssesc
+Version: 3.0.0
+License: MIT
+Repository: https://github.com/mathiasbynens/cssesc
+Publisher: Mathias Bynens
+
+Package: csstype
+Version: 3.1.3
+License: MIT
+Repository: https://github.com/frenic/csstype
+Publisher: Fredrik Nicol
+
+Package: d3-array
+Version: 3.2.4
+License: ISC
+Repository: https://github.com/d3/d3-array
+Publisher: Mike Bostock
+
+Package: d3-color
+Version: 3.1.0
+License: ISC
+Repository: https://github.com/d3/d3-color
+Publisher: Mike Bostock
+
+Package: d3-ease
+Version: 3.0.1
+License: BSD-3-Clause
+Repository: https://github.com/d3/d3-ease
+Publisher: Mike Bostock
+
+Package: d3-format
+Version: 3.1.0
+License: ISC
+Repository: https://github.com/d3/d3-format
+Publisher: Mike Bostock
+
+Package: d3-interpolate
+Version: 3.0.1
+License: ISC
+Repository: https://github.com/d3/d3-interpolate
+Publisher: Mike Bostock
+
+Package: d3-path
+Version: 3.1.0
+License: ISC
+Repository: https://github.com/d3/d3-path
+Publisher: Mike Bostock
+
+Package: d3-scale
+Version: 4.0.2
+License: ISC
+Repository: https://github.com/d3/d3-scale
+Publisher: Mike Bostock
+
+Package: d3-shape
+Version: 3.2.0
+License: ISC
+Repository: https://github.com/d3/d3-shape
+Publisher: Mike Bostock
+
+Package: d3-time
+Version: 3.1.0
+License: ISC
+Repository: https://github.com/d3/d3-time
+Publisher: Mike Bostock
+
+Package: d3-time-format
+Version: 4.1.0
+License: ISC
+Repository: https://github.com/d3/d3-time-format
+Publisher: Mike Bostock
+
+Package: d3-timer
+Version: 3.0.1
+License: ISC
+Repository: https://github.com/d3/d3-timer
+Publisher: Mike Bostock
+
+Package: date-fns
+Version: 3.6.0
+License: MIT
+Repository: https://github.com/date-fns/date-fns
+
+Package: decimal.js-light
+Version: 2.5.1
+License: MIT
+Repository: https://github.com/MikeMcl/decimal.js-light
+Publisher: Michael Mclaughlin
+
+Package: detect-gpu
+Version: 5.0.70
+License: MIT
+Repository: https://github.com/pmndrs/detect-gpu
+Publisher: Tim van Scherpenzeel
+
+Package: detect-node-es
+Version: 1.1.0
+License: MIT
+Repository: https://github.com/thekashey/detect-node
+Publisher: Ilya Kantor
+
+Package: didyoumean
+Version: 1.2.2
+License: Apache-2.0
+Repository: https://github.com/dcporter/didyoumean.js
+Publisher: Dave Porter
+
+Package: dlv
+Version: 1.1.3
+License: MIT
+Repository: https://github.com/developit/dlv
+Publisher: Jason Miller
+
+Package: docx
+Version: 9.6.1
+License: MIT
+Repository: https://github.com/dolanmiu/docx
+Publisher: Dolan Miu
+
+Package: dom-helpers
+Version: 5.2.1
+License: MIT
+Repository: https://github.com/react-bootstrap/dom-helpers
+Publisher: Jason Quense
+
+Package: dompurify
+Version: 3.3.3
+License: (MPL-2.0 OR Apache-2.0)
+Repository: https://github.com/cure53/DOMPurify
+Publisher: Dr.-Ing. Mario Heiderich, Cure53
+
+Package: draco3d
+Version: 1.5.7
+License: Apache-2.0
+Repository: https://github.com/google/draco
+Publisher: Google Draco Team
+
+Package: eastasianwidth
+Version: 0.2.0
+License: MIT
+Repository: https://github.com/komagata/eastasianwidth
+Publisher: Masaki Komagata
+
+Package: embla-carousel
+Version: 8.6.0
+License: MIT
+Repository: https://github.com/davidjerleke/embla-carousel
+Publisher: David Jerleke
+
+Package: embla-carousel-react
+Version: 8.6.0
+License: MIT
+Repository: https://github.com/davidjerleke/embla-carousel
+Publisher: David Jerleke
+
+Package: embla-carousel-reactive-utils
+Version: 8.6.0
+License: MIT
+Repository: https://github.com/davidjerleke/embla-carousel
+Publisher: David Jerleke
+
+Package: emoji-regex
+Version: 8.0.0
+License: MIT
+Repository: https://github.com/mathiasbynens/emoji-regex
+Publisher: Mathias Bynens
+
+Package: emoji-regex
+Version: 9.2.2
+License: MIT
+Repository: https://github.com/mathiasbynens/emoji-regex
+Publisher: Mathias Bynens
+
+Package: eventemitter3
+Version: 4.0.7
+License: MIT
+Repository: https://github.com/primus/eventemitter3
+Publisher: Arnout Kazemier
+
+Package: fast-equals
+Version: 5.2.2
+License: MIT
+Repository: https://github.com/planttheidea/fast-equals
+Publisher: tony_quetano@planttheidea.com
+
+Package: fast-glob
+Version: 3.3.2
+License: MIT
+Repository: https://github.com/mrmlnc/fast-glob
+Publisher: Denis Malinochkin
+
+Package: fast-png
+Version: 6.4.0
+License: MIT
+Repository: https://github.com/image-js/fast-png
+Publisher: Michaël Zasso
+
+Package: fastq
+Version: 1.17.1
+License: ISC
+Repository: https://github.com/mcollina/fastq
+Publisher: Matteo Collina
+
+Package: fflate
+Version: 0.6.10
+License: MIT
+Repository: https://github.com/101arrowz/fflate
+Publisher: Arjun Barrett
+
+Package: fflate
+Version: 0.8.2
+License: MIT
+Repository: https://github.com/101arrowz/fflate
+Publisher: Arjun Barrett
+
+Package: fill-range
+Version: 7.1.1
+License: MIT
+Repository: https://github.com/jonschlinkert/fill-range
+Publisher: Jon Schlinkert
+
+Package: foreground-child
+Version: 3.3.0
+License: ISC
+Repository: https://github.com/tapjs/foreground-child
+Publisher: Isaac Z. Schlueter
+
+Package: function-bind
+Version: 1.1.2
+License: MIT
+Repository: https://github.com/Raynos/function-bind
+Publisher: Raynos
+
+Package: get-nonce
+Version: 1.0.1
+License: MIT
+Repository: https://github.com/theKashey/get-nonce
+Publisher: Anton Korzunov
+
+Package: glob
+Version: 10.4.5
+License: ISC
+Repository: https://github.com/isaacs/node-glob
+Publisher: Isaac Z. Schlueter
+
+Package: glob-parent
+Version: 5.1.2
+License: ISC
+Repository: https://github.com/gulpjs/glob-parent
+Publisher: Gulp Team
+
+Package: glob-parent
+Version: 6.0.2
+License: ISC
+Repository: https://github.com/gulpjs/glob-parent
+Publisher: Gulp Team
+
+Package: glsl-noise
+Version: 0.0.0
+License: MIT
+Repository: https://github.com/hughsk/glsl-noise
+Publisher: Ian McEwan, Ashima Arts, Stefan Gustavson
+
+Package: hash.js
+Version: 1.1.7
+License: MIT
+Repository: https://github.com/indutny/hash.js
+Publisher: Fedor Indutny
+
+Package: hasown
+Version: 2.0.2
+License: MIT
+Repository: https://github.com/inspect-js/hasOwn
+Publisher: Jordan Harband
+
+Package: hls.js
+Version: 1.6.15
+License: Apache-2.0
+Repository: https://github.com/video-dev/hls.js
+
+Package: html2canvas
+Version: 1.4.1
+License: MIT
+Repository: https://github.com/niklasvh/html2canvas
+Publisher: Niklas von Hertzen
+
+Package: ieee754
+Version: 1.2.1
+License: BSD-3-Clause
+Repository: https://github.com/feross/ieee754
+Publisher: Feross Aboukhadijeh
+
+Package: immediate
+Version: 3.0.6
+License: MIT
+Repository: https://github.com/calvinmetcalf/immediate
+
+Package: inherits
+Version: 2.0.4
+License: ISC
+Repository: https://github.com/isaacs/inherits
+
+Package: input-otp
+Version: 1.4.2
+License: MIT
+Repository: https://github.com/guilhermerodz/input-otp
+Publisher: Guilherme Rodz
+
+Package: internmap
+Version: 2.0.3
+License: ISC
+Repository: https://github.com/mbostock/internmap
+Publisher: Mike Bostock
+
+Package: iobuffer
+Version: 5.4.0
+License: MIT
+Repository: https://github.com/image-js/iobuffer
+Publisher: Michaël Zasso
+
+Package: is-binary-path
+Version: 2.1.0
+License: MIT
+Repository: https://github.com/sindresorhus/is-binary-path
+Publisher: Sindre Sorhus
+
+Package: is-core-module
+Version: 2.15.1
+License: MIT
+Repository: https://github.com/inspect-js/is-core-module
+Publisher: Jordan Harband
+
+Package: is-extglob
+Version: 2.1.1
+License: MIT
+Repository: https://github.com/jonschlinkert/is-extglob
+Publisher: Jon Schlinkert
+
+Package: is-fullwidth-code-point
+Version: 3.0.0
+License: MIT
+Repository: https://github.com/sindresorhus/is-fullwidth-code-point
+Publisher: Sindre Sorhus
+
+Package: is-glob
+Version: 4.0.3
+License: MIT
+Repository: https://github.com/micromatch/is-glob
+Publisher: Jon Schlinkert
+
+Package: is-number
+Version: 7.0.0
+License: MIT
+Repository: https://github.com/jonschlinkert/is-number
+Publisher: Jon Schlinkert
+
+Package: is-promise
+Version: 2.2.2
+License: MIT
+Repository: https://github.com/then/is-promise
+Publisher: ForbesLindesay
+
+Package: isarray
+Version: 1.0.0
+License: MIT
+Repository: https://github.com/juliangruber/isarray
+Publisher: Julian Gruber
+
+Package: isexe
+Version: 2.0.0
+License: ISC
+Repository: https://github.com/isaacs/isexe
+Publisher: Isaac Z. Schlueter
+
+Package: its-fine
+Version: 1.2.5
+License: MIT
+Repository: https://github.com/pmndrs/its-fine
+Publisher: Cody Bennett
+
+Package: jackspeak
+Version: 3.4.3
+License: BlueOak-1.0.0
+Repository: https://github.com/isaacs/jackspeak
+Publisher: Isaac Z. Schlueter
+
+Package: jiti
+Version: 1.21.6
+License: MIT
+Repository: https://github.com/unjs/jiti
+
+Package: js-tokens
+Version: 4.0.0
+License: MIT
+Repository: https://github.com/lydell/js-tokens
+Publisher: Simon Lydell
+
+Package: jspdf
+Version: 4.2.1
+License: MIT
+Repository: https://github.com/parallax/jsPDF
+
+Package: jszip
+Version: 3.10.1
+License: (MIT OR GPL-3.0-or-later)
+Repository: https://github.com/Stuk/jszip
+Publisher: Stuart Knightley
+
+Package: lie
+Version: 3.3.0
+License: MIT
+Repository: https://github.com/calvinmetcalf/lie
+
+Package: lilconfig
+Version: 3.1.3
+License: MIT
+Repository: https://github.com/antonk52/lilconfig
+Publisher: antonk52
+
+Package: lines-and-columns
+Version: 1.2.4
+License: MIT
+Repository: https://github.com/eventualbuddha/lines-and-columns
+Publisher: Brian Donovan
+
+Package: lodash
+Version: 4.17.21
+License: MIT
+Repository: https://github.com/lodash/lodash
+Publisher: John-David Dalton
+
+Package: loose-envify
+Version: 1.4.0
+License: MIT
+Repository: https://github.com/zertosh/loose-envify
+Publisher: Andres Suarez
+
+Package: lru-cache
+Version: 10.4.3
+License: ISC
+Repository: https://github.com/isaacs/node-lru-cache
+Publisher: Isaac Z. Schlueter
+
+Package: lucide-react
+Version: 0.462.0
+License: ISC
+Repository: https://github.com/lucide-icons/lucide
+Publisher: Eric Fennis
+
+Package: maath
+Version: 0.10.8
+License: MIT
+
+Package: merge2
+Version: 1.4.1
+License: MIT
+Repository: https://github.com/teambition/merge2
+
+Package: meshline
+Version: 3.3.1
+License: MIT
+Publisher: Jaume Sanchez
+
+Package: meshoptimizer
+Version: 1.0.1
+License: MIT
+Repository: https://github.com/zeux/meshoptimizer
+Publisher: Arseny Kapoulkine
+
+Package: micromatch
+Version: 4.0.8
+License: MIT
+Repository: https://github.com/micromatch/micromatch
+Publisher: Jon Schlinkert
+
+Package: minimalistic-assert
+Version: 1.0.1
+License: ISC
+Repository: https://github.com/calvinmetcalf/minimalistic-assert
+
+Package: minimatch
+Version: 9.0.5
+License: ISC
+Repository: https://github.com/isaacs/minimatch
+Publisher: Isaac Z. Schlueter
+
+Package: minipass
+Version: 7.1.2
+License: ISC
+Repository: https://github.com/isaacs/minipass
+Publisher: Isaac Z. Schlueter
+
+Package: mz
+Version: 2.7.0
+License: MIT
+Repository: https://github.com/normalize/mz
+Publisher: Jonathan Ong
+
+Package: nanoid
+Version: 3.3.11
+License: MIT
+Repository: https://github.com/ai/nanoid
+Publisher: Andrey Sitnik
+
+Package: nanoid
+Version: 5.1.7
+License: MIT
+Repository: https://github.com/ai/nanoid
+Publisher: Andrey Sitnik
+
+Package: next-themes
+Version: 0.3.0
+License: MIT
+Repository: https://github.com/pacocoursey/next-themes
+
+Package: normalize-path
+Version: 3.0.0
+License: MIT
+Repository: https://github.com/jonschlinkert/normalize-path
+Publisher: Jon Schlinkert
+
+Package: object-assign
+Version: 4.1.1
+License: MIT
+Repository: https://github.com/sindresorhus/object-assign
+Publisher: Sindre Sorhus
+
+Package: object-hash
+Version: 3.0.0
+License: MIT
+Repository: https://github.com/puleos/object-hash
+Publisher: Scott Puleo
+
+Package: package-json-from-dist
+Version: 1.0.1
+License: BlueOak-1.0.0
+Repository: https://github.com/isaacs/package-json-from-dist
+Publisher: Isaac Z. Schlueter
+
+Package: pako
+Version: 1.0.11
+License: (MIT AND Zlib)
+Repository: https://github.com/nodeca/pako
+
+Package: pako
+Version: 2.1.0
+License: (MIT AND Zlib)
+Repository: https://github.com/nodeca/pako
+
+Package: path-key
+Version: 3.1.1
+License: MIT
+Repository: https://github.com/sindresorhus/path-key
+Publisher: Sindre Sorhus
+
+Package: path-parse
+Version: 1.0.7
+License: MIT
+Repository: https://github.com/jbgutierrez/path-parse
+Publisher: Javier Blanco
+
+Package: path-scurry
+Version: 1.11.1
+License: BlueOak-1.0.0
+Repository: https://github.com/isaacs/path-scurry
+Publisher: Isaac Z. Schlueter
+
+Package: pdfjs-dist
+Version: 4.10.38
+License: Apache-2.0
+Repository: https://github.com/mozilla/pdf.js
+
+Package: performance-now
+Version: 2.1.0
+License: MIT
+Repository: https://github.com/braveg1rl/performance-now
+Publisher: Braveg1rl
+
+Package: picocolors
+Version: 1.1.1
+License: ISC
+Repository: https://github.com/alexeyraspopov/picocolors
+Publisher: Alexey Raspopov
+
+Package: picomatch
+Version: 2.3.1
+License: MIT
+Repository: https://github.com/micromatch/picomatch
+Publisher: Jon Schlinkert
+
+Package: pify
+Version: 2.3.0
+License: MIT
+Repository: https://github.com/sindresorhus/pify
+Publisher: Sindre Sorhus
+
+Package: pirates
+Version: 4.0.6
+License: MIT
+Repository: https://github.com/danez/pirates
+Publisher: Ari Porad
+
+Package: postcss
+Version: 8.5.6
+License: MIT
+Repository: https://github.com/postcss/postcss
+Publisher: Andrey Sitnik
+
+Package: postcss-import
+Version: 15.1.0
+License: MIT
+Repository: https://github.com/postcss/postcss-import
+Publisher: Maxime Thirouin
+
+Package: postcss-js
+Version: 4.0.1
+License: MIT
+Repository: https://github.com/postcss/postcss-js
+Publisher: Andrey Sitnik
+
+Package: postcss-load-config
+Version: 4.0.2
+License: MIT
+Repository: https://github.com/postcss/postcss-load-config
+Publisher: Michael Ciniawky
+
+Package: postcss-nested
+Version: 6.2.0
+License: MIT
+Repository: https://github.com/postcss/postcss-nested
+Publisher: Andrey Sitnik
+
+Package: postcss-selector-parser
+Version: 6.1.2
+License: MIT
+Repository: https://github.com/postcss/postcss-selector-parser
+
+Package: postcss-value-parser
+Version: 4.2.0
+License: MIT
+Repository: https://github.com/TrySound/postcss-value-parser
+Publisher: Bogdan Chadkin
+
+Package: potpack
+Version: 1.0.2
+License: ISC
+Repository: https://github.com/mapbox/potpack
+Publisher: Vladimir Agafonkin
+
+Package: process-nextick-args
+Version: 2.0.1
+License: MIT
+Repository: https://github.com/calvinmetcalf/process-nextick-args
+
+Package: promise-worker-transferable
+Version: 1.0.4
+License: Apache-2.0
+Repository: https://github.com/terikon/promise-worker-transferable
+Publisher: Roman Viskin
+
+Package: prop-types
+Version: 15.8.1
+License: MIT
+Repository: https://github.com/facebook/prop-types
+
+Package: queue-microtask
+Version: 1.2.3
+License: MIT
+Repository: https://github.com/feross/queue-microtask
+Publisher: Feross Aboukhadijeh
+
+Package: raf
+Version: 3.4.1
+License: MIT
+Repository: https://github.com/chrisdickinson/raf
+Publisher: Chris Dickinson
+
+Package: react
+Version: 18.3.1
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: react-composer
+Version: 5.0.3
+License: MIT
+Repository: https://github.com/jamesplease/react-composer
+Publisher: James Smith
+
+Package: react-day-picker
+Version: 8.10.1
+License: MIT
+Repository: https://github.com/gpbl/react-day-picker
+Publisher: Giampaolo Bellavite
+
+Package: react-dom
+Version: 18.3.1
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: react-hook-form
+Version: 7.61.1
+License: MIT
+Repository: https://github.com/react-hook-form/react-hook-form
+Publisher: Beier
+
+Package: react-is
+Version: 16.13.1
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: react-is
+Version: 18.3.1
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: react-reconciler
+Version: 0.27.0
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: react-remove-scroll
+Version: 2.7.1
+License: MIT
+Repository: https://github.com/theKashey/react-remove-scroll
+Publisher: Anton Korzunov
+
+Package: react-remove-scroll-bar
+Version: 2.3.8
+License: MIT
+Repository: https://github.com/theKashey/react-remove-scroll-bar
+Publisher: Anton Korzunov
+
+Package: react-resizable-panels
+Version: 2.1.9
+License: MIT
+Repository: https://github.com/bvaughn/react-resizable-panels
+Publisher: Brian Vaughn
+
+Package: react-router
+Version: 6.30.1
+License: MIT
+Repository: https://github.com/remix-run/react-router
+Publisher: Remix Software
+
+Package: react-router-dom
+Version: 6.30.1
+License: MIT
+Repository: https://github.com/remix-run/react-router
+Publisher: Remix Software
+
+Package: react-smooth
+Version: 4.0.4
+License: MIT
+Repository: https://github.com/recharts/react-smooth
+Publisher: JasonHzq
+
+Package: react-style-singleton
+Version: 2.2.3
+License: MIT
+Repository: https://github.com/theKashey/react-style-singleton
+Publisher: Anton Korzunov
+
+Package: react-transition-group
+Version: 4.4.5
+License: BSD-3-Clause
+Repository: https://github.com/reactjs/react-transition-group
+
+Package: react-use-measure
+Version: 2.1.7
+License: MIT
+Repository: https://github.com/pmndrs/react-use-measure
+Publisher: Paul Henschel
+
+Package: read-cache
+Version: 1.0.0
+License: MIT
+Repository: https://github.com/TrySound/read-cache
+Publisher: Bogdan Chadkin
+
+Package: readable-stream
+Version: 2.3.8
+License: MIT
+Repository: https://github.com/nodejs/readable-stream
+
+Package: readdirp
+Version: 3.6.0
+License: MIT
+Repository: https://github.com/paulmillr/readdirp
+Publisher: Thorsten Lorenz
+
+Package: recharts
+Version: 2.15.4
+License: MIT
+Repository: https://github.com/recharts/recharts
+Publisher: recharts group
+
+Package: recharts-scale
+Version: 0.4.5
+License: MIT
+Repository: https://github.com/recharts/recharts-scale
+Publisher: recharts group
+
+Package: regenerator-runtime
+Version: 0.13.11
+License: MIT
+Repository: https://github.com/facebook/regenerator/tree/main/packages/runtime
+Publisher: Ben Newman
+
+Package: require-from-string
+Version: 2.0.2
+License: MIT
+Repository: https://github.com/floatdrop/require-from-string
+Publisher: Vsevolod Strukchinsky
+
+Package: resolve
+Version: 1.22.8
+License: MIT
+Repository: https://github.com/browserify/resolve
+Publisher: James Halliday
+
+Package: reusify
+Version: 1.0.4
+License: MIT
+Repository: https://github.com/mcollina/reusify
+Publisher: Matteo Collina
+
+Package: rgbcolor
+Version: 1.0.1
+License: MIT*
+Repository: https://github.com/yetzt/node-rgbcolor
+Publisher: Sebastian Vollnhals
+
+Package: run-parallel
+Version: 1.2.0
+License: MIT
+Repository: https://github.com/feross/run-parallel
+Publisher: Feross Aboukhadijeh
+
+Package: safe-buffer
+Version: 5.1.2
+License: MIT
+Repository: https://github.com/feross/safe-buffer
+Publisher: Feross Aboukhadijeh
+
+Package: sax
+Version: 1.6.0
+License: BlueOak-1.0.0
+Repository: https://github.com/isaacs/sax-js
+Publisher: Isaac Z. Schlueter
+
+Package: scheduler
+Version: 0.21.0
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: scheduler
+Version: 0.23.2
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: setimmediate
+Version: 1.0.5
+License: MIT
+Repository: https://github.com/YuzuJS/setImmediate
+Publisher: YuzuJS
+
+Package: shebang-command
+Version: 2.0.0
+License: MIT
+Repository: https://github.com/kevva/shebang-command
+Publisher: Kevin Mårtensson
+
+Package: shebang-regex
+Version: 3.0.0
+License: MIT
+Repository: https://github.com/sindresorhus/shebang-regex
+Publisher: Sindre Sorhus
+
+Package: signal-exit
+Version: 4.1.0
+License: ISC
+Repository: https://github.com/tapjs/signal-exit
+Publisher: Ben Coe
+
+Package: sonner
+Version: 1.7.4
+License: MIT
+Repository: https://github.com/emilkowalski/sonner
+Publisher: Emil Kowalski
+
+Package: source-map-js
+Version: 1.2.1
+License: BSD-3-Clause
+Repository: https://github.com/7rulnik/source-map-js
+Publisher: Valentin 7rulnik Semirulnik
+
+Package: stackblur-canvas
+Version: 2.7.0
+License: MIT
+Repository: https://github.com/flozz/StackBlur
+Publisher: Mario Klingemann
+
+Package: stats-gl
+Version: 2.4.2
+License: MIT
+Repository: https://github.com/RenaudRohlinger/stats-gl
+Publisher: Renaud ROHLINGER
+
+Package: stats.js
+Version: 0.17.0
+License: MIT
+Repository: https://github.com/mrdoob/stats.js
+Publisher: mrdoob
+
+Package: string_decoder
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/nodejs/string_decoder
+
+Package: string-width
+Version: 4.2.3
+License: MIT
+Repository: https://github.com/sindresorhus/string-width
+Publisher: Sindre Sorhus
+
+Package: string-width
+Version: 5.1.2
+License: MIT
+Repository: https://github.com/sindresorhus/string-width
+Publisher: Sindre Sorhus
+
+Package: strip-ansi
+Version: 6.0.1
+License: MIT
+Repository: https://github.com/chalk/strip-ansi
+Publisher: Sindre Sorhus
+
+Package: strip-ansi
+Version: 7.1.0
+License: MIT
+Repository: https://github.com/chalk/strip-ansi
+Publisher: Sindre Sorhus
+
+Package: sucrase
+Version: 3.35.0
+License: MIT
+Repository: https://github.com/alangpierce/sucrase
+Publisher: Alan Pierce
+
+Package: supports-preserve-symlinks-flag
+Version: 1.0.0
+License: MIT
+Repository: https://github.com/inspect-js/node-supports-preserve-symlinks-flag
+Publisher: Jordan Harband
+
+Package: suspend-react
+Version: 0.1.3
+License: MIT
+Repository: https://github.com/pmndrs/suspend-react
+Publisher: Paul Henschel
+
+Package: svg-pathdata
+Version: 6.0.3
+License: MIT
+Repository: https://github.com/nfroidure/svg-pathdata
+Publisher: Nicolas Froidure
+
+Package: tailwind-merge
+Version: 2.6.0
+License: MIT
+Repository: https://github.com/dcastil/tailwind-merge
+Publisher: Dany Castillo
+
+Package: tailwindcss
+Version: 3.4.17
+License: MIT
+Repository: https://github.com/tailwindlabs/tailwindcss
+
+Package: tailwindcss-animate
+Version: 1.0.7
+License: MIT
+Publisher: Jamie Kyle
+
+Package: text-segmentation
+Version: 1.0.3
+License: MIT
+Repository: https://github.com/niklasvh/text-segmentation
+Publisher: Niklas von Hertzen
+
+Package: thenify
+Version: 3.3.1
+License: MIT
+Repository: https://github.com/thenables/thenify
+Publisher: Jonathan Ong
+
+Package: thenify-all
+Version: 1.6.0
+License: MIT
+Repository: https://github.com/thenables/thenify-all
+Publisher: Jonathan Ong
+
+Package: three
+Version: 0.170.0
+License: MIT
+Repository: https://github.com/mrdoob/three.js
+Publisher: mrdoob
+
+Package: three
+Version: 0.183.2
+License: MIT
+Repository: https://github.com/mrdoob/three.js
+Publisher: mrdoob
+
+Package: three-mesh-bvh
+Version: 0.7.8
+License: MIT
+Repository: https://github.com/gkjohnson/three-mesh-bvh
+Publisher: Garrett Johnson
+
+Package: three-stdlib
+Version: 2.36.1
+License: MIT
+Repository: https://github.com/pmndrs/three-stdlib
+Publisher: Paul Henschel
+
+Package: tiny-invariant
+Version: 1.3.3
+License: MIT
+Repository: https://github.com/alexreardon/tiny-invariant
+Publisher: Alex Reardon
+
+Package: to-regex-range
+Version: 5.0.1
+License: MIT
+Repository: https://github.com/micromatch/to-regex-range
+Publisher: Jon Schlinkert
+
+Package: troika-three-text
+Version: 0.52.4
+License: MIT
+Repository: https://github.com/protectwise/troika
+Publisher: Jason Johnston
+
+Package: troika-three-utils
+Version: 0.52.4
+License: MIT
+Repository: https://github.com/protectwise/troika
+Publisher: Jason Johnston
+
+Package: troika-worker-utils
+Version: 0.52.0
+License: MIT
+Repository: https://github.com/protectwise/troika
+Publisher: Jason Johnston
+
+Package: ts-interface-checker
+Version: 0.1.13
+License: Apache-2.0
+Repository: https://github.com/gristlabs/ts-interface-checker
+Publisher: Dmitry S, Grist Labs
+
+Package: tslib
+Version: 2.8.0
+License: 0BSD
+Repository: https://github.com/Microsoft/tslib
+Publisher: Microsoft Corp.
+
+Package: tunnel-rat
+Version: 0.1.2
+License: MIT
+Repository: https://github.com/pmndrs/tunnel-rat
+Publisher: Paul Henschel
+
+Package: undici-types
+Version: 7.18.2
+License: MIT
+Repository: https://github.com/nodejs/undici
+
+Package: use-callback-ref
+Version: 1.3.3
+License: MIT
+Repository: https://github.com/theKashey/use-callback-ref
+Publisher: theKashey
+
+Package: use-sidecar
+Version: 1.1.3
+License: MIT
+Repository: https://github.com/theKashey/use-sidecar
+Publisher: theKashey
+
+Package: use-sync-external-store
+Version: 1.5.0
+License: MIT
+Repository: https://github.com/facebook/react
+
+Package: util-deprecate
+Version: 1.0.2
+License: MIT
+Repository: https://github.com/TooTallNate/util-deprecate
+Publisher: Nathan Rajlich
+
+Package: utility-types
+Version: 3.11.0
+License: MIT
+Repository: https://github.com/piotrwitek/utility-types
+Publisher: Piotr Witek
+
+Package: utrie
+Version: 1.0.2
+License: MIT
+Repository: https://github.com/niklasvh/utrie
+Publisher: Niklas von Hertzen
+
+Package: vaul
+Version: 0.9.9
+License: MIT
+Repository: https://github.com/emilkowalski/vaul
+Publisher: Emil Kowalski
+
+Package: victory-vendor
+Version: 36.9.2
+License: MIT AND ISC
+Repository: https://github.com/FormidableLabs/victory
+Publisher: Formidable
+
+Package: vite_react_shadcn_ts
+Version: 0.0.0
+License: UNLICENSED
+
+Package: webgl-constants
+Version: 1.1.1
+License: MIT*
+Publisher: Tim van Scherpenzeel
+
+Package: webgl-sdf-generator
+Version: 1.1.1
+License: MIT
+Repository: https://github.com/lojjic/webgl-sdf-generator
+Publisher: Jason Johnston
+
+Package: which
+Version: 2.0.2
+License: ISC
+Repository: https://github.com/isaacs/node-which
+Publisher: Isaac Z. Schlueter
+
+Package: wrap-ansi
+Version: 7.0.0
+License: MIT
+Repository: https://github.com/chalk/wrap-ansi
+Publisher: Sindre Sorhus
+
+Package: wrap-ansi
+Version: 8.1.0
+License: MIT
+Repository: https://github.com/chalk/wrap-ansi
+Publisher: Sindre Sorhus
+
+Package: xml
+Version: 1.0.1
+License: MIT
+Repository: https://github.com/dylang/node-xml
+Publisher: Dylan Greene
+
+Package: xml-js
+Version: 1.6.11
+License: MIT
+Repository: https://github.com/nashwaan/xml-js
+Publisher: Yousuf Almarzooqi
+
+Package: yaml
+Version: 2.6.0
+License: ISC
+Repository: https://github.com/eemeli/yaml
+Publisher: Eemeli Aro
+
+Package: zod
+Version: 3.25.76
+License: MIT
+Repository: https://github.com/colinhacks/zod
+Publisher: Colin McDonnell
+
+Package: zustand
+Version: 3.7.2
+License: MIT
+Repository: https://github.com/pmndrs/zustand
+Publisher: Paul Henschel
+
+Package: zustand
+Version: 4.5.7
+License: MIT
+Repository: https://github.com/pmndrs/zustand
+Publisher: Paul Henschel
+
+Package: zustand
+Version: 5.0.12
+License: MIT
+Repository: https://github.com/pmndrs/zustand
+Publisher: Paul Henschel
+

@@ -1,0 +1,216 @@
+{
+  "motors": {
+    "direct": {
+      "left": [
+        {
+          "id": "direct-left",
+          "url": "/models/motors/motor.glb?v=3",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1, 1, 1]
+        }
+      ],
+      "right": [
+        {
+          "id": "direct-right",
+          "url": "/models/motors/motor.glb?v=3",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1, 1, 1]
+        }
+      ]
+    },
+    "indirect": {
+      "left": [
+        {
+          "id": "indirect-left-compact",
+          "url": "/models/motors/indirect_side.glb?v=2",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
+          "rules": {
+            "maxFrameWidth": 500
+          }
+        },
+        {
+          "id": "indirect-left-large",
+          "url": "/models/motors/indirect_side.glb?v=2",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
+          "rules": {
+            "minFrameWidth": 501
+          }
+        }
+      ],
+      "right": [
+        {
+          "id": "indirect-right-compact",
+          "url": "/models/motors/indirect_side.glb?v=2",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
+          "rules": {
+            "maxFrameWidth": 500
+          }
+        },
+        {
+          "id": "indirect-right-large",
+          "url": "/models/motors/indirect_side.glb?v=2",
+          "rotationDeg": [90, 90, 0],
+          "scale": [1000, 1000, 1000],
+          "rules": {
+            "minFrameWidth": 501
+          }
+        }
+      ]
+    },
+    "center": [
+      {
+        "id": "center-compact",
+        "url": "/models/motors/center_motor.glb",
+        "rotationDeg": [90, 90, 0],
+        "scale": [1000, 1000, 1000],
+        "rules": {
+          "maxFrameWidth": 500
+        }
+      },
+      {
+        "id": "center-large",
+        "url": "/models/motors/center_motor.glb",
+        "rotationDeg": [90, 90, 0],
+        "scale": [1000, 1000, 1000],
+        "rules": {
+          "minFrameWidth": 501
+        }
+      }
+    ],
+    "drum": {
+      "left": [
+        {
+          "id": "drum-left",
+          "url": "/models/motors/drum-motor.glb",
+          "rotationDeg": [0, 0, 0],
+          "scale": [1, 1, 1]
+        }
+      ],
+      "right": [
+        {
+          "id": "drum-right",
+          "url": "/models/motors/drum-motor.glb",
+          "rotationDeg": [0, 0, 0],
+          "scale": [1, 1, 1]
+        }
+      ]
+    }
+  },
+  "components": {
+    "deflectionUnit": [
+      {
+        "id": "deflection-unit-default",
+        "url": "/models/components/deflection-unit/deflection-unit.glb"
+      }
+    ],
+    "drives": {
+      "direct": [
+        {
+          "id": "direct-drive-default",
+          "url": "/models/components/direct-drive/direct-drive.glb"
+        }
+      ],
+      "indirect": [
+        {
+          "id": "indirect-drive-default",
+          "url": "/models/components/indirect-drive/indirect-drive.glb"
+        }
+      ],
+      "center": [
+        {
+          "id": "center-drive-default",
+          "url": "/models/components/center-drive/center-drive.glb"
+        }
+      ],
+      "drum": [
+        {
+          "id": "drum-drive-default",
+          "url": "/models/components/drum-motor/drum-motor.glb"
+        }
+      ]
+    }
+  },
+  "floorElements": {
+    "feet": {
+      "positionOffset": [0, -12, 0],
+      "variants": [
+        {
+          "id": "foot",
+          "url": "/models/floor-elements/foot.glb?v=4",
+          "rotationDeg": [90, 0, 0],
+          "scale": [1, 1, 1],
+          "rules": {}
+        }
+      ]
+    },
+    "castors": {
+      "positionOffset": [0, 0, 0],
+      "variants": [
+        {
+          "id": "castor",
+          "url": "/models/floor-elements/castor.glb?v=2",
+          "rotationDeg": [0, 180, 0],
+          "scale": [1000, 1000, 1000],
+          "rules": {}
+        }
+      ]
+    },
+    "floorBolts": {
+      "positionOffset": [0, -12, 0],
+      "variants": [
+        {
+          "id": "floor-bolt",
+          "url": "/models/floor-elements/floor-bolt.glb?v=2",
+          "rotationDeg": [-90, 0, 0],
+          "scale": [1000, 1000, 1000],
+          "rules": {}
+        }
+      ]
+    }
+  },
+  "accessories": {
+    "sideGuide": [
+      {
+        "id": "side-guide-standard",
+        "url": "/models/accessories/side-guide.glb",
+        "rules": {
+          "maxFrameWidth": 700
+        }
+      },
+      {
+        "id": "side-guide-heavy",
+        "url": "/models/accessories/side-guide-heavy.glb",
+        "rules": {
+          "minFrameWidth": 701
+        }
+      }
+    ],
+    "sensors": [
+      {
+        "id": "sensor-standard",
+        "url": "/models/accessories/sensor-standard.glb"
+      }
+    ]
+  },
+  "profiles": {
+    "sideRails": [
+      {
+        "id": "profile-40x40-light",
+        "url": "/models/profiles/1108038_profil_a8_40x40_leicht.glb",
+        "rules": {
+          "maxFrameWidth": 500
+        }
+      },
+      {
+        "id": "profile-80x40-light-high",
+        "url": "/models/profiles/1108055_profil_a8_80x40_leicht.glb",
+        "rules": {
+          "minFrameWidth": 501
+        }
+      }
+    ]
+  }
+}
