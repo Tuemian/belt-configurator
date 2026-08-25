@@ -85,6 +85,10 @@ export default function ProfileConfigurator() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  // Nut 5/6 haben zwar Referenzbilder (s. Durchbiegungsrechner), aber noch keine
+  // Preise/Verbinder-/Bohrungstypen für den Zuschnitt — Auswahl bleibt möglich,
+  // zeigt aber einen Hinweis statt der Werkbank (siehe unten).
+  const [nut, setNut] = useState<'A5' | 'A6' | 'A8' | 'A10'>('A8');
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
@@ -146,18 +150,21 @@ export default function ProfileConfigurator() {
                 <div>
                   <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Nut</Label>
                   <div className="grid grid-cols-4 gap-2">
-                    {(['A5', 'A6', 'A8', 'A10'] as const).map((nut) => (
+                    {(['A5', 'A6', 'A8', 'A10'] as const).map((n) => (
                       <button
-                        key={nut}
-                        disabled={nut !== 'A8'}
-                        title={nut === 'A8' ? undefined : 'Bald verfügbar'}
+                        key={n}
+                        disabled={n === 'A10'}
+                        onClick={() => setNut(n)}
+                        title={n === 'A10' ? 'Bald verfügbar' : undefined}
                         className={`rounded-lg px-2 py-2 text-xs font-semibold border-2 transition-all ${
-                          nut === 'A8'
-                            ? 'bg-primary/10 border-primary text-primary'
-                            : 'bg-white border-slate-200 text-muted-foreground opacity-40 cursor-not-allowed'
+                          n === 'A10'
+                            ? 'bg-white border-slate-200 text-muted-foreground opacity-40 cursor-not-allowed'
+                            : nut === n
+                              ? 'bg-primary/10 border-primary text-primary'
+                              : 'bg-white border-slate-200 text-foreground hover:border-primary/40'
                         }`}
                       >
-                        {nut}
+                        {n}
                       </button>
                     ))}
                   </div>
@@ -466,96 +473,115 @@ export default function ProfileConfigurator() {
 
         {/* Main stage: 2D Workbench (Bearbeiten) + 3D Viewer (Vorschau) */}
         <main className="flex-1 relative flex flex-col bg-slate-100 overflow-hidden">
-          <div className="shrink-0 flex items-center justify-between px-3 md:px-5 pt-3 md:pt-5 pb-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ansicht</span>
-            <div className="inline-flex items-center bg-white rounded-md border border-slate-200 p-0.5 shadow-sm">
-              <button
-                onClick={() => setViewMode('2d')}
-                className={`px-3 py-1 text-xs rounded ${viewMode === '2d' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
-              >
-                2D bearbeiten
-              </button>
-              <button
-                onClick={() => setViewMode('3d')}
-                className={`px-3 py-1 text-xs rounded ${viewMode === '3d' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
-              >
-                3D-Vorschau
-              </button>
+          {nut !== 'A8' ? (
+            <div className="flex-1 flex items-center justify-center p-6">
+              <Card className="max-w-sm border-slate-200 shadow-sm">
+                <CardContent className="pt-6 text-center space-y-2">
+                  <div className="text-sm font-semibold text-foreground">Nut {nut.slice(1)} · in Vorbereitung</div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Der Zuschnitt für diese Nutgröße ist noch nicht vollständig hinterlegt (Preise, Verbinder, Bohrungstypen fehlen noch).
+                    Für eine individuelle Anfrage in Nut {nut.slice(1)} kontaktiere uns bitte direkt.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => setNut('A8')} className="mt-2">
+                    Zurück zu Nut 8
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-
-          <div className="flex-1 px-3 md:px-5 min-h-0 pb-[280px] lg:pb-5">
-            {viewMode === '2d' ? (
-              <ProfileWorkbench2D
-                section={section}
-                length={config.length}
-                angleStart={config.angleStart}
-                angleEnd={config.angleEnd}
-                holes={config.holes}
-                connectors={config.connectors}
-                endStart={config.endStart}
-                endEnd={config.endEnd}
-                onUpdateHoles={setHoles}
-                onUpdateConnectors={setConnectors}
-                onUpdateEndStart={(e) => update({ endStart: e })}
-                onUpdateEndEnd={(e) => update({ endEnd: e })}
-              />
-            ) : (
-              <div className="w-full h-full rounded-lg overflow-hidden border border-slate-200 bg-white">
-                <ProfileViewer3D
-                  section={section}
-                  length={config.length}
-                  angleStart={config.angleStart}
-                  angleEnd={config.angleEnd}
-                  holes={config.holes}
-                  connectors={config.connectors}
-                />
+          ) : (
+            <>
+              <div className="shrink-0 flex items-center justify-between px-3 md:px-5 pt-3 md:pt-5 pb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ansicht</span>
+                <div className="inline-flex items-center bg-white rounded-md border border-slate-200 p-0.5 shadow-sm">
+                  <button
+                    onClick={() => setViewMode('2d')}
+                    className={`px-3 py-1 text-xs rounded ${viewMode === '2d' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                  >
+                    2D bearbeiten
+                  </button>
+                  <button
+                    onClick={() => setViewMode('3d')}
+                    className={`px-3 py-1 text-xs rounded ${viewMode === '3d' ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground'}`}
+                  >
+                    3D-Vorschau
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Floating Price Card */}
-          <div className="absolute z-30 left-3 right-3 bottom-3 lg:left-auto lg:right-6 lg:bottom-6 lg:w-[340px]">
-            <Card className="shadow-2xl border-slate-200/80 bg-white/95 backdrop-blur">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center justify-between">
-                  <span>Preis-Übersicht</span>
-                  <span className="text-[10px] normal-case tracking-normal text-muted-foreground">{config.quantity} Stk.</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-2">
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Material</span>
-                    <span className="font-mono text-foreground">{fmt.format(price.material)}</span>
+              <div className="flex-1 px-3 md:px-5 min-h-0 pb-[280px] lg:pb-5">
+                {viewMode === '2d' ? (
+                  <ProfileWorkbench2D
+                    section={section}
+                    length={config.length}
+                    angleStart={config.angleStart}
+                    angleEnd={config.angleEnd}
+                    holes={config.holes}
+                    connectors={config.connectors}
+                    endStart={config.endStart}
+                    endEnd={config.endEnd}
+                    onUpdateHoles={setHoles}
+                    onUpdateConnectors={setConnectors}
+                    onUpdateEndStart={(e) => update({ endStart: e })}
+                    onUpdateEndEnd={(e) => update({ endEnd: e })}
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-lg overflow-hidden border border-slate-200 bg-white">
+                    <ProfileViewer3D
+                      section={section}
+                      length={config.length}
+                      angleStart={config.angleStart}
+                      angleEnd={config.angleEnd}
+                      holes={config.holes}
+                      connectors={config.connectors}
+                    />
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Bearbeitung</span>
-                    <span className="font-mono text-foreground">{fmt.format(processingTotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>MwSt. (19 %)</span>
-                    <span className="font-mono text-foreground">{fmt.format(tax)}</span>
-                  </div>
-                </div>
-                <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (netto)</div>
-                    <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(price.total)}</div>
-                  </div>
-                  <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
-                    Richtpreis · zzgl. Versand
-                    <br />
-                    inkl. MwSt.: {fmt.format(grossTotal)}
-                  </div>
-                </div>
-                <Button onClick={addToCart} size="lg" className="w-full gap-2 font-semibold mt-1">
-                  <ShoppingCart className="h-4 w-4" />
-                  In den Warenkorb
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+                )}
+              </div>
+
+              {/* Floating Price Card */}
+              <div className="absolute z-30 left-3 right-3 bottom-3 lg:left-auto lg:right-6 lg:bottom-6 lg:w-[340px]">
+                <Card className="shadow-2xl border-slate-200/80 bg-white/95 backdrop-blur">
+                  <CardHeader className="pb-2 pt-4 px-4">
+                    <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center justify-between">
+                      <span>Preis-Übersicht</span>
+                      <span className="text-[10px] normal-case tracking-normal text-muted-foreground">{config.quantity} Stk.</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 space-y-2">
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Material</span>
+                        <span className="font-mono text-foreground">{fmt.format(price.material)}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Bearbeitung</span>
+                        <span className="font-mono text-foreground">{fmt.format(processingTotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>MwSt. (19 %)</span>
+                        <span className="font-mono text-foreground">{fmt.format(tax)}</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
+                      <div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (netto)</div>
+                        <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(price.total)}</div>
+                      </div>
+                      <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
+                        Richtpreis · zzgl. Versand
+                        <br />
+                        inkl. MwSt.: {fmt.format(grossTotal)}
+                      </div>
+                    </div>
+                    <Button onClick={addToCart} size="lg" className="w-full gap-2 font-semibold mt-1">
+                      <ShoppingCart className="h-4 w-4" />
+                      In den Warenkorb
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </main>
       </div>
 
