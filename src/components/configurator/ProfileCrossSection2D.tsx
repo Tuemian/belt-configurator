@@ -28,6 +28,9 @@ interface Props {
   rotate90?: boolean;
   /** Seitenkürzel A/B/C/D außen am Profil anzeigen */
   showSideLabels?: boolean;
+  /** Keine Nut als "aktiv" markieren, auch wenn sie zufällig activeSlot/activeModuleIndex entspricht
+   *  (für Kontexte wie das Stirnseiten-Panel, wo activeSlot nur ein Pflicht-Prop ohne Bedeutung ist). */
+  noSlotHighlight?: boolean;
 }
 
 export function slotKey(slot: SlotId, moduleIndex: number) {
@@ -52,6 +55,7 @@ export function ProfileCrossSection2D({
   showLabels = true,
   rotate90 = false,
   showSideLabels = false,
+  noSlotHighlight = false,
 }: Props) {
   const { w, h, slotWidth, slotDepth, grooveWidth, cornerR, boreRadius, webThickness = 3 } = section;
   const MODULE = getModulePitch(section);
@@ -62,10 +66,19 @@ export function ProfileCrossSection2D({
   // Konstante, damit Bild und mm-basierte Hitbox-/Label-Geometrie exakt übereinstimmen.
   const alvarisImage = getAlvarisImage(section.sizeKey);
   const PAD = alvarisImage ? ALVARIS_PAD_MM : 14;
-  const VB_W = w + PAD * 2;
-  const VB_H = h + PAD * 2;
+  // Bildbreite/-höhe (Bild + sein eigener dünner Rand) — die Nut-/Kernzug-Positionsformeln
+  // unten (PAD + …) sind darauf kalibriert und bleiben unverändert.
+  const IMG_W = w + PAD * 2;
+  const IMG_H = h + PAD * 2;
+  // Referenzbilder haben nur einen sehr schmalen Rand (ALVARIS_PAD_MM ≈ 2,3mm) — zu wenig,
+  // um die Nutnummern außerhalb des Profils zu platzieren. LABEL_MARGIN schafft dafür extra
+  // Platz rundherum, ohne die Bild-/Hitbox-Kalibrierung anzufassen (separater Wrapper-Offset).
+  const LABEL_MARGIN = alvarisImage ? 8 : 0;
+  const VB_W = IMG_W + LABEL_MARGIN * 2;
+  const VB_H = IMG_H + LABEL_MARGIN * 2;
 
   const isSelected = (s: SlotId, mi: number): boolean => {
+    if (noSlotHighlight) return false;
     if (selectedKeys && selectedKeys.size > 0) return selectedKeys.has(slotKey(s, mi));
     return s === activeSlot && mi === activeModuleIndex;
   };
@@ -94,13 +107,17 @@ export function ProfileCrossSection2D({
   const HIT = 5;
   const slots: SlotEntry[] = [];
 
+  // Bei Referenzbild sitzen die Nutnummern außerhalb des Profils (im LABEL_MARGIN-Rand) statt
+  // auf Basis der (beim echten Bild nicht mehr zutreffenden) Schema-Nuttiefe — sonst landen sie
+  // je nach tatsächlicher Nuttiefe im Bild mitten auf der Zeichnung statt sauber daneben.
+  const labelOutside = !!alvarisImage;
   for (let i = 0; i < counts.A; i++) {
     const cx = PAD + MODULE * (i + 0.5);
     slots.push({
       slot: 'A', moduleIndex: i,
       number: getSlotNumber(section, 'A', i),
       slotPath: tSlotPathDown(cx, PAD, slotWidth, grooveWidth, slotDepth),
-      label: { x: cx, y: PAD + slotDepth + fs * 0.9 },
+      label: { x: cx, y: labelOutside ? -2.5 : PAD + slotDepth + fs * 0.9 },
       hit: { x: cx - MODULE / 2, y: PAD - HIT, w: MODULE, h: HIT + slotDepth + fs * 1.4 },
     });
   }
@@ -110,7 +127,7 @@ export function ProfileCrossSection2D({
       slot: 'B', moduleIndex: j,
       number: getSlotNumber(section, 'B', j),
       slotPath: tSlotPathHorizontal(cy, PAD + w, slotWidth, grooveWidth, slotDepth, true),
-      label: { x: PAD + w - slotDepth - fs * 0.7, y: cy + fs * 0.35 },
+      label: { x: labelOutside ? IMG_W + 2 + fs * 0.8 : PAD + w - slotDepth - fs * 0.7, y: cy + fs * 0.35 },
       hit: { x: PAD + w - slotDepth - fs * 1.4, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
     });
   }
@@ -120,7 +137,7 @@ export function ProfileCrossSection2D({
       slot: 'C', moduleIndex: i,
       number: getSlotNumber(section, 'C', i),
       slotPath: tSlotPathUp(cx, PAD + h, slotWidth, grooveWidth, slotDepth),
-      label: { x: cx, y: PAD + h - slotDepth - fs * 0.4 },
+      label: { x: cx, y: labelOutside ? IMG_H + fs * 1.0 + 1 : PAD + h - slotDepth - fs * 0.4 },
       hit: { x: cx - MODULE / 2, y: PAD + h - slotDepth - fs * 0.4, w: MODULE, h: HIT + slotDepth + fs * 0.6 },
     });
   }
@@ -130,7 +147,7 @@ export function ProfileCrossSection2D({
       slot: 'D', moduleIndex: j,
       number: getSlotNumber(section, 'D', j),
       slotPath: tSlotPathHorizontal(cy, PAD, slotWidth, grooveWidth, slotDepth, false),
-      label: { x: PAD + slotDepth + fs * 0.7, y: cy + fs * 0.35 },
+      label: { x: labelOutside ? -2 - fs * 0.8 : PAD + slotDepth + fs * 0.7, y: cy + fs * 0.35 },
       hit: { x: PAD - HIT, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
     });
   }
@@ -166,15 +183,16 @@ export function ProfileCrossSection2D({
       </defs>
 
       <g transform={innerTransform}>
+      <g transform={`translate(${LABEL_MARGIN}, ${LABEL_MARGIN})`}>
         {alvarisImage ? (
           alvarisImage.rotated ? (
             // Alvaris zeichnet diese Größe im Querformat; wir drehen nur das Bild um 90°,
             // die Hitbox-/Label-Geometrie ist bereits korrekt im Hochformat berechnet.
-            <g transform={`translate(${VB_W}, 0) rotate(90)`}>
-              <image href={alvarisImage.path} x="0" y="0" width={VB_H} height={VB_W} preserveAspectRatio="none" />
+            <g transform={`translate(${IMG_W}, 0) rotate(90)`}>
+              <image href={alvarisImage.path} x="0" y="0" width={IMG_H} height={IMG_W} preserveAspectRatio="none" />
             </g>
           ) : (
-            <image href={alvarisImage.path} x="0" y="0" width={VB_W} height={VB_H} preserveAspectRatio="none" />
+            <image href={alvarisImage.path} x="0" y="0" width={IMG_W} height={IMG_H} preserveAspectRatio="none" />
           )
         ) : (
           <>
@@ -315,6 +333,7 @@ export function ProfileCrossSection2D({
             </text>
           ));
         })()}
+      </g>
       </g>
     </svg>
   );

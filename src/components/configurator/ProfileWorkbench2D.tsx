@@ -506,17 +506,15 @@ export function ProfileWorkbench2D({
                   }}
                   size={88}
                   showLabels
-                  showSideLabels
                 />
                 <span className="text-[9px] text-muted-foreground">Klick = Seite wählen</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Aktive Bearbeitungs-Seite</div>
                 <h2 className="text-xl md:text-2xl font-bold text-foreground mt-0.5">
-                  Seite {activeKey.slot} – <span className="uppercase">{SLOT_LABEL_DE[activeKey.slot]}</span>
+                  Nut {getSlotNumber(section, activeKey.slot, activeKey.moduleIndex)} – <span className="uppercase">{SLOT_LABEL_DE[activeKey.slot]}</span>
                 </h2>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Nut {getSlotNumber(section, activeKey.slot, activeKey.moduleIndex)}
                   {multiSelected.size > 0 && (
                     <> · <span className="text-primary font-medium">{multiSelected.size + 1} Nuten gleichzeitig</span> · <button onClick={() => setMultiSelected(new Set())} className="underline hover:text-foreground">aufheben</button></>
                   )}
@@ -995,11 +993,8 @@ function SideRow({
     <div className={`flex items-stretch gap-2 rounded-md border bg-white transition-colors ${borderClass}`}>
       {/* Label column (Seite) */}
       <div className={`shrink-0 w-20 flex flex-col items-center justify-center py-1 px-1 text-center rounded-l-md ${isAnyActive ? 'bg-primary/10' : isAnyMulti ? 'bg-primary/5' : 'bg-slate-50'}`}>
-        <div className={`text-sm font-bold ${isAnyActive ? 'text-primary' : 'text-foreground'}`}>Seite {side.slot}</div>
+        <div className={`text-sm font-bold ${isAnyActive ? 'text-primary' : 'text-foreground'}`}>Nut {side.lanes.map((l) => l.number).join(', ')}</div>
         <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{SLOT_SIDE_DE[side.slot]}</div>
-        <div className="text-[9px] text-muted-foreground mt-0.5">
-          Nut {side.lanes.map((l) => l.number).join(', ')}
-        </div>
         <div className="text-[9px] text-muted-foreground">{holes.length} B · {connectors.length} V</div>
       </div>
 
@@ -1128,10 +1123,13 @@ function SideRow({
               return (
                 <g pointerEvents="none">
                   <line x1={hx} y1={cy - LANE_PIX_HEIGHT / 2} x2={hx} y2={cy + LANE_PIX_HEIGHT / 2} stroke="hsl(var(--primary))" strokeWidth="0.5" strokeDasharray="2 2" />
-                  <rect x={hx - 16} y={cy - LANE_PIX_HEIGHT / 2 - 11} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
-                  <text x={hx} y={cy - LANE_PIX_HEIGHT / 2 - 3} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
-                    {Math.round(hoverInfo.z)} mm
-                  </text>
+                  {/* Gegenskalierung wie bei den runden Markern, sonst wirkt die Pille bei langen/gezoomten Profilen gestaucht */}
+                  <g transform={`translate(${hx} ${cy - LANE_PIX_HEIGHT / 2 - 6}) scale(${circleScaleX} 1) translate(${-hx} ${-(cy - LANE_PIX_HEIGHT / 2 - 6)})`}>
+                    <rect x={hx - 16} y={cy - LANE_PIX_HEIGHT / 2 - 11} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
+                    <text x={hx} y={cy - LANE_PIX_HEIGHT / 2 - 3} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
+                      {Math.round(hoverInfo.z)} mm
+                    </text>
+                  </g>
                 </g>
               );
             })()}
@@ -1208,18 +1206,24 @@ function SideRow({
                       <line x1={hx} y1={cy} x2={length} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
                       {/* Linie zum Ende (links) */}
                       <line x1={hx} y1={cy} x2={0} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
-                      {/* Label zum Anfang */}
-                      <rect x={(hx + length) / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
-                      <text x={(hx + length) / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distStart)} mm</text>
+                      {/* Label zum Anfang — Gegenskalierung wie bei den runden Markern */}
+                      <g transform={`translate(${(hx + length) / 2} ${cy - 7.5}) scale(${circleScaleX} 1) translate(${-(hx + length) / 2} ${-(cy - 7.5)})`}>
+                        <rect x={(hx + length) / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
+                        <text x={(hx + length) / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distStart)} mm</text>
+                      </g>
                       {/* Label zum Ende */}
-                      <rect x={hx / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
-                      <text x={hx / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distEnd)} mm</text>
+                      <g transform={`translate(${hx / 2} ${cy - 7.5}) scale(${circleScaleX} 1) translate(${-hx / 2} ${-(cy - 7.5)})`}>
+                        <rect x={hx / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
+                        <text x={hx / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distEnd)} mm</text>
+                      </g>
                     </g>
                   )}
                   {(isSel || isDragging) && (
-                    <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill={tooClose ? '#dc2626' : 'hsl(var(--primary))'} fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
-                      {Math.round(h.zPosition)} mm
-                    </text>
+                    <g transform={`translate(${hx} ${cy + LANE_PIX_HEIGHT / 2 - 1}) scale(${circleScaleX} 1) translate(${-hx} ${-(cy + LANE_PIX_HEIGHT / 2 - 1)})`}>
+                      <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill={tooClose ? '#dc2626' : 'hsl(var(--primary))'} fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
+                        {Math.round(h.zPosition)} mm
+                      </text>
+                    </g>
                   )}
                   {/* Runde Marker: Gegenskalierung, damit sie bei langen Profilen (nicht-uniform gestauchte Ansicht) als Kreis statt Schlitz erscheinen */}
                   <g transform={`translate(${hx} ${cy}) scale(${circleScaleX} 1) translate(${-hx} ${-cy})`}>
@@ -1241,9 +1245,9 @@ function SideRow({
             })}
           </g>
 
-          {/* End labels (EU 1st-angle: Ende links, Anfang rechts) */}
-          <text x={PAD_X} y={VB_H - 1} fontSize="7" fill="#94a3b8">Ende ←</text>
-          <text x={PAD_X + length} y={VB_H - 1} textAnchor="end" fontSize="7" fill="#94a3b8">→ Anfang</text>
+          {/* End labels (EU 1st-angle: Ende links, Anfang rechts) — Gegenskalierung wie die Ruler-Ziffern */}
+          <text x={PAD_X} y={VB_H - 1} fontSize="7" fill="#94a3b8" transform={`translate(${PAD_X} 0) scale(${circleScaleX} 1) translate(${-PAD_X} 0)`}>Ende ←</text>
+          <text x={PAD_X + length} y={VB_H - 1} textAnchor="end" fontSize="7" fill="#94a3b8" transform={`translate(${PAD_X + length} 0) scale(${circleScaleX} 1) translate(${-(PAD_X + length)} 0)`}>→ Anfang</text>
         </svg>
       </div>
     </div>
@@ -1382,12 +1386,12 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
           section={section}
           activeSlot="A"
           activeModuleIndex={0}
+          noSlotHighlight
           onSelectSlot={() => { /* keine Nutwahl hier */ }}
           onSelectBore={toggleBore}
           activeBores={activeBores}
           size={140}
           showLabels
-          showSideLabels
         />
       </div>
       <div className="text-[9px] text-muted-foreground text-center mt-1">
