@@ -47,6 +47,16 @@ const DEFAULT_CONFIG: ProfileConfig = {
   quantity: 1,
 };
 
+// Querschnitte, die laut Alvaris-Profilbearbeitungscode-Blatt für Nut 5/6 existieren
+// (Profilreihe 5 bzw. 8_30) — rein informativ, solange Preise/Verbinder/Bohrungstypen
+// für diese Nuten im Zuschnitt noch nicht hinterlegt sind (s. Durchbiegungsrechner).
+const NUT_PREVIEW_SIZES: Record<'A5' | 'A6' | 'A8' | 'A10', string[]> = {
+  A5: ['20 × 10', '20 × 20', '40 × 10', '40 × 20', '40 × 40', '80 × 20'],
+  A6: ['30 × 30', '30 × 60', '60 × 60'],
+  A8: [],
+  A10: [],
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -170,99 +180,113 @@ export default function ProfileConfigurator() {
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Querschnitt</Label>
-                  <Select
-                    value={section.sizeKey}
-                    onValueChange={(sizeKey) => {
-                      const next =
-                        PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === section.variant) ??
-                        PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === 'leicht') ??
-                        PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey)!;
-                      update({ sectionId: next.id });
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROFILE_SIZES.map((sz) => (
-                        <SelectItem key={sz.key} value={sz.key}>{sz.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Variante</Label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(['eco', 'leicht', 'schwer'] as const).map((v) => {
-                      const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
-                      const isActive = section.variant === v;
-                      return (
-                        <button
-                          key={v}
-                          disabled={!available}
-                          onClick={() => available && update({ sectionId: available.id })}
-                          className={`rounded-md px-2 py-2.5 text-xs font-semibold border transition-colors ${
-                            !available
-                              ? 'opacity-30 cursor-not-allowed border-slate-200 text-muted-foreground'
-                              : isActive
-                              ? 'bg-primary/10 border-primary text-primary'
-                              : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
-                          }`}
-                        >
-                          {v === 'eco' ? 'ECO' : v === 'leicht' ? 'Leicht' : 'Schwer'}
-                        </button>
-                      );
-                    })}
+                {nut !== 'A8' ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+                    <div className="text-xs font-semibold text-foreground mb-1">Verfügbare Querschnitte in Nut {nut.slice(1)} (in Vorbereitung)</div>
+                    <div className="text-[11px] text-muted-foreground leading-relaxed">
+                      {NUT_PREVIEW_SIZES[nut].join(' · ')}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      Preise, Verbinder und Bohrungstypen für diese Nut folgen noch — für eine Anfrage bitte direkt kontaktieren.
+                    </p>
                   </div>
-                  <div className="flex justify-between text-[11px] text-muted-foreground mt-2">
-                    <span>{section.label}</span>
-                    <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-3 block uppercase tracking-wider">Querschnitt</Label>
+                      <Select
+                        value={section.sizeKey}
+                        onValueChange={(sizeKey) => {
+                          const next =
+                            PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === section.variant) ??
+                            PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === 'leicht') ??
+                            PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey)!;
+                          update({ sectionId: next.id });
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROFILE_SIZES.map((sz) => (
+                            <SelectItem key={sz.key} value={sz.key}>{sz.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider">Länge</Label>
-                    <div className="flex items-center gap-1">
-                      <NumericInput
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Variante</Label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(['eco', 'leicht', 'schwer'] as const).map((v) => {
+                          const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
+                          const isActive = section.variant === v;
+                          return (
+                            <button
+                              key={v}
+                              disabled={!available}
+                              onClick={() => available && update({ sectionId: available.id })}
+                              className={`rounded-md px-2 py-2.5 text-xs font-semibold border transition-colors ${
+                                !available
+                                  ? 'opacity-30 cursor-not-allowed border-slate-200 text-muted-foreground'
+                                  : isActive
+                                  ? 'bg-primary/10 border-primary text-primary'
+                                  : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
+                              }`}
+                            >
+                              {v === 'eco' ? 'ECO' : v === 'leicht' ? 'Leicht' : 'Schwer'}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between text-[11px] text-muted-foreground mt-2">
+                        <span>{section.label}</span>
+                        <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Länge</Label>
+                        <div className="flex items-center gap-1">
+                          <NumericInput
+                            min={50}
+                            max={6000}
+                            step={5}
+                            value={config.length}
+                            onCommit={(v) => update({
+                              length: v,
+                              holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
+                            })}
+                            className="h-8 w-24 text-right text-sm"
+                          />
+                          <span className="text-muted-foreground text-xs">mm</span>
+                        </div>
+                      </div>
+                      <Slider
                         min={50}
                         max={6000}
                         step={5}
-                        value={config.length}
-                        onCommit={(v) => update({
-                          length: v,
-                          holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })),
-                        })}
-                        className="h-8 w-24 text-right text-sm"
+                        value={[config.length]}
+                        onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
                       />
-                      <span className="text-muted-foreground text-xs">mm</span>
+                      <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                        <span>50 mm</span><span>6000 mm</span>
+                      </div>
                     </div>
-                  </div>
-                  <Slider
-                    min={50}
-                    max={6000}
-                    step={5}
-                    value={[config.length]}
-                    onValueChange={([v]) => update({ length: v, holes: config.holes.map((h) => ({ ...h, zPosition: Math.min(h.zPosition, v - 5) })) })}
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                    <span>50 mm</span><span>6000 mm</span>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Stückzahl</Label>
-                  <NumericInput
-                    min={1}
-                    max={9999}
-                    value={config.quantity}
-                    onCommit={(v) => update({ quantity: v })}
-                    className="h-8 w-24 text-right"
-                  />
-                </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider">Stückzahl</Label>
+                      <NumericInput
+                        min={1}
+                        max={9999}
+                        value={config.quantity}
+                        onCommit={(v) => update({ quantity: v })}
+                        className="h-8 w-24 text-right"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -479,8 +503,9 @@ export default function ProfileConfigurator() {
                 <CardContent className="pt-6 text-center space-y-2">
                   <div className="text-sm font-semibold text-foreground">Nut {nut.slice(1)} · in Vorbereitung</div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Der Zuschnitt für diese Nutgröße ist noch nicht vollständig hinterlegt (Preise, Verbinder, Bohrungstypen fehlen noch).
-                    Für eine individuelle Anfrage in Nut {nut.slice(1)} kontaktiere uns bitte direkt.
+                    Verfügbare Querschnitte: {NUT_PREVIEW_SIZES[nut].join(' · ')}.
+                    <br />
+                    Preise, Verbinder und Bohrungstypen für diese Nut fehlen noch — für eine individuelle Anfrage in Nut {nut.slice(1)} kontaktiere uns bitte direkt.
                   </p>
                   <Button variant="outline" size="sm" onClick={() => setNut('A8')} className="mt-2">
                     Zurück zu Nut 8
