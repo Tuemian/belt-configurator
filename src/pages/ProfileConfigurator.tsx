@@ -47,15 +47,6 @@ const DEFAULT_CONFIG: ProfileConfig = {
   quantity: 1,
 };
 
-// Querschnitte, die laut Alvaris-Profilbearbeitungscode-Blatt für Nut 5/6 existieren
-// (Profilreihe 5 bzw. 8_30) — rein informativ, solange Preise/Verbinder/Bohrungstypen
-// für diese Nuten im Zuschnitt noch nicht hinterlegt sind (s. Durchbiegungsrechner).
-const NUT_PREVIEW_SIZES: Record<'A5' | 'A6' | 'A8' | 'A10', string[]> = {
-  A5: ['20 × 10', '20 × 20', '40 × 10', '40 × 20', '40 × 40', '80 × 20'],
-  A6: ['30 × 30', '30 × 60', '60 × 60'],
-  A8: [],
-  A10: [],
-};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -95,10 +86,28 @@ export default function ProfileConfigurator() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
-  // Nut 5/6 haben zwar Referenzbilder (s. Durchbiegungsrechner), aber noch keine
-  // Preise/Verbinder-/Bohrungstypen für den Zuschnitt — Auswahl bleibt möglich,
-  // zeigt aber einen Hinweis statt der Werkbank (siehe unten).
+  // A10 hat kein Referenzbild vom Alvaris-Blatt und bleibt daher ein Hinweis statt der
+  // Werkbank (siehe unten). A5 hat eigene Katalogeinträge (section.nut==='A5'); A6
+  // nutzt exakt dieselben Einträge wie A8s 30er-Untervariante (modulePitch 30, kein
+  // eigenes nut-Tag) — gleiche Nutbreite bei Alvaris, siehe Kommentar bei getAlvarisImage.
   const [nut, setNut] = useState<'A5' | 'A6' | 'A8' | 'A10'>('A8');
+
+  const sizesForNut = (n: typeof nut) =>
+    n === 'A5' ? PROFILE_SIZES.filter((s) => s.nut === 'A5')
+    : n === 'A6' ? PROFILE_SIZES.filter((s) => !s.nut && ['30x30', '30x60', '60x60'].includes(s.key))
+    : PROFILE_SIZES.filter((s) => !s.nut);
+  const sectionsForNut = (n: typeof nut) =>
+    n === 'A5' ? PROFILE_SECTIONS.filter((s) => s.nut === 'A5')
+    : n === 'A6' ? PROFILE_SECTIONS.filter((s) => !s.nut && s.modulePitch === 30)
+    : PROFILE_SECTIONS.filter((s) => !s.nut);
+
+  const changeNut = (n: typeof nut) => {
+    setNut(n);
+    if (n === 'A10') return;
+    const options = sectionsForNut(n);
+    const first = options.find((s) => s.variant === 'leicht') ?? options[0];
+    if (first) update({ sectionId: first.id });
+  };
 
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
   const price = calculateProfilePrice(config);
@@ -164,7 +173,7 @@ export default function ProfileConfigurator() {
                       <button
                         key={n}
                         disabled={n === 'A10'}
-                        onClick={() => setNut(n)}
+                        onClick={() => changeNut(n)}
                         title={n === 'A10' ? 'Bald verfügbar' : undefined}
                         className={`rounded-lg px-2 py-2 text-xs font-semibold border-2 transition-all ${
                           n === 'A10'
@@ -180,14 +189,11 @@ export default function ProfileConfigurator() {
                   </div>
                 </div>
 
-                {nut !== 'A8' ? (
+                {nut === 'A10' ? (
                   <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
-                    <div className="text-xs font-semibold text-foreground mb-1">Verfügbare Querschnitte in Nut {nut.slice(1)} (in Vorbereitung)</div>
-                    <div className="text-[11px] text-muted-foreground leading-relaxed">
-                      {NUT_PREVIEW_SIZES[nut].join(' · ')}
-                    </div>
+                    <div className="text-xs font-semibold text-foreground mb-1">Nut 10 · in Vorbereitung</div>
                     <p className="text-[11px] text-muted-foreground mt-2">
-                      Preise, Verbinder und Bohrungstypen für diese Nut folgen noch — für eine Anfrage bitte direkt kontaktieren.
+                      Für Nut 10 liegt noch kein Referenzquerschnitt vor — für eine Anfrage bitte direkt kontaktieren.
                     </p>
                   </div>
                 ) : (
@@ -197,10 +203,11 @@ export default function ProfileConfigurator() {
                       <Select
                         value={section.sizeKey}
                         onValueChange={(sizeKey) => {
+                          const options = sectionsForNut(nut);
                           const next =
-                            PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === section.variant) ??
-                            PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey && s.variant === 'leicht') ??
-                            PROFILE_SECTIONS.find((s) => s.sizeKey === sizeKey)!;
+                            options.find((s) => s.sizeKey === sizeKey && s.variant === section.variant) ??
+                            options.find((s) => s.sizeKey === sizeKey && s.variant === 'leicht') ??
+                            options.find((s) => s.sizeKey === sizeKey)!;
                           update({ sectionId: next.id });
                         }}
                       >
@@ -208,7 +215,7 @@ export default function ProfileConfigurator() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {PROFILE_SIZES.map((sz) => (
+                          {sizesForNut(nut).map((sz) => (
                             <SelectItem key={sz.key} value={sz.key}>{sz.label}</SelectItem>
                           ))}
                         </SelectContent>
@@ -219,7 +226,7 @@ export default function ProfileConfigurator() {
                       <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Variante</Label>
                       <div className="grid grid-cols-3 gap-1.5">
                         {(['eco', 'leicht', 'schwer'] as const).map((v) => {
-                          const available = PROFILE_SECTIONS.find((s) => s.sizeKey === section.sizeKey && s.variant === v);
+                          const available = sectionsForNut(nut).find((s) => s.sizeKey === section.sizeKey && s.variant === v);
                           const isActive = section.variant === v;
                           return (
                             <button
@@ -497,17 +504,15 @@ export default function ProfileConfigurator() {
 
         {/* Main stage: 2D Workbench (Bearbeiten) + 3D Viewer (Vorschau) */}
         <main className="flex-1 relative flex flex-col bg-slate-100 overflow-hidden">
-          {nut !== 'A8' ? (
+          {nut === 'A10' ? (
             <div className="flex-1 flex items-center justify-center p-6">
               <Card className="max-w-sm border-slate-200 shadow-sm">
                 <CardContent className="pt-6 text-center space-y-2">
-                  <div className="text-sm font-semibold text-foreground">Nut {nut.slice(1)} · in Vorbereitung</div>
+                  <div className="text-sm font-semibold text-foreground">Nut 10 · in Vorbereitung</div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Verfügbare Querschnitte: {NUT_PREVIEW_SIZES[nut].join(' · ')}.
-                    <br />
-                    Preise, Verbinder und Bohrungstypen für diese Nut fehlen noch — für eine individuelle Anfrage in Nut {nut.slice(1)} kontaktiere uns bitte direkt.
+                    Für Nut 10 liegt noch kein Referenzquerschnitt vor — für eine individuelle Anfrage kontaktiere uns bitte direkt.
                   </p>
-                  <Button variant="outline" size="sm" onClick={() => setNut('A8')} className="mt-2">
+                  <Button variant="outline" size="sm" onClick={() => changeNut('A8')} className="mt-2">
                     Zurück zu Nut 8
                   </Button>
                 </CardContent>

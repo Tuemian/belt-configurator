@@ -870,15 +870,28 @@ function SideRow({
   const viewBoxX = PAD_X + windowXDispStart - marginMm;
   const viewBoxWidth = visibleWidthMm + marginMm * 2;
 
-  // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts
+  // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts.
+  // Der Schnitt kippt real nur um EINE Achse (s. ProfileViewer3D: Z variiert mit der
+  // Cross-Section-X-Position, nicht mit Y). Seiten A/C liegen quer zu dieser Achse und
+  // zeigen daher einen echten Diagonalschnitt über die volle Profilbreite. Seiten B/D
+  // liegen an einer FESTEN X-Position: B (x=+w/2) ist die unbeschnittene Referenzkante
+  // (bleibt exakt auf voller Länge), D (x=−w/2) wird um denselben Betrag gekürzt wie die
+  // äußerste Ecke von A/C — aber gleichmäßig über die ganze Seite, nicht diagonal.
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
-  const cutS = ROW_PIX_HEIGHT * tanS;
-  const cutE = ROW_PIX_HEIGHT * tanE;
+  const isAC = side.slot === 'A' || side.slot === 'C';
+  const pitch = getModulePitch(section);
+  const widthLanes = Math.max(1, Math.round(section.w / pitch));
+  const acRowPixHeight = LANE_PIX_HEIGHT * widthLanes;
+  const cutS = isAC ? ROW_PIX_HEIGHT * tanS : side.slot === 'D' ? acRowPixHeight * tanS : 0;
+  const cutE = isAC ? ROW_PIX_HEIGHT * tanE : side.slot === 'D' ? acRowPixHeight * tanE : 0;
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
-  // links = Ende, rechts = Anfang. Schräge oben: links cutE rein, rechts cutS rein.
-  const profilePath = `M ${cutE} ${top} L ${length - cutS} ${top} L ${length} ${bot} L 0 ${bot} Z`;
+  // A/C: Diagonalschnitt (unverändert). B/D: gerade, gleichmäßig verschobene Kante
+  // (kein Diagonal-Artefakt mehr über mehrere Spuren hinweg).
+  const profilePath = isAC
+    ? `M ${cutE} ${top} L ${length - cutS} ${top} L ${length} ${bot} L 0 ${bot} Z`
+    : `M ${cutE} ${top} L ${length - cutS} ${top} L ${length - cutS} ${bot} L ${cutE} ${bot} Z`;
 
   // y-Position der Nut-Mitte je Lane (oberste Lane = Lane 0)
   const laneCy = (laneIdx: number) => top + LANE_PIX_HEIGHT * (laneIdx + 0.5);

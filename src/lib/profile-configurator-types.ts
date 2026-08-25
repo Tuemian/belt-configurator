@@ -31,12 +31,17 @@ export const SLOT_SIDE_DE: Record<SlotId, string> = {
   D: 'links',
 };
 
+/** Alvaris-Profilreihe (Nutbreite). Fehlt das Feld, ist A8 gemeint (historischer Default —
+ *  der Zuschnittskonfigurator kannte anfangs nur Nut 8). */
+export type ProfileNut = 'A5' | 'A6' | 'A8';
+
 export interface ProfileSize {
   key: string;
   label: string;
   w: number;
   h: number;
   variants: ProfileVariantKey[];
+  nut?: ProfileNut;
 }
 
 export interface ProfileSection {
@@ -59,6 +64,7 @@ export interface ProfileSection {
   massPerMeter?: number;
   /** Rastermaß / Modulteilung (mm). 30er-Reihe = 30, sonst 40. */
   modulePitch?: number;
+  nut?: ProfileNut;
 }
 
 export interface ProfileHole {
@@ -137,6 +143,14 @@ export const PROFILE_SIZES: ProfileSize[] = [
   { key: '80x160', label: '80 × 160', w: 80,  h: 160, variants: ['leicht', 'schwer'] },
   { key: '160x16', label: '160 × 16', w: 160, h: 16,  variants: ['leicht'] },
   { key: '160x28', label: '160 × 28', w: 160, h: 28,  variants: ['leicht'] },
+
+  // --- Nut 5 (Alvaris "Profilreihe 5") — eigene, kleinere Nut-Geometrie ---------
+  { key: '20x20', label: '20 × 20', w: 20, h: 20, variants: ['leicht'], nut: 'A5' },
+  { key: '40x20', label: '40 × 20', w: 40, h: 20, variants: ['leicht'], nut: 'A5' },
+  { key: '20x10', label: '20 × 10', w: 20, h: 10, variants: ['leicht'], nut: 'A5' },
+  { key: '40x40', label: '40 × 40', w: 40, h: 40, variants: ['leicht'], nut: 'A5' },
+  { key: '40x10', label: '40 × 10', w: 40, h: 10, variants: ['leicht'], nut: 'A5' },
+  { key: '80x20', label: '80 × 20', w: 80, h: 20, variants: ['leicht'], nut: 'A5' },
 ];
 
 const NUT8_GEO = {
@@ -244,6 +258,32 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   { id: '160x28-leicht', sizeKey: '160x28', variant: 'leicht', label: '160 × 28 · Leicht',
     w: 160, h: 28, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 24.90,
     orderCode: 'NM-PRO-160x28-L', massPerMeter: 4.61 },
+
+  // --- Nut 5 (Alvaris "Profilreihe 5") -----------------------------------------
+  // Nut-/Steg-Geometrie (slotWidth/grooveWidth/…) ist mangels echter Maßangaben von
+  // Alvaris ein Platzhalter (NUT8_GEO wiederverwendet) — betrifft nur unsichtbare
+  // Klick-Hitboxen, die sichtbare Zeichnung kommt vom echten a5-*.png-Referenzbild.
+  // pricePerMeter/massPerMeter sind ebenfalls nur grob geschätzt (aus dem Preis/Umfang-
+  // Verhältnis der Nut-8-Größen, mit Faktor 0.85 für die leichtere Nut-5-Bauweise) —
+  // vor Live-Einsatz mit echten Einkaufspreisen abgleichen.
+  { id: 'a5-20x20-leicht', sizeKey: '20x20', variant: 'leicht', label: '20 × 20 · Leicht',
+    w: 20, h: 20, ...NUT8_GEO, webThickness: 2.0, pricePerMeter: 2.80,
+    orderCode: 'NM-PRO-A5-20x20-L', massPerMeter: 0.50, modulePitch: 20, nut: 'A5' },
+  { id: 'a5-40x20-leicht', sizeKey: '40x20', variant: 'leicht', label: '40 × 20 · Leicht',
+    w: 40, h: 20, ...NUT8_GEO, webThickness: 2.0, pricePerMeter: 4.60,
+    orderCode: 'NM-PRO-A5-40x20-L', massPerMeter: 0.83, modulePitch: 20, nut: 'A5' },
+  { id: 'a5-20x10-leicht', sizeKey: '20x10', variant: 'leicht', label: '20 × 10 · Leicht',
+    w: 20, h: 10, ...NUT8_GEO, webThickness: 2.0, pricePerMeter: 2.00,
+    orderCode: 'NM-PRO-A5-20x10-L', massPerMeter: 0.36, modulePitch: 20, nut: 'A5' },
+  { id: 'a5-40x40-leicht', sizeKey: '40x40', variant: 'leicht', label: '40 × 40 · Leicht',
+    w: 40, h: 40, ...NUT8_GEO, webThickness: 2.0, pricePerMeter: 6.50,
+    orderCode: 'NM-PRO-A5-40x40-L', massPerMeter: 1.17, modulePitch: 20, nut: 'A5' },
+  { id: 'a5-40x10-leicht', sizeKey: '40x10', variant: 'leicht', label: '40 × 10 · Leicht',
+    w: 40, h: 10, ...NUT8_GEO, webThickness: 2.0, pricePerMeter: 3.70,
+    orderCode: 'NM-PRO-A5-40x10-L', massPerMeter: 0.67, modulePitch: 20, nut: 'A5' },
+  { id: 'a5-80x20-leicht', sizeKey: '80x20', variant: 'leicht', label: '80 × 20 · Leicht',
+    w: 80, h: 20, ...NUT8_GEO, webThickness: 2.0, pricePerMeter: 8.80,
+    orderCode: 'NM-PRO-A5-80x20-L', massPerMeter: 1.58, modulePitch: 20, nut: 'A5' },
 ];
 
 export const CONNECTOR_TYPES = [

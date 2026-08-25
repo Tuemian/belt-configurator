@@ -64,7 +64,7 @@ export function ProfileCrossSection2D({
   // 1:1-Referenzbild aus dem Alvaris-Profilbearbeitungscode-Blatt (falls vorhanden) statt
   // der schematischen Zeichnung. Dessen Rand (ALVARIS_PAD_MM) ersetzt die alte feste
   // Konstante, damit Bild und mm-basierte Hitbox-/Label-Geometrie exakt übereinstimmen.
-  const alvarisImage = getAlvarisImage(section.sizeKey);
+  const alvarisImage = getAlvarisImage(section.sizeKey, section.nut ?? 'A8');
   const PAD = alvarisImage ? ALVARIS_PAD_MM : 14;
   // Bildbreite/-höhe (Bild + sein eigener dünner Rand) — die Nut-/Kernzug-Positionsformeln
   // unten (PAD + …) sind darauf kalibriert und bleiben unverändert.

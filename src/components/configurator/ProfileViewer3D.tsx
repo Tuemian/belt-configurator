@@ -15,43 +15,82 @@ const SLOT_DIR: Record<SlotId, { nx: number; ny: number }> = {
 };
 
 // ---------------------------------------------------------------------------
-// T-slot path helpers — all produce CW paths (negative signed area = hole)
-// Profil 8 system: neck depth 1.5 mm fixed
+// T-slot path helpers — dieselbe abgerundete "Ohren"-Mündung wie die 2D-Querschnitte
+// (tSlotPathDown/tSlotPathHorizontal in profile-cross-section-shapes.ts), nur als
+// THREE.Path statt SVG-Pfad. So zeigt das 3D-Modell dieselbe Nutkontur wie die
+// 2D-Werkbank/der Durchbiegungsrechner, statt einer eigenen, gröberen Näherung.
 // ---------------------------------------------------------------------------
 
-const MODULE = 40;    // ITEM Nut 8 module pitch (mm)
-const NECK = 1.5;     // distance from face to T-expansion
-
 function addSlotTop(s: THREE.Shape, cx: number, yf: number, sw: number, gw: number, sd: number) {
+  const wHalf = sw / 2, gHalf = gw / 2;
+  const lip = Math.min(1.2, sd * 0.22);
+  const flare = Math.min(1.8, sd * 0.32);
+  const yLip = yf - lip;
+  const yFlare = yLip - flare;
+  const yBottom = yf - sd;
   const p = new THREE.Path();
-  p.moveTo(cx + sw / 2, yf);          p.lineTo(cx + sw / 2, yf - NECK);
-  p.lineTo(cx + gw / 2, yf - NECK);   p.lineTo(cx + gw / 2, yf - sd);
-  p.lineTo(cx - gw / 2, yf - sd);     p.lineTo(cx - gw / 2, yf - NECK);
-  p.lineTo(cx - sw / 2, yf - NECK);   p.lineTo(cx - sw / 2, yf);
+  p.moveTo(cx + wHalf, yf);
+  p.lineTo(cx + wHalf, yLip);
+  p.quadraticCurveTo(cx + wHalf, yFlare, cx + gHalf, yFlare);
+  p.lineTo(cx + gHalf, yBottom);
+  p.lineTo(cx - gHalf, yBottom);
+  p.lineTo(cx - gHalf, yFlare);
+  p.quadraticCurveTo(cx - wHalf, yFlare, cx - wHalf, yLip);
+  p.lineTo(cx - wHalf, yf);
   p.closePath(); s.holes.push(p);
 }
 function addSlotBottom(s: THREE.Shape, cx: number, yf: number, sw: number, gw: number, sd: number) {
+  const wHalf = sw / 2, gHalf = gw / 2;
+  const lip = Math.min(1.2, sd * 0.22);
+  const flare = Math.min(1.8, sd * 0.32);
+  const yLip = yf + lip;
+  const yFlare = yLip + flare;
+  const yBottom = yf + sd;
   const p = new THREE.Path();
-  p.moveTo(cx - sw / 2, yf);          p.lineTo(cx - sw / 2, yf + NECK);
-  p.lineTo(cx - gw / 2, yf + NECK);   p.lineTo(cx - gw / 2, yf + sd);
-  p.lineTo(cx + gw / 2, yf + sd);     p.lineTo(cx + gw / 2, yf + NECK);
-  p.lineTo(cx + sw / 2, yf + NECK);   p.lineTo(cx + sw / 2, yf);
+  p.moveTo(cx - wHalf, yf);
+  p.lineTo(cx - wHalf, yLip);
+  p.quadraticCurveTo(cx - wHalf, yFlare, cx - gHalf, yFlare);
+  p.lineTo(cx - gHalf, yBottom);
+  p.lineTo(cx + gHalf, yBottom);
+  p.lineTo(cx + gHalf, yFlare);
+  p.quadraticCurveTo(cx + wHalf, yFlare, cx + wHalf, yLip);
+  p.lineTo(cx + wHalf, yf);
   p.closePath(); s.holes.push(p);
 }
 function addSlotRight(s: THREE.Shape, xf: number, cy: number, sw: number, gw: number, sd: number) {
+  const wHalf = sw / 2, gHalf = gw / 2;
+  const lip = Math.min(1.2, sd * 0.22);
+  const flare = Math.min(1.8, sd * 0.32);
+  const xLip = xf - lip;
+  const xFlare = xLip - flare;
+  const xDeep = xf - sd;
   const p = new THREE.Path();
-  p.moveTo(xf, cy - sw / 2);          p.lineTo(xf - NECK, cy - sw / 2);
-  p.lineTo(xf - NECK, cy - gw / 2);   p.lineTo(xf - sd, cy - gw / 2);
-  p.lineTo(xf - sd, cy + gw / 2);     p.lineTo(xf - NECK, cy + gw / 2);
-  p.lineTo(xf - NECK, cy + sw / 2);   p.lineTo(xf, cy + sw / 2);
+  p.moveTo(xf, cy - wHalf);
+  p.lineTo(xLip, cy - wHalf);
+  p.quadraticCurveTo(xFlare, cy - wHalf, xFlare, cy - gHalf);
+  p.lineTo(xDeep, cy - gHalf);
+  p.lineTo(xDeep, cy + gHalf);
+  p.lineTo(xFlare, cy + gHalf);
+  p.quadraticCurveTo(xFlare, cy + wHalf, xLip, cy + wHalf);
+  p.lineTo(xf, cy + wHalf);
   p.closePath(); s.holes.push(p);
 }
 function addSlotLeft(s: THREE.Shape, xf: number, cy: number, sw: number, gw: number, sd: number) {
+  const wHalf = sw / 2, gHalf = gw / 2;
+  const lip = Math.min(1.2, sd * 0.22);
+  const flare = Math.min(1.8, sd * 0.32);
+  const xLip = xf + lip;
+  const xFlare = xLip + flare;
+  const xDeep = xf + sd;
   const p = new THREE.Path();
-  p.moveTo(xf, cy + sw / 2);          p.lineTo(xf + NECK, cy + sw / 2);
-  p.lineTo(xf + NECK, cy + gw / 2);   p.lineTo(xf + sd, cy + gw / 2);
-  p.lineTo(xf + sd, cy - gw / 2);     p.lineTo(xf + NECK, cy - gw / 2);
-  p.lineTo(xf + NECK, cy - sw / 2);   p.lineTo(xf, cy - sw / 2);
+  p.moveTo(xf, cy + wHalf);
+  p.lineTo(xLip, cy + wHalf);
+  p.quadraticCurveTo(xFlare, cy + wHalf, xFlare, cy + gHalf);
+  p.lineTo(xDeep, cy + gHalf);
+  p.lineTo(xDeep, cy - gHalf);
+  p.lineTo(xFlare, cy - gHalf);
+  p.quadraticCurveTo(xFlare, cy - wHalf, xLip, cy - wHalf);
+  p.lineTo(xf, cy - wHalf);
   p.closePath(); s.holes.push(p);
 }
 
@@ -92,31 +131,87 @@ function buildProfileShape(section: ProfileSection): THREE.Shape {
     addSlotLeft(shape, -hw, cy, sw, gw, sd);
   }
 
-  // Center bore + inner hollow per module cell
+  // Bohrungen (Kernzüge) — die eigentliche Verstärkung um sie herum kommt als separate
+  // Boss-Ring-Extrusion (buildBoreBossShapes), da sie hier ohnehin im Hohlraum liegt.
   for (let i = 0; i < numW; i++) {
     for (let j = 0; j < numH; j++) {
       const cx = -hw + PITCH * (i + 0.5);
       const cy = -hh + PITCH * (j + 0.5);
-
       const bore = new THREE.Path();
       bore.absarc(cx, cy, boreRadius, 0, Math.PI * 2, true);
       shape.holes.push(bore);
-
-      const ie = PITCH / 2 - sd - wt * 0.3;
-      if (ie > boreRadius + 2.5) {
-        const ic = ie * 0.72;
-        const inn = new THREE.Path();
-        inn.moveTo(cx + ie, cy - ic); inn.lineTo(cx + ic, cy - ie);
-        inn.lineTo(cx - ic, cy - ie); inn.lineTo(cx - ie, cy - ic);
-        inn.lineTo(cx - ie, cy + ic); inn.lineTo(cx - ic, cy + ie);
-        inn.lineTo(cx + ic, cy + ie); inn.lineTo(cx + ie, cy + ic);
-        inn.closePath();
-        shape.holes.push(inn);
-      }
     }
   }
 
+  // Hohle Wandung statt Vollmaterial — echte Strangpressprofile sind innen hohl
+  // (vgl. roundedRectPath(PAD+wall, …) in den 2D-Querschnitten), nicht massiv mit
+  // einer winzigen Aussparung pro Zelle wie zuvor.
+  const wall = Math.min(wt, Math.min(w, h) / 2 - 1.5);
+  const innerR = Math.max(0, cornerR - wall);
+  const ihw = hw - wall, ihh = hh - wall;
+  const inner = new THREE.Path();
+  inner.moveTo(-ihw + innerR, -ihh);
+  inner.lineTo(ihw - innerR, -ihh);
+  inner.quadraticCurveTo(ihw, -ihh, ihw, -ihh + innerR);
+  inner.lineTo(ihw, ihh - innerR);
+  inner.quadraticCurveTo(ihw, ihh, ihw - innerR, ihh);
+  inner.lineTo(-ihw + innerR, ihh);
+  inner.quadraticCurveTo(-ihw, ihh, -ihw, ihh - innerR);
+  inner.lineTo(-ihw, -ihh + innerR);
+  inner.quadraticCurveTo(-ihw, -ihh, -ihw + innerR, -ihh);
+  shape.holes.push(inner);
+
   return shape;
+}
+
+/**
+ * Verstärkungsringe um jeden Kernzug (liegen als eigene Extrusion innerhalb des
+ * Hohlraums, vgl. Bohrungskreis in den 2D-Querschnitten). Volle Steg-Nachbildung wie
+ * getCellStruts (2D) ist hier bewusst ausgespart — die Ringe geben schon einen klaren,
+ * einfach zu bauenden Hinweis auf die Verstärkung ohne komplexe Boolesche Vereinigung.
+ */
+function buildBoreBossShapes(section: ProfileSection): THREE.Shape[] {
+  const { w, h, boreRadius } = section;
+  const PITCH = getModulePitch(section);
+  const hw = w / 2;
+  const hh = h / 2;
+  const numW = Math.max(1, Math.round(w / PITCH));
+  const numH = Math.max(1, Math.round(h / PITCH));
+  const bossR = boreRadius + 1.6;
+  const shapes: THREE.Shape[] = [];
+  for (let i = 0; i < numW; i++) {
+    for (let j = 0; j < numH; j++) {
+      const cx = -hw + PITCH * (i + 0.5);
+      const cy = -hh + PITCH * (j + 0.5);
+      const s = new THREE.Shape();
+      s.absarc(cx, cy, bossR, 0, Math.PI * 2, false);
+      const hole = new THREE.Path();
+      hole.absarc(cx, cy, boreRadius, 0, Math.PI * 2, true);
+      s.holes.push(hole);
+      shapes.push(s);
+    }
+  }
+  return shapes;
+}
+
+/** Wendet denselben Gehrungsschnitt (Kippung um die Y-Achse, s. SideRow/2D) auf eine
+ *  fertig extrudierte Geometrie an — von Hauptkörper und Boss-Ringen gemeinsam genutzt. */
+function applyMiterCut(geo: THREE.ExtrudeGeometry, length: number, angleStart: number, angleEnd: number) {
+  const tanS = Math.tan((angleStart * Math.PI) / 180);
+  const tanE = Math.tan((angleEnd * Math.PI) / 180);
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const arr = pos.array as Float32Array;
+  for (let i = 0; i < arr.length; i += 3) {
+    const x = arr[i];
+    const z = arr[i + 2];
+    if (z < length * 0.5) {
+      arr[i + 2] = Math.max(0, z + x * tanS);
+    } else {
+      arr[i + 2] = Math.min(length, z - x * tanE);
+    }
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
 }
 
 // ---------------------------------------------------------------------------
@@ -138,24 +233,17 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
   const geometry = useMemo(() => {
     const shape = buildProfileShape(section);
     const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
-
-    // Miter cuts: shift Z by X-position (tilt around Y-axis)
-    const tanS = Math.tan((angleStart * Math.PI) / 180);
-    const tanE = Math.tan((angleEnd   * Math.PI) / 180);
-    const pos = geo.attributes.position as THREE.BufferAttribute;
-    const arr = pos.array as Float32Array;
-    for (let i = 0; i < arr.length; i += 3) {
-      const x = arr[i];
-      const z = arr[i + 2];
-      if (z < length * 0.5) {
-        arr[i + 2] = Math.max(0, z + x * tanS);
-      } else {
-        arr[i + 2] = Math.min(length, z - x * tanE);
-      }
-    }
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
+    applyMiterCut(geo, length, angleStart, angleEnd);
     return geo;
+  }, [section, length, angleStart, angleEnd]);
+
+  // Verstärkungsringe um jeden Kernzug — eigene Extrusionen, derselbe Gehrungsschnitt.
+  const bossGeometries = useMemo(() => {
+    return buildBoreBossShapes(section).map((shape) => {
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
+      applyMiterCut(geo, length, angleStart, angleEnd);
+      return geo;
+    });
   }, [section, length, angleStart, angleEnd]);
 
   // Bore / hole cylinders — drilled THROUGH the profile from the chosen slot.
@@ -248,6 +336,11 @@ function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors 
       <mesh ref={meshRef} geometry={geometry} castShadow receiveShadow>
         <meshStandardMaterial color="#b8c8d8" metalness={0.88} roughness={0.15} envMapIntensity={1.4} />
       </mesh>
+      {bossGeometries.map((geo, i) => (
+        <mesh key={`boss-${i}`} geometry={geo} castShadow receiveShadow>
+          <meshStandardMaterial color="#b8c8d8" metalness={0.88} roughness={0.15} envMapIntensity={1.4} />
+        </mesh>
+      ))}
       {holeMeshes}
       {connectorMeshes}
     </group>
