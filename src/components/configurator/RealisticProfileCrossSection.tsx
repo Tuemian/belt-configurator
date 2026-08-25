@@ -6,6 +6,8 @@ interface Props {
   size?: number;
   rotate90?: boolean;
   className?: string;
+  /** Alvaris-Profilreihe für die Bild-Zuordnung (s. getAlvarisImage). Default 'A8'. */
+  series?: 'A5' | 'A6' | 'A8' | 'A10';
 }
 
 /**
@@ -14,13 +16,13 @@ interface Props {
  * dezente Bohrungs-Schattierung. Bewusst getrennt von `ProfileCrossSection2D`
  * (die interaktive Grafik des Zuschnittskonfigurators bleibt unverändert).
  */
-export function RealisticProfileCrossSection({ section, size = 140, rotate90 = false, className }: Props) {
+export function RealisticProfileCrossSection({ section, size = 140, rotate90 = false, className, series = 'A8' }: Props) {
   const { w, h, slotWidth, slotDepth, grooveWidth, cornerR, boreRadius, webThickness = 3 } = section;
   const MODULE = getModulePitch(section);
   const counts = getSlotCounts(section);
   const bores = getBoreCounts(section);
 
-  const alvarisImage = getAlvarisImage(section.sizeKey);
+  const alvarisImage = getAlvarisImage(section.sizeKey, series);
   const PAD = alvarisImage ? ALVARIS_PAD_MM : 16;
   const VB_W = w + PAD * 2;
   const VB_H = h + PAD * 2;

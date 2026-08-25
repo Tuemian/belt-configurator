@@ -20,10 +20,30 @@ export const ALVARIS_PAD_MM = ALVARIS_PAD_PX / ALVARIS_PX_PER_MM;
  * (40×120 statt 120×40 usw. — dieselbe Extrusion, nur gedreht verwendet). Für diese
  * Fälle liefern wir das Querformat-Bild plus `rotated: true`, damit der Aufrufer es
  * um 90° gedreht in seine (bereits korrekt hochformatige) Interaktions-viewBox legt.
+ *
+ * `series` wählt die Alvaris-Profilreihe (Nutbreite): A8 (Zuschnittskonfigurator hat
+ * nur Nut 8, daher Default) deckt "Profilreihe 8_40" plus die 30er-Untervariante aus
+ * "Profilreihe 8_30" ab (30×30/30×60/60×60 — gleiche Nutbreite, kleineres Rastermaß).
+ * A5 deckt "Profilreihe 5" ab (eigene, kleinere Nut-Geometrie, Bilder a5-*.png).
+ * A6 ist im Durchbiegungsrechner-Katalog eine eigene Reihe, entspricht bei Alvaris
+ * aber ebenfalls "Profilreihe 8_30" (Bilder a6-*.png, gleiche Kontur wie die
+ * 30er-Untervariante oben, nur unter dem NOVAMOTIS-Namen "A6" geführt).
+ * A10 hat keine Entsprechung auf dem Blatt — liefert immer null.
  */
-export function getAlvarisImage(sizeKey: string): { path: string; rotated: boolean } | null {
-  const native = new Set(['40x16', '40x40', '80x16', '80x40', '80x80', '160x16', '160x28']);
+export function getAlvarisImage(sizeKey: string, series: 'A5' | 'A6' | 'A8' | 'A10' = 'A8'): { path: string; rotated: boolean } | null {
+  if (series === 'A5') {
+    const a5Sizes = new Set(['20x20', '40x20', '20x10', '40x40', '40x10', '80x20']);
+    return a5Sizes.has(sizeKey) ? { path: `/profiles/cross-sections/a5-${sizeKey}.png`, rotated: false } : null;
+  }
+  if (series === 'A6') {
+    const a6Sizes = new Set(['30x30', '60x30', '60x60']);
+    return a6Sizes.has(sizeKey) ? { path: `/profiles/cross-sections/a6-${sizeKey}.png`, rotated: false } : null;
+  }
+  if (series === 'A10') return null;
+
+  const native = new Set(['30x30', '40x16', '40x40', '60x30', '60x60', '80x16', '80x40', '80x80', '160x16', '160x28']);
   const rotatedFrom: Record<string, string> = {
+    '30x60': '60x30',
     '40x80': '80x40', '40x120': '120x40', '40x160': '160x40',
     '80x120': '120x80', '80x160': '160x80',
   };

@@ -117,15 +117,15 @@ export default function DeflectionCalculator() {
                   {SERIES_ORDER.map(({ series: s, label }) => (
                     <button
                       key={s}
-                      disabled={s !== 'A8'}
+                      disabled={s === 'A10'}
                       onClick={() => changeSeries(s)}
-                      title={s === 'A8' ? label : 'Bald verfügbar'}
+                      title={s === 'A10' ? 'Bald verfügbar' : label}
                       className={`rounded-lg px-2 py-2 text-xs font-semibold border-2 transition-all ${
-                        s === 'A8'
-                          ? series === s
+                        s === 'A10'
+                          ? 'bg-white border-slate-200 text-muted-foreground opacity-40 cursor-not-allowed'
+                          : series === s
                             ? 'bg-primary/10 border-primary text-primary'
                             : 'bg-white border-slate-200 text-foreground hover:border-primary/40'
-                          : 'bg-white border-slate-200 text-muted-foreground opacity-40 cursor-not-allowed'
                       }`}
                     >
                       {s}
@@ -281,6 +281,7 @@ export default function DeflectionCalculator() {
                   section={section}
                   size={140}
                   rotate90={effectiveOrientation === 'upright'}
+                  series={profile.series}
                 />
                 <span className="text-xs text-muted-foreground mt-2 font-mono">{profile.label}</span>
               </CardContent>

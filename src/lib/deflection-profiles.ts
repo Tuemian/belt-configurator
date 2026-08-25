@@ -41,29 +41,25 @@ export interface DeflectionProfile {
 }
 
 export const DEFLECTION_PROFILES: DeflectionProfile[] = [
-  // --- A5 · Nut 5 -----------------------------------------------------------
-  { articleNumber: '1105002', label: 'Profil A5 16x8,5', series: 'A5', w: 16, h: 8.5, areaMm2: 82, massPerMeterKg: 0.22, iUprightMm4: 2_300, iFlatMm4: 600 },
+  // --- A5 · Nut 5 -------------------------------------------------------------
+  // Nur Größen aus "Profilreihe 5" auf dem Alvaris-Blatt (PROS.2020/4020/2010/4040/4010/8020);
+  // 16x8,5 und 60x20 waren nicht auf dem Blatt und wurden entfernt.
   { articleNumber: '1105003', label: 'Profil A5 20x10', series: 'A5', w: 20, h: 10, areaMm2: 129, massPerMeterKg: 0.35, iUprightMm4: 5_300, iFlatMm4: 1_200 },
   { articleNumber: '1105004', label: 'Profil A5 20x20', series: 'A5', w: 20, h: 20, areaMm2: 180, massPerMeterKg: 0.48, iUprightMm4: 7_200, iFlatMm4: 7_200 },
   { articleNumber: '1105011', label: 'Profil A5 40x10', series: 'A5', w: 40, h: 10, areaMm2: 239, massPerMeterKg: 0.65, iUprightMm4: 36_300, iFlatMm4: 2_400 },
   { articleNumber: '1105012', label: 'Profil A5 40x20', series: 'A5', w: 40, h: 20, areaMm2: 332, massPerMeterKg: 0.89, iUprightMm4: 51_400, iFlatMm4: 14_100 },
   { articleNumber: '1105016', label: 'Profil A5 40x40', series: 'A5', w: 40, h: 40, areaMm2: 514, massPerMeterKg: 1.39, iUprightMm4: 93_000, iFlatMm4: 93_000 },
-  { articleNumber: '1105017', label: 'Profil A5 60x20', series: 'A5', w: 60, h: 20, areaMm2: 476, massPerMeterKg: 1.28, iUprightMm4: 160_900, iFlatMm4: 20_600 },
   { articleNumber: '1105018', label: 'Profil A5 80x20', series: 'A5', w: 80, h: 20, areaMm2: 619, massPerMeterKg: 1.67, iUprightMm4: 360_800, iFlatMm4: 27_200 },
 
-  // --- A6 · Nut 6 -----------------------------------------------------------
-  { articleNumber: '1106009', label: 'Profil A6 30x12 leicht', series: 'A6', w: 30, h: 12, areaMm2: 158, massPerMeterKg: 0.43, iUprightMm4: 14_600, iFlatMm4: 2_500 },
-  { articleNumber: '1106017', label: 'Profil A6 60x12 leicht', series: 'A6', w: 60, h: 12, areaMm2: 298, massPerMeterKg: 0.81, iUprightMm4: 100_000, iFlatMm4: 5_300 },
+  // --- A6 · Nut 6 -------------------------------------------------------------
+  // Entspricht bei Alvaris "Profilreihe 8_30" (PRO8.3030/6030/6060) — nur diese drei
+  // Größen sind auf dem Blatt; 30x12/60x12/120x30/120x60 wurden entfernt.
   { articleNumber: '1106011', label: 'Profil A6 30x30 leicht', series: 'A6', w: 30, h: 30, areaMm2: 343, massPerMeterKg: 0.93, iUprightMm4: 29_000, iFlatMm4: 29_000 },
   { articleNumber: '1106010', label: 'Profil A6 30x30', series: 'A6', w: 30, h: 30, areaMm2: 467, massPerMeterKg: 1.26, iUprightMm4: 41_500, iFlatMm4: 41_500 },
   { articleNumber: '1106019', label: 'Profil A6 60x30 leicht', series: 'A6', w: 60, h: 30, areaMm2: 613, massPerMeterKg: 1.65, iUprightMm4: 212_200, iFlatMm4: 55_400 },
   { articleNumber: '1106018', label: 'Profil A6 60x30', series: 'A6', w: 60, h: 30, areaMm2: 847, massPerMeterKg: 2.29, iUprightMm4: 293_000, iFlatMm4: 79_200 },
   { articleNumber: '1106022', label: 'Profil A6 60x60 leicht', series: 'A6', w: 60, h: 60, areaMm2: 1001, massPerMeterKg: 2.70, iUprightMm4: 394_700, iFlatMm4: 394_700 },
   { articleNumber: '1106021', label: 'Profil A6 60x60', series: 'A6', w: 60, h: 60, areaMm2: 1333, massPerMeterKg: 3.60, iUprightMm4: 537_700, iFlatMm4: 537_700 },
-  { articleNumber: '1106006', label: 'Profil A6 120x30 leicht', series: 'A6', w: 120, h: 30, areaMm2: 1153, massPerMeterKg: 3.11, iUprightMm4: 1_526_500, iFlatMm4: 108_200 },
-  { articleNumber: '1106005', label: 'Profil A6 120x30', series: 'A6', w: 120, h: 30, areaMm2: 1600, massPerMeterKg: 4.32, iUprightMm4: 2_109_400, iFlatMm4: 154_200 },
-  { articleNumber: '1106008', label: 'Profil A6 120x60 leicht', series: 'A6', w: 120, h: 60, areaMm2: 1870, massPerMeterKg: 5.05, iUprightMm4: 2_596_500, iFlatMm4: 766_100 },
-  { articleNumber: '1106007', label: 'Profil A6 120x60', series: 'A6', w: 120, h: 60, areaMm2: 2484, massPerMeterKg: 6.71, iUprightMm4: 3_476_200, iFlatMm4: 1_027_100 },
 
   // --- A8 · Nut 8 -------------------------------------------------------------
   { articleNumber: '1108035', label: 'Profil A8 40x40 eco', series: 'A8', w: 40, h: 40, areaMm2: 507, massPerMeterKg: 1.37, iUprightMm4: 73_800, iFlatMm4: 73_800 },
