@@ -196,21 +196,24 @@ function buildBoreBossShapes(section: ProfileSection): THREE.Shape[] {
 
 /** Wendet denselben Gehrungsschnitt (Kippung um eine Achse, s. SideRow/2D) auf eine fertig
  *  extrudierte Geometrie an — von Hauptkörper und Boss-Ringen gemeinsam genutzt. axis='AC'
- *  kippt um die Y-Achse (Nut 1/3 laufen diagonal aus), 'BD' um die X-Achse (Nut 2/4). */
+ *  kippt um die Y-Achse (Nut 1/3 laufen diagonal aus), 'BD' um die X-Achse (Nut 2/4).
+ *
+ *  Die eingegebene Länge bleibt dabei IMMER exakt an einer festen Referenzkante erhalten
+ *  (Nut B bzw. A — Long Point, so wird in der Fertigung gemessen, s. SideRow/2D); nur die
+ *  gegenüberliegende Kante (Nut D bzw. C) läuft um den vollen Eckversatz länger oder kürzer
+ *  aus. Muss exakt dieselbe Referenzkante/denselben Betrag wie die 2D-Werkbank verwenden. */
 function applyMiterCut(geo: THREE.ExtrudeGeometry, length: number, angleStart: number, angleEnd: number, axis: AngleAxis = 'AC') {
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const arr = pos.array as Float32Array;
   const coordIdx = axis === 'BD' ? 1 : 0; // y statt x, wenn Nut 2/4 diagonal auslaufen sollen
+  geo.computeBoundingBox();
+  const refCoord = axis === 'BD' ? geo.boundingBox!.max.y : geo.boundingBox!.max.x;
   for (let i = 0; i < arr.length; i += 3) {
-    const c = arr[i + coordIdx];
+    const c = refCoord - arr[i + coordIdx];
     const z = arr[i + 2];
-    if (z < length * 0.5) {
-      arr[i + 2] = Math.max(0, z + c * tanS);
-    } else {
-      arr[i + 2] = Math.min(length, z - c * tanE);
-    }
+    arr[i + 2] = z < length * 0.5 ? z + c * tanS : z - c * tanE;
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();

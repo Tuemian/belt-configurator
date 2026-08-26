@@ -879,30 +879,29 @@ function SideRow({
   // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts.
   // Der Schnitt kippt real nur um EINE Achse (s. ProfileViewer3D). Welches Nutenpaar
   // quer dazu liegt (und damit diagonal ausläuft) ist wählbar (angleAxis), da es vom
-  // Anschluss abhängt, an welcher Nut ein anderes Profil anstößt. Das jeweils andere
-  // Paar liegt an fester Position, aber symmetrisch um die eingegebene (Kern-)Länge:
-  // eine Seite wird um den halben Eckversatz länger, die gegenüberliegende um denselben
-  // Betrag kürzer — physikalisch entspricht das genau der Kippung der einen Schnittebene.
+  // Anschluss abhängt, an welcher Nut ein anderes Profil anstößt. Die eingegebene Länge
+  // bleibt dabei IMMER exakt an einer festen Referenzkante erhalten (Long Point — so wird
+  // in der Fertigung gemessen); nur die gegenüberliegende Kante läuft um den vollen
+  // Eckversatz länger oder kürzer aus. Das gilt für die Diagonalfläche selbst genauso
+  // (ihre "untere" Kante — dieselbe Referenzkante — bleibt dort ebenfalls immer exakt auf
+  // Länge; nur die "obere" Kante bewegt sich) — beide Darstellungen müssen daher exakt
+  // denselben Referenz-Nutenpaar und -Betrag verwenden, s. ProfileViewer3D.
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const isDiagonal = angleAxis === 'BD' ? side.slot === 'B' || side.slot === 'D' : side.slot === 'A' || side.slot === 'C';
-  // Welche der beiden geraden Seiten gekürzt bzw. verlängert wird — willkürliche, aber
-  // konsistente Wahl je Achse (spiegelbildlich zueinander).
-  const straightShortSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
-  const straightLongSlot: SlotId = angleAxis === 'BD' ? 'A' : 'B';
+  // Welche der beiden geraden Seiten die bewegliche Kante ist (die andere bleibt die feste
+  // Referenzkante auf voller Nominallänge) — dieselbe Wahl wie die "untere"/"obere" Kante
+  // der Diagonalfläche (s. profilePath unten).
+  const movingSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
   const pitch = getModulePitch(section);
   const widthLanes = Math.max(1, Math.round(section.w / pitch));
   const heightLanes = Math.max(1, Math.round(section.h / pitch));
   // Versatzbetrag der geraden Seiten = ROW_PIX_HEIGHT, die die DIAGONALEN Seiten für
   // ihre eigene volle Breite/Höhe hätten (unabhängig von der ROW_PIX_HEIGHT der aktuell
-  // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann). Je zur Hälfte
-  // auf die gekürzte und die verlängerte Seite verteilt.
+  // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann).
   const diagonalRowPixHeight = LANE_PIX_HEIGHT * (angleAxis === 'BD' ? heightLanes : widthLanes);
-  const straightHalfS = (diagonalRowPixHeight * tanS) / 2;
-  const straightHalfE = (diagonalRowPixHeight * tanE) / 2;
-  const straightSign = side.slot === straightShortSlot ? 1 : side.slot === straightLongSlot ? -1 : 0;
-  const cutS = isDiagonal ? ROW_PIX_HEIGHT * tanS : straightSign * straightHalfS;
-  const cutE = isDiagonal ? ROW_PIX_HEIGHT * tanE : straightSign * straightHalfE;
+  const cutS = isDiagonal ? ROW_PIX_HEIGHT * tanS : side.slot === movingSlot ? diagonalRowPixHeight * tanS : 0;
+  const cutE = isDiagonal ? ROW_PIX_HEIGHT * tanE : side.slot === movingSlot ? diagonalRowPixHeight * tanE : 0;
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
   // Diagonale Seiten: echter Schrägschnitt. Gerade Seiten: gerade, gleichmäßig
