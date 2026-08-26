@@ -879,20 +879,22 @@ function SideRow({
   // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts.
   // Der Schnitt kippt real nur um EINE Achse (s. ProfileViewer3D). Welches Nutenpaar
   // quer dazu liegt (und damit diagonal ausläuft) ist wählbar (angleAxis), da es vom
-  // Anschluss abhängt, an welcher Nut ein anderes Profil anstößt. Die eingegebene Länge
-  // bleibt dabei IMMER exakt an einer festen Referenzkante erhalten (Long Point — so wird
-  // in der Fertigung gemessen); nur die gegenüberliegende Kante läuft um den vollen
-  // Eckversatz länger oder kürzer aus. Das gilt für die Diagonalfläche selbst genauso
-  // (ihre "untere" Kante — dieselbe Referenzkante — bleibt dort ebenfalls immer exakt auf
-  // Länge; nur die "obere" Kante bewegt sich) — beide Darstellungen müssen daher exakt
-  // denselben Referenz-Nutenpaar und -Betrag verwenden, s. ProfileViewer3D.
+  // Anschluss abhängt, an welcher Nut ein anderes Profil anstößt.
+  //
+  // Die eingegebene Länge darf NIE überschritten werden (kein Eckpunkt darf über sie
+  // hinausragen) — pro Ende (Anfang/Ende) bleibt daher immer GENAU eine der beiden Kanten
+  // exakt auf der Länge (Long Point) stehen, die andere läuft um den vollen Eckversatz
+  // nach innen aus. WELCHE der beiden Kanten das ist, hängt vom Vorzeichen des jeweiligen
+  // Winkels ab: positiv → "moving"-Kante (Nut D bzw. C) kürzer, "ref"-Kante (Nut B bzw. A)
+  // bleibt auf Länge; negativ → umgekehrt (spiegelbildlich um den jeweils anderen
+  // Eckpunkt). Beide Enden werden unabhängig voneinander behandelt (Anfang und Ende
+  // können unterschiedliche Vorzeichen haben). Muss exakt dieselbe Logik wie
+  // ProfileViewer3D.applyMiterCut verwenden.
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const isDiagonal = angleAxis === 'BD' ? side.slot === 'B' || side.slot === 'D' : side.slot === 'A' || side.slot === 'C';
-  // Welche der beiden geraden Seiten die bewegliche Kante ist (die andere bleibt die feste
-  // Referenzkante auf voller Nominallänge) — dieselbe Wahl wie die "untere"/"obere" Kante
-  // der Diagonalfläche (s. profilePath unten).
   const movingSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
+  const refSlot: SlotId = angleAxis === 'BD' ? 'A' : 'B';
   const pitch = getModulePitch(section);
   const widthLanes = Math.max(1, Math.round(section.w / pitch));
   const heightLanes = Math.max(1, Math.round(section.h / pitch));
@@ -900,14 +902,23 @@ function SideRow({
   // ihre eigene volle Breite/Höhe hätten (unabhängig von der ROW_PIX_HEIGHT der aktuell
   // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann).
   const diagonalRowPixHeight = LANE_PIX_HEIGHT * (angleAxis === 'BD' ? heightLanes : widthLanes);
-  const cutS = isDiagonal ? ROW_PIX_HEIGHT * tanS : side.slot === movingSlot ? diagonalRowPixHeight * tanS : 0;
-  const cutE = isDiagonal ? ROW_PIX_HEIGHT * tanE : side.slot === movingSlot ? diagonalRowPixHeight * tanE : 0;
+  const rawS = diagonalRowPixHeight * tanS; // Anfang, vorzeichenbehaftet
+  const rawE = diagonalRowPixHeight * tanE; // Ende, vorzeichenbehaftet
+  // Kürzungsbetrag je Ende und Kante (immer ≥ 0 — nie eine Verlängerung über die Länge hinaus).
+  const movingRecedeS = Math.max(0, rawS);
+  const movingRecedeE = Math.max(0, rawE);
+  const refRecedeS = Math.max(0, -rawS);
+  const refRecedeE = Math.max(0, -rawE);
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
-  // Diagonale Seiten: echter Schrägschnitt. Gerade Seiten: gerade, gleichmäßig
-  // verschobene Kante (kein Diagonal-Artefakt mehr über mehrere Spuren hinweg).
+  // Diagonale Seiten: "obere" Kante (Zeile-y=top) = moving-Nut, "untere" Kante (y=bot) =
+  // ref-Nut — je Ende (links=Ende, rechts=Anfang) unabhängig gekürzt. Gerade Seiten: die
+  // eigene Kante wird an beiden Enden um ihren jeweiligen Betrag gekürzt (kein Diagonal-
+  // Artefakt über mehrere Spuren hinweg).
+  const cutS = side.slot === movingSlot ? movingRecedeS : side.slot === refSlot ? refRecedeS : movingRecedeS;
+  const cutE = side.slot === movingSlot ? movingRecedeE : side.slot === refSlot ? refRecedeE : movingRecedeE;
   const profilePath = isDiagonal
-    ? `M ${cutE} ${top} L ${length - cutS} ${top} L ${length} ${bot} L 0 ${bot} Z`
+    ? `M ${movingRecedeE} ${top} L ${length - movingRecedeS} ${top} L ${length - refRecedeS} ${bot} L ${refRecedeE} ${bot} Z`
     : `M ${cutE} ${top} L ${length - cutS} ${top} L ${length - cutS} ${bot} L ${cutE} ${bot} Z`;
 
   // y-Position der Nut-Mitte je Lane (oberste Lane = Lane 0)

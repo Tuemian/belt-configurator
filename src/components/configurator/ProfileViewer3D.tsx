@@ -198,10 +198,12 @@ function buildBoreBossShapes(section: ProfileSection): THREE.Shape[] {
  *  extrudierte Geometrie an — von Hauptkörper und Boss-Ringen gemeinsam genutzt. axis='AC'
  *  kippt um die Y-Achse (Nut 1/3 laufen diagonal aus), 'BD' um die X-Achse (Nut 2/4).
  *
- *  Die eingegebene Länge bleibt dabei IMMER exakt an einer festen Referenzkante erhalten
- *  (Nut B bzw. A — Long Point, so wird in der Fertigung gemessen, s. SideRow/2D); nur die
- *  gegenüberliegende Kante (Nut D bzw. C) läuft um den vollen Eckversatz länger oder kürzer
- *  aus. Muss exakt dieselbe Referenzkante/denselben Betrag wie die 2D-Werkbank verwenden. */
+ *  Die eingegebene Länge darf an keinem Eckpunkt überschritten werden — pro Ende (Anfang/
+ *  Ende, unabhängig voneinander) bleibt daher immer GENAU eine der beiden Kanten (Nut B/A
+ *  bzw. D/C) exakt auf Länge (Long Point), die andere läuft um den vollen Eckversatz nach
+ *  innen aus. Welche das ist, hängt vom Vorzeichen des jeweiligen Winkels ab — bei negativem
+ *  Winkel spiegelbildlich um den jeweils anderen Eckpunkt. Muss exakt dieselbe Logik wie
+ *  SideRow (2D-Werkbank) verwenden. */
 function applyMiterCut(geo: THREE.ExtrudeGeometry, length: number, angleStart: number, angleEnd: number, axis: AngleAxis = 'AC') {
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
@@ -209,11 +211,15 @@ function applyMiterCut(geo: THREE.ExtrudeGeometry, length: number, angleStart: n
   const arr = pos.array as Float32Array;
   const coordIdx = axis === 'BD' ? 1 : 0; // y statt x, wenn Nut 2/4 diagonal auslaufen sollen
   geo.computeBoundingBox();
-  const refCoord = axis === 'BD' ? geo.boundingBox!.max.y : geo.boundingBox!.max.x;
+  const bbox = geo.boundingBox!;
+  const refCoord = axis === 'BD' ? bbox.max.y : bbox.max.x;    // Nut B bzw. A
+  const movingCoord = axis === 'BD' ? bbox.min.y : bbox.min.x; // Nut D bzw. C
+  const pivotS = tanS >= 0 ? refCoord : movingCoord;
+  const pivotE = tanE >= 0 ? refCoord : movingCoord;
   for (let i = 0; i < arr.length; i += 3) {
-    const c = refCoord - arr[i + coordIdx];
+    const c = arr[i + coordIdx];
     const z = arr[i + 2];
-    arr[i + 2] = z < length * 0.5 ? z + c * tanS : z - c * tanE;
+    arr[i + 2] = z < length * 0.5 ? z + (pivotS - c) * tanS : z - (pivotE - c) * tanE;
   }
   pos.needsUpdate = true;
   geo.computeVertexNormals();
