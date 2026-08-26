@@ -107,11 +107,19 @@ export interface EndTreatment {
   coreHole?: boolean;
 }
 
+/** Um welche Achse der Schrägschnitt kippt: 'AC' (Standard) lässt Nut 1/3 (oben/unten)
+ *  diagonal auslaufen, Nut 2/4 (rechts/links) bleiben gerade (mit Referenzlinie) — 'BD'
+ *  vertauscht das. Welche Seite den Schrägschnitt zeigen soll, hängt vom Anschluss ab
+ *  (z. B. welche Nut an ein anderes Profil stößt), daher wählbar statt fest verdrahtet. */
+export type AngleAxis = 'AC' | 'BD';
+
 export interface ProfileConfig {
   sectionId: string;
   length: number;
   angleStart: number;
   angleEnd: number;
+  /** Default 'AC', wenn nicht gesetzt (bisheriges Verhalten). */
+  angleAxis?: AngleAxis;
   endStart: EndTreatment;
   endEnd: EndTreatment;
   holes: ProfileHole[];

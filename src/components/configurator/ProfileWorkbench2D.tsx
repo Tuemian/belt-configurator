@@ -23,6 +23,7 @@ import {
   type ConnectorType,
   type SlotId,
   type EndTreatment,
+  type AngleAxis,
 } from '@/lib/profile-configurator-types';
 import { ProfileCrossSection2D } from './ProfileCrossSection2D';
 import { NumericInput } from './NumericInput';
@@ -44,6 +45,8 @@ interface Props {
   length: number;
   angleStart: number;
   angleEnd: number;
+  /** Um welche Achse der Schrägschnitt kippt (default 'AC', s. profile-configurator-types). */
+  angleAxis?: AngleAxis;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
   endStart?: EndTreatment;
@@ -101,6 +104,7 @@ export function ProfileWorkbench2D({
   length,
   angleStart,
   angleEnd,
+  angleAxis = 'AC',
   holes,
   connectors,
   endStart,
@@ -561,6 +565,7 @@ export function ProfileWorkbench2D({
                   onViewChange={(nextZoom, nextPanMm) => { setZoom(nextZoom); setPanMm(nextPanMm); }}
                   angleStart={angleStart}
                   angleEnd={angleEnd}
+                  angleAxis={angleAxis}
                   holes={sideHoles}
                   ghostHoles={ghostHoles}
                   connectors={sideConns}
@@ -796,6 +801,7 @@ interface SideRowProps {
   onViewChange: (zoom: number, panMm: number) => void;
   angleStart: number;
   angleEnd: number;
+  angleAxis?: AngleAxis;
   holes: ProfileHole[];
   /** Bohrungen der gegenüberliegenden Seite – nur als Geister-Markierung anzeigen */
   ghostHoles?: ProfileHole[];
@@ -815,7 +821,7 @@ interface SideRowProps {
 }
 
 function SideRow({
-  section, side, length, zoom, panMm, onViewChange, angleStart, angleEnd, holes, ghostHoles = [], connectors, tool,
+  section, side, length, zoom, panMm, onViewChange, angleStart, angleEnd, angleAxis = 'AC', holes, ghostHoles = [], connectors, tool,
   activeModuleIndex, multiSelected, selectedId, draggingId, hoverInfo,
   onHover, onClick, onDragStart, onDragMove, onDragEnd, onSelectMarker,
 }: SideRowProps) {
@@ -871,25 +877,32 @@ function SideRow({
   const viewBoxWidth = visibleWidthMm + marginMm * 2;
 
   // Schrägschnitt — wegen der Spiegelung ist der "Anfang"-Schnitt jetzt rechts.
-  // Der Schnitt kippt real nur um EINE Achse (s. ProfileViewer3D: Z variiert mit der
-  // Cross-Section-X-Position, nicht mit Y). Seiten A/C liegen quer zu dieser Achse und
-  // zeigen daher einen echten Diagonalschnitt über die volle Profilbreite. Seiten B/D
-  // liegen an einer FESTEN X-Position: B (x=+w/2) ist die unbeschnittene Referenzkante
-  // (bleibt exakt auf voller Länge), D (x=−w/2) wird um denselben Betrag gekürzt wie die
-  // äußerste Ecke von A/C — aber gleichmäßig über die ganze Seite, nicht diagonal.
+  // Der Schnitt kippt real nur um EINE Achse (s. ProfileViewer3D). Welches Nutenpaar
+  // quer dazu liegt (und damit diagonal ausläuft) ist wählbar (angleAxis), da es vom
+  // Anschluss abhängt, an welcher Nut ein anderes Profil anstößt. Das jeweils andere
+  // Paar liegt an fester Position: eine Seite ist die unbeschnittene Referenzkante
+  // (volle Länge), die andere wird um denselben Betrag wie die äußerste Diagonal-Ecke
+  // gerade (nicht diagonal) gekürzt.
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
-  const isAC = side.slot === 'A' || side.slot === 'C';
+  const isDiagonal = angleAxis === 'BD' ? side.slot === 'B' || side.slot === 'D' : side.slot === 'A' || side.slot === 'C';
+  // Welche der beiden geraden Seiten gekürzt wird (die andere bleibt Referenzkante) —
+  // willkürliche, aber konsistente Wahl je Achse.
+  const shortenedSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
   const pitch = getModulePitch(section);
   const widthLanes = Math.max(1, Math.round(section.w / pitch));
-  const acRowPixHeight = LANE_PIX_HEIGHT * widthLanes;
-  const cutS = isAC ? ROW_PIX_HEIGHT * tanS : side.slot === 'D' ? acRowPixHeight * tanS : 0;
-  const cutE = isAC ? ROW_PIX_HEIGHT * tanE : side.slot === 'D' ? acRowPixHeight * tanE : 0;
+  const heightLanes = Math.max(1, Math.round(section.h / pitch));
+  // Kürzungsbetrag der geraden Seiten = ROW_PIX_HEIGHT, die die DIAGONALEN Seiten für
+  // ihre eigene volle Breite/Höhe hätten (unabhängig von der ROW_PIX_HEIGHT der aktuell
+  // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann).
+  const diagonalRowPixHeight = LANE_PIX_HEIGHT * (angleAxis === 'BD' ? heightLanes : widthLanes);
+  const cutS = isDiagonal ? ROW_PIX_HEIGHT * tanS : side.slot === shortenedSlot ? diagonalRowPixHeight * tanS : 0;
+  const cutE = isDiagonal ? ROW_PIX_HEIGHT * tanE : side.slot === shortenedSlot ? diagonalRowPixHeight * tanE : 0;
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
-  // A/C: Diagonalschnitt (unverändert). B/D: gerade, gleichmäßig verschobene Kante
-  // (kein Diagonal-Artefakt mehr über mehrere Spuren hinweg).
-  const profilePath = isAC
+  // Diagonale Seiten: echter Schrägschnitt. Gerade Seiten: gerade, gleichmäßig
+  // verschobene Kante (kein Diagonal-Artefakt mehr über mehrere Spuren hinweg).
+  const profilePath = isDiagonal
     ? `M ${cutE} ${top} L ${length - cutS} ${top} L ${length} ${bot} L 0 ${bot} Z`
     : `M ${cutE} ${top} L ${length - cutS} ${top} L ${length - cutS} ${bot} L ${cutE} ${bot} Z`;
 
@@ -1062,13 +1075,14 @@ function SideRow({
           <g transform={`translate(${PAD_X}, 0)`}>
             <path d={profilePath} fill={`url(#alu-${side.slot})`} stroke="#475569" strokeWidth="0.6" />
 
-            {/* Referenzlinie bei Schrägschnitt: B/D werden gerade gekürzt (kein Diagonalschnitt,
-                da sie quer zur Kippachse liegen — s. profilePath oben), aber eine gestrichelte
-                Linie zeigt, wo die Kante ohne Schrägschnitt geendet hätte. */}
-            {!isAC && cutE > 0 && (
+            {/* Referenzlinie bei Schrägschnitt: die geraden Seiten werden gerade gekürzt (kein
+                Diagonalschnitt, da sie quer zur gewählten Kippachse liegen — s. profilePath
+                oben), aber eine gestrichelte Linie zeigt, wo die Kante ohne Schrägschnitt
+                geendet hätte. */}
+            {!isDiagonal && cutE > 0 && (
               <line x1={0} y1={top} x2={0} y2={bot} stroke="#94a3b8" strokeWidth="0.4" strokeDasharray="1.5 1.5" />
             )}
-            {!isAC && cutS > 0 && (
+            {!isDiagonal && cutS > 0 && (
               <line x1={length} y1={top} x2={length} y2={bot} stroke="#94a3b8" strokeWidth="0.4" strokeDasharray="1.5 1.5" />
             )}
 

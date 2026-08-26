@@ -344,6 +344,31 @@ export default function ProfileConfigurator() {
                 </div>
 
                 <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Ausrichtung des Schrägschnitts</Label>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
+                    Welche Nuten diagonal auslaufen, hängt vom Anschluss ab (z. B. an welche Nut ein anderes Profil stößt).
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(['AC', 'BD'] as const).map((axis) => {
+                      const isActive = (config.angleAxis ?? 'AC') === axis;
+                      return (
+                        <button
+                          key={axis}
+                          onClick={() => update({ angleAxis: axis })}
+                          className={`rounded-md px-2 py-2 text-xs font-semibold border transition-colors ${
+                            isActive
+                              ? 'bg-primary/10 border-primary text-primary'
+                              : 'bg-white border-slate-200 text-foreground hover:border-primary/50 hover:bg-slate-50'
+                          }`}
+                        >
+                          Nut {axis === 'AC' ? '1 / 3' : '2 / 4'} diagonal
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
                   <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Stirnseiten-Gewinde</Label>
                   <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
                     Detail-Auswahl direkt im 2D-Editor (Klick auf Kernzug = M8-Gewinde).
@@ -545,6 +570,7 @@ export default function ProfileConfigurator() {
                     length={config.length}
                     angleStart={config.angleStart}
                     angleEnd={config.angleEnd}
+                    angleAxis={config.angleAxis}
                     holes={config.holes}
                     connectors={config.connectors}
                     endStart={config.endStart}
@@ -561,6 +587,7 @@ export default function ProfileConfigurator() {
                       length={config.length}
                       angleStart={config.angleStart}
                       angleEnd={config.angleEnd}
+                      angleAxis={config.angleAxis}
                       holes={config.holes}
                       connectors={config.connectors}
                     />

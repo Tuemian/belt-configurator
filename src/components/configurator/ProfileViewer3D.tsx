@@ -2,7 +2,7 @@ import { useRef, useMemo, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId } from '@/lib/profile-configurator-types';
+import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
 
 // Slot direction vectors in cross-section space (X right, Y up).
 // Slot A=top, B=right, C=bottom, D=left. We need both an outward normal
@@ -194,20 +194,22 @@ function buildBoreBossShapes(section: ProfileSection): THREE.Shape[] {
   return shapes;
 }
 
-/** Wendet denselben Gehrungsschnitt (Kippung um die Y-Achse, s. SideRow/2D) auf eine
- *  fertig extrudierte Geometrie an — von Hauptkörper und Boss-Ringen gemeinsam genutzt. */
-function applyMiterCut(geo: THREE.ExtrudeGeometry, length: number, angleStart: number, angleEnd: number) {
+/** Wendet denselben Gehrungsschnitt (Kippung um eine Achse, s. SideRow/2D) auf eine fertig
+ *  extrudierte Geometrie an — von Hauptkörper und Boss-Ringen gemeinsam genutzt. axis='AC'
+ *  kippt um die Y-Achse (Nut 1/3 laufen diagonal aus), 'BD' um die X-Achse (Nut 2/4). */
+function applyMiterCut(geo: THREE.ExtrudeGeometry, length: number, angleStart: number, angleEnd: number, axis: AngleAxis = 'AC') {
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const arr = pos.array as Float32Array;
+  const coordIdx = axis === 'BD' ? 1 : 0; // y statt x, wenn Nut 2/4 diagonal auslaufen sollen
   for (let i = 0; i < arr.length; i += 3) {
-    const x = arr[i];
+    const c = arr[i + coordIdx];
     const z = arr[i + 2];
     if (z < length * 0.5) {
-      arr[i + 2] = Math.max(0, z + x * tanS);
+      arr[i + 2] = Math.max(0, z + c * tanS);
     } else {
-      arr[i + 2] = Math.min(length, z - x * tanE);
+      arr[i + 2] = Math.min(length, z - c * tanE);
     }
   }
   pos.needsUpdate = true;
@@ -223,28 +225,29 @@ interface ProfileMeshProps {
   length: number;
   angleStart: number;
   angleEnd: number;
+  angleAxis?: AngleAxis;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
 }
 
-function ProfileMesh({ section, length, angleStart, angleEnd, holes, connectors }: ProfileMeshProps) {
+function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', holes, connectors }: ProfileMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const geometry = useMemo(() => {
     const shape = buildProfileShape(section);
     const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
-    applyMiterCut(geo, length, angleStart, angleEnd);
+    applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
     return geo;
-  }, [section, length, angleStart, angleEnd]);
+  }, [section, length, angleStart, angleEnd, angleAxis]);
 
   // Verstärkungsringe um jeden Kernzug — eigene Extrusionen, derselbe Gehrungsschnitt.
   const bossGeometries = useMemo(() => {
     return buildBoreBossShapes(section).map((shape) => {
       const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
-      applyMiterCut(geo, length, angleStart, angleEnd);
+      applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
       return geo;
     });
-  }, [section, length, angleStart, angleEnd]);
+  }, [section, length, angleStart, angleEnd, angleAxis]);
 
   // Bore / hole cylinders — drilled THROUGH the profile from the chosen slot.
   // The hole orientation depends on which slot it sits on:
@@ -356,11 +359,12 @@ interface SceneProps {
   length: number;
   angleStart: number;
   angleEnd: number;
+  angleAxis?: AngleAxis;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
 }
 
-function Scene({ section, length, angleStart, angleEnd, holes, connectors }: SceneProps) {
+function Scene({ section, length, angleStart, angleEnd, angleAxis, holes, connectors }: SceneProps) {
   const maxDim = Math.max(section.w, section.h, length);
   return (
     <>
@@ -375,6 +379,7 @@ function Scene({ section, length, angleStart, angleEnd, holes, connectors }: Sce
         length={length}
         angleStart={angleStart}
         angleEnd={angleEnd}
+        angleAxis={angleAxis}
         holes={holes}
         connectors={connectors}
       />
@@ -397,11 +402,12 @@ export interface ProfileViewer3DProps {
   length: number;
   angleStart: number;
   angleEnd: number;
+  angleAxis?: AngleAxis;
   holes: ProfileHole[];
   connectors: ProfileConnector[];
 }
 
-export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes, connectors }: ProfileViewer3DProps) {
+export function ProfileViewer3D({ section, length, angleStart, angleEnd, angleAxis, holes, connectors }: ProfileViewer3DProps) {
   return (
     <div className="relative w-full h-full">
       <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center gap-1.5 rounded-full bg-white/85 backdrop-blur px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm border border-slate-200">
@@ -420,6 +426,7 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, holes, 
           length={length}
           angleStart={angleStart}
           angleEnd={angleEnd}
+          angleAxis={angleAxis}
           holes={holes}
           connectors={connectors}
         />
