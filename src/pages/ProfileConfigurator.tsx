@@ -306,7 +306,7 @@ export default function ProfileConfigurator() {
             <AccordionContent className="pt-1 pb-5">
               <div className="space-y-5">
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Schrägschnitte (0–45°)</Label>
+                  <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Schrägschnitte (−60° bis +60°)</Label>
                   <div className="grid grid-cols-2 gap-4">
                     {(['Anfang', 'Ende'] as const).map((end) => {
                       const key = end === 'Anfang' ? 'angleStart' : 'angleEnd';
@@ -317,24 +317,24 @@ export default function ProfileConfigurator() {
                             <span className="text-xs font-medium text-foreground">{end}</span>
                             <div className="flex items-center gap-1">
                               <NumericInput
-                                min={0}
-                                max={45}
+                                min={-60}
+                                max={60}
                                 step={1}
                                 value={val}
-                                onCommit={(v) => update({ [key]: Math.max(0, Math.min(45, v)) })}
+                                onCommit={(v) => update({ [key]: Math.max(-60, Math.min(60, v)) })}
                                 className="h-8 w-14 text-right text-sm"
                               />
                               <span className="text-muted-foreground text-xs">°</span>
                             </div>
                           </div>
                           <Slider
-                            min={0}
-                            max={45}
+                            min={-60}
+                            max={60}
                             step={1}
                             value={[val]}
                             onValueChange={([v]) => update({ [key]: v })}
                           />
-                          {val > 0 && (
+                          {val !== 0 && (
                             <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
                           )}
                         </div>

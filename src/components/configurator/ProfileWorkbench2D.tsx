@@ -880,24 +880,29 @@ function SideRow({
   // Der Schnitt kippt real nur um EINE Achse (s. ProfileViewer3D). Welches Nutenpaar
   // quer dazu liegt (und damit diagonal ausläuft) ist wählbar (angleAxis), da es vom
   // Anschluss abhängt, an welcher Nut ein anderes Profil anstößt. Das jeweils andere
-  // Paar liegt an fester Position: eine Seite ist die unbeschnittene Referenzkante
-  // (volle Länge), die andere wird um denselben Betrag wie die äußerste Diagonal-Ecke
-  // gerade (nicht diagonal) gekürzt.
+  // Paar liegt an fester Position, aber symmetrisch um die eingegebene (Kern-)Länge:
+  // eine Seite wird um den halben Eckversatz länger, die gegenüberliegende um denselben
+  // Betrag kürzer — physikalisch entspricht das genau der Kippung der einen Schnittebene.
   const tanS = Math.tan((angleStart * Math.PI) / 180);
   const tanE = Math.tan((angleEnd * Math.PI) / 180);
   const isDiagonal = angleAxis === 'BD' ? side.slot === 'B' || side.slot === 'D' : side.slot === 'A' || side.slot === 'C';
-  // Welche der beiden geraden Seiten gekürzt wird (die andere bleibt Referenzkante) —
-  // willkürliche, aber konsistente Wahl je Achse.
-  const shortenedSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
+  // Welche der beiden geraden Seiten gekürzt bzw. verlängert wird — willkürliche, aber
+  // konsistente Wahl je Achse (spiegelbildlich zueinander).
+  const straightShortSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
+  const straightLongSlot: SlotId = angleAxis === 'BD' ? 'A' : 'B';
   const pitch = getModulePitch(section);
   const widthLanes = Math.max(1, Math.round(section.w / pitch));
   const heightLanes = Math.max(1, Math.round(section.h / pitch));
-  // Kürzungsbetrag der geraden Seiten = ROW_PIX_HEIGHT, die die DIAGONALEN Seiten für
+  // Versatzbetrag der geraden Seiten = ROW_PIX_HEIGHT, die die DIAGONALEN Seiten für
   // ihre eigene volle Breite/Höhe hätten (unabhängig von der ROW_PIX_HEIGHT der aktuell
-  // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann).
+  // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann). Je zur Hälfte
+  // auf die gekürzte und die verlängerte Seite verteilt.
   const diagonalRowPixHeight = LANE_PIX_HEIGHT * (angleAxis === 'BD' ? heightLanes : widthLanes);
-  const cutS = isDiagonal ? ROW_PIX_HEIGHT * tanS : side.slot === shortenedSlot ? diagonalRowPixHeight * tanS : 0;
-  const cutE = isDiagonal ? ROW_PIX_HEIGHT * tanE : side.slot === shortenedSlot ? diagonalRowPixHeight * tanE : 0;
+  const straightHalfS = (diagonalRowPixHeight * tanS) / 2;
+  const straightHalfE = (diagonalRowPixHeight * tanE) / 2;
+  const straightSign = side.slot === straightShortSlot ? 1 : side.slot === straightLongSlot ? -1 : 0;
+  const cutS = isDiagonal ? ROW_PIX_HEIGHT * tanS : straightSign * straightHalfS;
+  const cutE = isDiagonal ? ROW_PIX_HEIGHT * tanE : straightSign * straightHalfE;
   const top = PAD_Y + RULER_H;
   const bot = top + ROW_PIX_HEIGHT;
   // Diagonale Seiten: echter Schrägschnitt. Gerade Seiten: gerade, gleichmäßig
@@ -1075,14 +1080,14 @@ function SideRow({
           <g transform={`translate(${PAD_X}, 0)`}>
             <path d={profilePath} fill={`url(#alu-${side.slot})`} stroke="#475569" strokeWidth="0.6" />
 
-            {/* Referenzlinie bei Schrägschnitt: die geraden Seiten werden gerade gekürzt (kein
-                Diagonalschnitt, da sie quer zur gewählten Kippachse liegen — s. profilePath
+            {/* Referenzlinie bei Schrägschnitt: die geraden Seiten werden gerade gekürzt/verlängert
+                (kein Diagonalschnitt, da sie quer zur gewählten Kippachse liegen — s. profilePath
                 oben), aber eine gestrichelte Linie zeigt, wo die Kante ohne Schrägschnitt
-                geendet hätte. */}
-            {!isDiagonal && cutE > 0 && (
+                geendet hätte (die eingegebene Kernlänge). */}
+            {!isDiagonal && cutE !== 0 && (
               <line x1={0} y1={top} x2={0} y2={bot} stroke="#94a3b8" strokeWidth="0.4" strokeDasharray="1.5 1.5" />
             )}
-            {!isDiagonal && cutS > 0 && (
+            {!isDiagonal && cutS !== 0 && (
               <line x1={length} y1={top} x2={length} y2={bot} stroke="#94a3b8" strokeWidth="0.4" strokeDasharray="1.5 1.5" />
             )}
 
