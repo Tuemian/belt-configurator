@@ -1062,6 +1062,16 @@ function SideRow({
           <g transform={`translate(${PAD_X}, 0)`}>
             <path d={profilePath} fill={`url(#alu-${side.slot})`} stroke="#475569" strokeWidth="0.6" />
 
+            {/* Referenzlinie bei Schrägschnitt: B/D werden gerade gekürzt (kein Diagonalschnitt,
+                da sie quer zur Kippachse liegen — s. profilePath oben), aber eine gestrichelte
+                Linie zeigt, wo die Kante ohne Schrägschnitt geendet hätte. */}
+            {!isAC && cutE > 0 && (
+              <line x1={0} y1={top} x2={0} y2={bot} stroke="#94a3b8" strokeWidth="0.4" strokeDasharray="1.5 1.5" />
+            )}
+            {!isAC && cutS > 0 && (
+              <line x1={length} y1={top} x2={length} y2={bot} stroke="#94a3b8" strokeWidth="0.4" strokeDasharray="1.5 1.5" />
+            )}
+
             {/* Lane center lines + lane labels + lane highlights */}
             {side.lanes.map((lane, idx) => {
               const cy = laneCy(idx);
