@@ -460,7 +460,7 @@ export function ProfileWorkbench2D({
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
           {/* Left: end face "Ende" */}
           {onUpdateEndEnd && (
-            <aside className="w-full lg:w-40 shrink-0 max-h-36 lg:max-h-none border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+            <aside className="w-full lg:w-56 shrink-0 max-h-48 lg:max-h-none border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Ende</div>
               <EndFacePanel
                 label="Ende"
@@ -507,7 +507,7 @@ export function ProfileWorkbench2D({
                       setSelectedId(null);
                     }
                   }}
-                  size={88}
+                  size={128}
                   showLabels
                   rotate90={section.w > section.h}
                 />
@@ -610,7 +610,7 @@ export function ProfileWorkbench2D({
 
           {/* Right: end face "Anfang" */}
           {onUpdateEndStart && (
-            <aside className="w-full lg:w-40 shrink-0 max-h-36 lg:max-h-none border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
+            <aside className="w-full lg:w-56 shrink-0 max-h-48 lg:max-h-none border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50 overflow-y-auto p-2 space-y-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center">Stirnseite Anfang</div>
               <EndFacePanel
                 label="Anfang"
@@ -1433,7 +1433,7 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
           onSelectSlot={() => { /* keine Nutwahl hier */ }}
           onSelectBore={toggleBore}
           activeBores={activeBores}
-          size={140}
+          size={200}
           showLabels
           rotate90={section.w > section.h}
         />

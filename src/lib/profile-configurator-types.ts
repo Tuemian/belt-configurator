@@ -356,11 +356,19 @@ export function getSlotCenters(section: ProfileSection, slot: SlotId): number[] 
 // Kernzüge / Mittelbohrungen (blaue Zahlen in Kreisen):
 //   zeilenweise von oben-links nach unten-rechts (Spalte i, Zeile j)
 
+/** Sehr flache Profile, bei denen laut Alvaris-Referenzbild auf der schmalen Seite (B/D)
+ *  GAR KEINE Nut sitzt (die generische Rasterformel unten würde dort sonst fälschlich
+ *  mindestens 1 Nut annehmen — vermessen anhand der Referenzbilder: kein Nut-Ausschnitt
+ *  auf der linken/rechten Kante, nur die glatte, abgerundete Profilseite). */
+const NO_SIDE_SLOTS_A8 = new Set(['40x16', '80x16', '160x16', '160x28']);
+const NO_SIDE_SLOTS_A5 = new Set(['20x10', '40x10']);
+
 /** Anzahl Nuten je Seite (basierend auf modulePitch) */
 export function getSlotCounts(section: ProfileSection): { A: number; B: number; C: number; D: number } {
   const pitch = getModulePitch(section);
   const nW = Math.max(1, Math.round(section.w / pitch));
-  const nH = Math.max(1, Math.round(section.h / pitch));
+  const noSideSlots = section.nut === 'A5' ? NO_SIDE_SLOTS_A5.has(section.sizeKey) : NO_SIDE_SLOTS_A8.has(section.sizeKey);
+  const nH = noSideSlots ? 0 : Math.max(1, Math.round(section.h / pitch));
   return { A: nW, B: nH, C: nW, D: nH };
 }
 

@@ -114,44 +114,50 @@ export function ProfileCrossSection2D({
   // auf Basis der (beim echten Bild nicht mehr zutreffenden) Schema-Nuttiefe — sonst landen sie
   // je nach tatsächlicher Nuttiefe im Bild mitten auf der Zeichnung statt sauber daneben.
   const labelOutside = !!alvarisImage;
+  // Zellgröße je Achse = tatsächliche Breite/Höhe geteilt durch die Nutanzahl auf dieser
+  // Seite — NICHT das feste Rastermaß (MODULE). Bei Profilen, deren Höhe/Breite kein
+  // Vielfaches des Rastermaßes ist (z. B. 16/28mm hohe Profile), würde MODULE die Position
+  // sonst außerhalb der Zeichnung schieben (derselbe Fehler wie bei den Kernzügen).
+  const cellW = w / counts.A;
+  const cellH = h / counts.B;
   for (let i = 0; i < counts.A; i++) {
-    const cx = PAD + MODULE * (i + 0.5);
+    const cx = PAD + cellW * (i + 0.5);
     slots.push({
       slot: 'A', moduleIndex: i,
       number: getSlotNumber(section, 'A', i),
       slotPath: tSlotPathDown(cx, PAD, slotWidth, grooveWidth, slotDepth),
       label: { x: cx, y: labelOutside ? -2.5 : PAD + slotDepth + fs * 0.9 },
-      hit: { x: cx - MODULE / 2, y: PAD - HIT, w: MODULE, h: HIT + slotDepth + fs * 1.4 },
+      hit: { x: cx - cellW / 2, y: PAD - HIT, w: cellW, h: HIT + slotDepth + fs * 1.4 },
     });
   }
   for (let j = 0; j < counts.B; j++) {
-    const cy = PAD + MODULE * (j + 0.5);
+    const cy = PAD + cellH * (j + 0.5);
     slots.push({
       slot: 'B', moduleIndex: j,
       number: getSlotNumber(section, 'B', j),
       slotPath: tSlotPathHorizontal(cy, PAD + w, slotWidth, grooveWidth, slotDepth, true),
       label: { x: labelOutside ? IMG_W + 2 + fs * 0.8 : PAD + w - slotDepth - fs * 0.7, y: cy + fs * 0.35 },
-      hit: { x: PAD + w - slotDepth - fs * 1.4, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
+      hit: { x: PAD + w - slotDepth - fs * 1.4, y: cy - cellH / 2, w: HIT + slotDepth + fs * 1.4, h: cellH },
     });
   }
   for (let i = 0; i < counts.C; i++) {
-    const cx = PAD + MODULE * (i + 0.5);
+    const cx = PAD + cellW * (i + 0.5);
     slots.push({
       slot: 'C', moduleIndex: i,
       number: getSlotNumber(section, 'C', i),
       slotPath: tSlotPathUp(cx, PAD + h, slotWidth, grooveWidth, slotDepth),
       label: { x: cx, y: labelOutside ? IMG_H + fs * 1.0 + 1 : PAD + h - slotDepth - fs * 0.4 },
-      hit: { x: cx - MODULE / 2, y: PAD + h - slotDepth - fs * 0.4, w: MODULE, h: HIT + slotDepth + fs * 0.6 },
+      hit: { x: cx - cellW / 2, y: PAD + h - slotDepth - fs * 0.4, w: cellW, h: HIT + slotDepth + fs * 0.6 },
     });
   }
   for (let j = 0; j < counts.D; j++) {
-    const cy = PAD + MODULE * (j + 0.5);
+    const cy = PAD + cellH * (j + 0.5);
     slots.push({
       slot: 'D', moduleIndex: j,
       number: getSlotNumber(section, 'D', j),
       slotPath: tSlotPathHorizontal(cy, PAD, slotWidth, grooveWidth, slotDepth, false),
       label: { x: labelOutside ? -2 - fs * 0.8 : PAD + slotDepth + fs * 0.7, y: cy + fs * 0.35 },
-      hit: { x: PAD - HIT, y: cy - MODULE / 2, w: HIT + slotDepth + fs * 1.4, h: MODULE },
+      hit: { x: PAD - HIT, y: cy - cellH / 2, w: HIT + slotDepth + fs * 1.4, h: cellH },
     });
   }
 
