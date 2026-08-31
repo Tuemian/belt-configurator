@@ -16,6 +16,7 @@ import {
   getSlotCounts,
   getSlotNumber,
   getBorePositions,
+  getMaterialZRange,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
@@ -202,6 +203,11 @@ export function ProfileWorkbench2D({
   // Selected helpers
   const selectedHole = holes.find((h) => h.id === selectedId);
   const selectedConn = connectors.find((c) => c.id === selectedId);
+  // Gültiger z-Bereich der ausgewählten Bohrung unter Berücksichtigung des Schrägschnitts
+  // an ihrer Spur — begrenzt Positions-Eingabefeld und Schnell-Positions-Knöpfe.
+  const selectedHoleRange = selectedHole
+    ? getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, selectedHole.slot, selectedHole.moduleIndex ?? 0)
+    : null;
 
   const updateHole = (patch: Partial<ProfileHole>) => {
     if (!selectedHole) return;
@@ -218,7 +224,9 @@ export function ProfileWorkbench2D({
   };
   const duplicateSelected = () => {
     if (selectedHole) {
-      const copy = { ...selectedHole, id: crypto.randomUUID(), zPosition: Math.min(length - 5, selectedHole.zPosition + 40) };
+      const range = getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, selectedHole.slot, selectedHole.moduleIndex ?? 0);
+      const z = Math.max(range.min, Math.min(Math.min(length - 5, range.max), selectedHole.zPosition + 40));
+      const copy = { ...selectedHole, id: crypto.randomUUID(), zPosition: z };
       onUpdateHoles([...holes, copy]);
       setSelectedId(copy.id);
     }
@@ -231,13 +239,23 @@ export function ProfileWorkbench2D({
       setSelectedId(copy.id);
     }
   };
+  /** Spiegeln erzeugt eine KOPIE an der gespiegelten Position/Seite — die Originalbohrung
+   *  bzw. der Original-Verbinder bleibt bestehen (nicht verschieben, sonst geht die
+   *  ursprüngliche Platzierung verloren). */
   const mirrorSelected = () => {
     if (selectedHole) {
-      const z = Math.max(1, Math.min(length - 1, length - selectedHole.zPosition));
-      updateHole({ zPosition: z });
+      const range = getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, selectedHole.slot, selectedHole.moduleIndex ?? 0);
+      const z = Math.max(Math.max(1, range.min), Math.min(Math.min(length - 1, range.max), length - selectedHole.zPosition));
+      const copy = { ...selectedHole, id: crypto.randomUUID(), zPosition: z };
+      onUpdateHoles([...holes, copy]);
+      setSelectedId(copy.id);
     } else if (selectedConn) {
       const otherEnd: 'start' | 'end' = selectedConn.end === 'start' ? 'end' : 'start';
-      updateConn({ end: otherEnd });
+      const taken = connectors.some((c) => c.slot === selectedConn.slot && c.end === otherEnd && (c.moduleIndex ?? 0) === (selectedConn.moduleIndex ?? 0));
+      if (taken) return;
+      const copy = { ...selectedConn, id: crypto.randomUUID(), end: otherEnd };
+      onUpdateConnectors([...connectors, copy]);
+      setSelectedId(copy.id);
     }
   };
 
@@ -306,15 +324,25 @@ export function ProfileWorkbench2D({
     if (tool === 'hole') {
       const z = snapValue(zMm, SNAP_FINE, snapPointsFor(rowKey), length);
       const typeDef = HOLE_TYPES.find((t) => t.id === holeType)!;
-      const newHoles: ProfileHole[] = targets.map((s) => ({
-        id: crypto.randomUUID(),
-        zPosition: z,
-        diameter: typeDef.diameter,
-        slot: s.slot,
-        moduleIndex: s.moduleIndex,
-        type: holeType,
-        label: typeDef.label,
-      }));
+      // Je Ziel-Nut eigener Materialbereich (Schrägschnitt kann pro Spur unterschiedlich
+      // viel wegschneiden) — Position wird hineingeklemmt, an Spuren ohne jegliches
+      // Material (min >= max, nur bei sehr kurzen Profilen + steilem Winkel möglich) wird
+      // keine Bohrung gesetzt.
+      const newHoles: ProfileHole[] = targets.flatMap((s) => {
+        const range = getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, s.slot, s.moduleIndex);
+        if (range.min >= range.max) return [];
+        const clampedZ = Math.max(range.min, Math.min(range.max, z));
+        return [{
+          id: crypto.randomUUID(),
+          zPosition: clampedZ,
+          diameter: typeDef.diameter,
+          slot: s.slot,
+          moduleIndex: s.moduleIndex,
+          type: holeType,
+          label: typeDef.label,
+        }];
+      });
+      if (newHoles.length === 0) return;
       onUpdateHoles([...holes, ...newHoles]);
       const primary = newHoles.find((h) => h.slot === row.slot && h.moduleIndex === row.moduleIndex);
       setSelectedId(primary?.id ?? newHoles[0]?.id ?? null);
@@ -340,7 +368,7 @@ export function ProfileWorkbench2D({
       const primary = additions.find((c) => c.slot === row.slot && c.moduleIndex === row.moduleIndex);
       setSelectedId(primary?.id ?? additions[0].id);
     }
-  }, [tool, holeType, connType, length, holes, connectors, snapPointsFor, draggingId, activeKey, multiSelected, selectedSlots, onUpdateHoles, onUpdateConnectors]);
+  }, [tool, holeType, connType, length, holes, connectors, snapPointsFor, draggingId, activeKey, multiSelected, selectedSlots, onUpdateHoles, onUpdateConnectors, section, angleStart, angleEnd, angleAxis]);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -587,9 +615,13 @@ export function ProfileWorkbench2D({
                     }
                     const hole = holes.find((h) => h.id === id);
                     if (hole) {
-                      const rk = keyOf(ensureSlot(hole), hole.moduleIndex ?? 0);
+                      const holeSlot = ensureSlot(hole);
+                      const holeModuleIndex = hole.moduleIndex ?? 0;
+                      const rk = keyOf(holeSlot, holeModuleIndex);
                       const z = snapValue(zMm, SNAP_FINE, snapPointsFor(rk).filter((p) => Math.abs(p - hole.zPosition) > 0.1), length);
-                      onUpdateHoles(holes.map((h) => h.id === id ? { ...h, zPosition: z } : h));
+                      const range = getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, holeSlot, holeModuleIndex);
+                      const clampedZ = Math.max(range.min, Math.min(range.max, z));
+                      onUpdateHoles(holes.map((h) => h.id === id ? { ...h, zPosition: clampedZ } : h));
                     }
                   }}
                   onDragEnd={() => setDraggingId(null)}
@@ -677,26 +709,38 @@ export function ProfileWorkbench2D({
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Position (mm vom Anfang)</Label>
                   <NumericInput
                     value={selectedHole.zPosition}
-                    min={1}
-                    max={length - 1}
+                    min={Math.max(1, Math.ceil(selectedHoleRange!.min))}
+                    max={Math.min(length - 1, Math.floor(selectedHoleRange!.max))}
                     step={1}
                     onCommit={(z) => updateHole({ zPosition: z })}
                     className="h-8 text-xs"
                   />
+                  {(selectedHoleRange!.min > 1 || selectedHoleRange!.max < length - 1) && (
+                    <p className="text-[9px] text-amber-600 mt-1">
+                      Durch Schrägschnitt an dieser Nut nur {Math.ceil(selectedHoleRange!.min)}–{Math.floor(selectedHoleRange!.max)} mm möglich
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-[10px] text-muted-foreground mb-1 block">Schnell-Position</Label>
+                  {/* Reihenfolge folgt der Zeichnung (Ende links, Anfang rechts, s. dx()/EU
+                      1st-angle-Konvention oben) — links im Raster = nah an Ende, rechts = nah
+                      an Anfang, damit die Knopf-Reihenfolge räumlich zur Werkbank passt. */}
                   <div className="grid grid-cols-5 gap-1">
                     {[
-                      { lbl: '20→', z: 20, title: '20 mm vom Anfang' },
-                      { lbl: '50→', z: 50, title: '50 mm vom Anfang' },
-                      { lbl: 'Mitte', z: Math.round(length / 2), title: 'Mitte des Profils' },
-                      { lbl: '←50', z: length - 50, title: '50 mm vom Ende' },
                       { lbl: '←20', z: length - 20, title: '20 mm vom Ende' },
+                      { lbl: '←50', z: length - 50, title: '50 mm vom Ende' },
+                      { lbl: 'Mitte', z: Math.round(length / 2), title: 'Mitte des Profils' },
+                      { lbl: '50→', z: 50, title: '50 mm vom Anfang' },
+                      { lbl: '20→', z: 20, title: '20 mm vom Anfang' },
                     ].map((q) => (
                       <button
                         key={q.lbl}
-                        onClick={() => updateHole({ zPosition: Math.max(1, Math.min(length - 1, q.z)) })}
+                        onClick={() => {
+                          const min = Math.max(1, selectedHoleRange!.min);
+                          const max = Math.min(length - 1, selectedHoleRange!.max);
+                          updateHole({ zPosition: Math.max(min, Math.min(max, q.z)) });
+                        }}
                         title={q.title}
                         className="h-7 text-[10px] rounded border border-slate-200 bg-white hover:bg-primary/10 hover:border-primary text-foreground font-medium"
                       >
@@ -895,15 +939,13 @@ function SideRow({
   const isDiagonal = angleAxis === 'BD' ? side.slot === 'B' || side.slot === 'D' : side.slot === 'A' || side.slot === 'C';
   const movingSlot: SlotId = angleAxis === 'BD' ? 'C' : 'D';
   const refSlot: SlotId = angleAxis === 'BD' ? 'A' : 'B';
-  const pitch = getModulePitch(section);
-  const widthLanes = Math.max(1, Math.round(section.w / pitch));
-  const heightLanes = Math.max(1, Math.round(section.h / pitch));
-  // Versatzbetrag der geraden Seiten = ROW_PIX_HEIGHT, die die DIAGONALEN Seiten für
-  // ihre eigene volle Breite/Höhe hätten (unabhängig von der ROW_PIX_HEIGHT der aktuell
-  // gerenderten geraden Seite selbst, die eine andere Spurzahl haben kann).
-  const diagonalRowPixHeight = LANE_PIX_HEIGHT * (angleAxis === 'BD' ? heightLanes : widthLanes);
-  const rawS = diagonalRowPixHeight * tanS; // Anfang, vorzeichenbehaftet
-  const rawE = diagonalRowPixHeight * tanE; // Ende, vorzeichenbehaftet
+  // Versatzbetrag in ECHTEN mm (Breite bzw. Höhe des Profils) statt eines fiktiven
+  // Pixel-Schemawerts — die x-Achse der Zeichnung ist bereits mm-basiert (0..length),
+  // damit deckt sich die sichtbare Schnittkante exakt mit dem gültigen Bohrungsbereich
+  // (s. getMaterialZRange) und mit ProfileViewer3D.applyMiterCut.
+  const fullDim = angleAxis === 'BD' ? section.h : section.w;
+  const rawS = fullDim * tanS; // Anfang, vorzeichenbehaftet
+  const rawE = fullDim * tanE; // Ende, vorzeichenbehaftet
   // Kürzungsbetrag je Ende und Kante (immer ≥ 0 — nie eine Verlängerung über die Länge hinaus).
   const movingRecedeS = Math.max(0, rawS);
   const movingRecedeE = Math.max(0, rawE);
@@ -1129,18 +1171,22 @@ function SideRow({
                     strokeDasharray="3 3"
                     opacity={isLaneActive ? 0.8 : 0.4}
                   />
-                  {/* Lane number label — beim "Anfang" (rechts) gut sichtbar */}
-                  <text
-                    x={length - 6}
-                    y={cy + 2.5}
-                    textAnchor="end"
-                    fontSize="7"
-                    fill={isLaneActive ? 'hsl(var(--primary))' : '#64748b'}
-                    fontWeight="600"
-                    pointerEvents="none"
-                  >
-                    Nut {lane.number}
-                  </text>
+                  {/* Lane number label — beim "Anfang" (rechts) gut sichtbar. Gegenskalierung wie
+                      bei den runden Markern, sonst wirkt der Text bei langen/gezoomten Profilen
+                      (nicht-uniform gestauchte Ansicht) horizontal verzerrt und damit unscharf. */}
+                  <g transform={`translate(${length - 6} ${cy}) scale(${circleScaleX} 1) translate(${-(length - 6)} ${-cy})`}>
+                    <text
+                      x={length - 6}
+                      y={cy + 2.5}
+                      textAnchor="end"
+                      fontSize="7"
+                      fill={isLaneActive ? 'hsl(var(--primary))' : '#64748b'}
+                      fontWeight="600"
+                      pointerEvents="none"
+                    >
+                      Nut {lane.number}
+                    </text>
+                  </g>
                   {/* divider between lanes */}
                   {idx > 0 && (
                     <line
@@ -1176,9 +1222,9 @@ function SideRow({
                 <g pointerEvents="none">
                   <line x1={hx} y1={cy - LANE_PIX_HEIGHT / 2} x2={hx} y2={cy + LANE_PIX_HEIGHT / 2} stroke="hsl(var(--primary))" strokeWidth="0.5" strokeDasharray="2 2" />
                   {/* Gegenskalierung wie bei den runden Markern, sonst wirkt die Pille bei langen/gezoomten Profilen gestaucht */}
-                  <g transform={`translate(${hx} ${cy - LANE_PIX_HEIGHT / 2 - 6}) scale(${circleScaleX} 1) translate(${-hx} ${-(cy - LANE_PIX_HEIGHT / 2 - 6)})`}>
-                    <rect x={hx - 16} y={cy - LANE_PIX_HEIGHT / 2 - 11} width="32" height="10" rx="2" fill="hsl(var(--primary))" />
-                    <text x={hx} y={cy - LANE_PIX_HEIGHT / 2 - 3} textAnchor="middle" fontSize="7" fill="white" fontFamily="ui-monospace, monospace" fontWeight="600">
+                  <g transform={`translate(${hx} ${cy - LANE_PIX_HEIGHT / 2 - 9}) scale(${circleScaleX} 1) translate(${-hx} ${-(cy - LANE_PIX_HEIGHT / 2 - 9)})`}>
+                    <rect x={hx - 22} y={cy - LANE_PIX_HEIGHT / 2 - 16} width="44" height="14" rx="3" fill="hsl(var(--primary))" />
+                    <text x={hx} y={cy - LANE_PIX_HEIGHT / 2 - 6} textAnchor="middle" fontSize="10" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">
                       {Math.round(hoverInfo.z)} mm
                     </text>
                   </g>
@@ -1259,20 +1305,21 @@ function SideRow({
                       {/* Linie zum Ende (links) */}
                       <line x1={hx} y1={cy} x2={0} y2={cy} stroke="hsl(var(--primary))" strokeWidth="0.4" strokeDasharray="2 2" opacity="0.7" />
                       {/* Label zum Anfang — Gegenskalierung wie bei den runden Markern */}
-                      <g transform={`translate(${(hx + length) / 2} ${cy - 7.5}) scale(${circleScaleX} 1) translate(${-(hx + length) / 2} ${-(cy - 7.5)})`}>
-                        <rect x={(hx + length) / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
-                        <text x={(hx + length) / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distStart)} mm</text>
+                      <g transform={`translate(${(hx + length) / 2} ${cy - 9}) scale(${circleScaleX} 1) translate(${-(hx + length) / 2} ${-(cy - 9)})`}>
+                        <rect x={(hx + length) / 2 - 24} y={cy - 15} width="48" height="13" rx="3" fill="hsl(var(--primary))" />
+                        <text x={(hx + length) / 2} y={cy - 6} textAnchor="middle" fontSize="9.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distStart)} mm</text>
                       </g>
                       {/* Label zum Ende */}
-                      <g transform={`translate(${hx / 2} ${cy - 7.5}) scale(${circleScaleX} 1) translate(${-hx / 2} ${-(cy - 7.5)})`}>
-                        <rect x={hx / 2 - 18} y={cy - 12} width="36" height="9" rx="2" fill="hsl(var(--primary))" />
-                        <text x={hx / 2} y={cy - 5} textAnchor="middle" fontSize="6.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distEnd)} mm</text>
+                      <g transform={`translate(${hx / 2} ${cy - 9}) scale(${circleScaleX} 1) translate(${-hx / 2} ${-(cy - 9)})`}>
+                        <rect x={hx / 2 - 24} y={cy - 15} width="48" height="13" rx="3" fill="hsl(var(--primary))" />
+                        <text x={hx / 2} y={cy - 6} textAnchor="middle" fontSize="9.5" fill="white" fontFamily="ui-monospace, monospace" fontWeight="700">{Math.round(distEnd)} mm</text>
                       </g>
                     </g>
                   )}
                   {(isSel || isDragging) && (
                     <g transform={`translate(${hx} ${cy + LANE_PIX_HEIGHT / 2 - 1}) scale(${circleScaleX} 1) translate(${-hx} ${-(cy + LANE_PIX_HEIGHT / 2 - 1)})`}>
-                      <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 1} textAnchor="middle" fontSize="7" fill={tooClose ? '#dc2626' : 'hsl(var(--primary))'} fontFamily="ui-monospace, monospace" fontWeight="600" pointerEvents="none">
+                      <rect x={hx - 20} y={cy + LANE_PIX_HEIGHT / 2 - 12} width="40" height="12" rx="3" fill="white" stroke={tooClose ? '#dc2626' : 'hsl(var(--primary))'} strokeWidth="1" />
+                      <text x={hx} y={cy + LANE_PIX_HEIGHT / 2 - 2.5} textAnchor="middle" fontSize="9" fill={tooClose ? '#dc2626' : 'hsl(var(--primary))'} fontFamily="ui-monospace, monospace" fontWeight="700" pointerEvents="none">
                         {Math.round(h.zPosition)} mm
                       </text>
                     </g>

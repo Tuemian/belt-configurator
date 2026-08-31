@@ -343,6 +343,49 @@ export function getSlotCenters(section: ProfileSection, slot: SlotId): number[] 
   return Array.from({ length: n }, (_, i) => pitch * (i + 0.5));
 }
 
+/**
+ * Gültiger z-Bereich (mm) für eine Bohrung auf einer bestimmten Nut/Spur, unter
+ * Berücksichtigung des Schrägschnitts (angleStart/angleEnd/angleAxis) — jenseits davon
+ * ist an dieser Spur kein Material mehr vorhanden (weggeschnitten). Nutzt dieselbe
+ * Referenzkanten-Logik wie ProfileViewer3D.applyMiterCut/SideRow.profilePath (muss mit
+ * beiden exakt übereinstimmen, sonst weicht die sichtbare Schnittkante von der
+ * tatsächlich erlaubten Bohrungsposition ab).
+ */
+export function getMaterialZRange(
+  section: ProfileSection,
+  length: number,
+  angleStart: number,
+  angleEnd: number,
+  angleAxis: AngleAxis | undefined,
+  slot: SlotId,
+  moduleIndex: number,
+): { min: number; max: number } {
+  const axis = angleAxis ?? 'AC';
+  const tanS = Math.tan((angleStart * Math.PI) / 180);
+  const tanE = Math.tan((angleEnd * Math.PI) / 180);
+  const isDiagonal = axis === 'BD' ? (slot === 'B' || slot === 'D') : (slot === 'A' || slot === 'C');
+  const refCoord = (axis === 'BD' ? section.h : section.w) / 2;
+  const movingCoord = -refCoord;
+
+  let c: number;
+  if (isDiagonal) {
+    const pitch = getModulePitch(section);
+    const dim = axis === 'BD' ? section.h : section.w;
+    const lanes = Math.max(1, Math.round(dim / pitch));
+    const cell = dim / lanes;
+    c = movingCoord + cell * (moduleIndex + 0.5);
+  } else {
+    const refSlot: SlotId = axis === 'BD' ? 'A' : 'B';
+    c = slot === refSlot ? refCoord : movingCoord;
+  }
+
+  const pivotS = tanS >= 0 ? refCoord : movingCoord;
+  const pivotE = tanE >= 0 ? refCoord : movingCoord;
+  const recedeS = Math.max(0, (pivotS - c) * tanS);
+  const recedeE = Math.max(0, (pivotE - c) * tanE);
+  return { min: recedeS, max: length - recedeE };
+}
+
 // ---------------------------------------------------------------------------
 // Alvaris-Nummerierung (Profilbearbeitungscode 10404-11-0000-00)
 // ---------------------------------------------------------------------------
