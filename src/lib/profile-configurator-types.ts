@@ -399,20 +399,53 @@ export function getMaterialZRange(
 // Kernzüge / Mittelbohrungen (blaue Zahlen in Kreisen):
 //   zeilenweise von oben-links nach unten-rechts (Spalte i, Zeile j)
 
-/** Sehr flache Profile, bei denen laut Alvaris-Referenzbild auf der schmalen Seite (B/D)
- *  GAR KEINE Nut sitzt (die generische Rasterformel unten würde dort sonst fälschlich
- *  mindestens 1 Nut annehmen — vermessen anhand der Referenzbilder: kein Nut-Ausschnitt
- *  auf der linken/rechten Kante, nur die glatte, abgerundete Profilseite). */
-const NO_SIDE_SLOTS_A8 = new Set(['40x16', '80x16', '160x16', '160x28']);
-const NO_SIDE_SLOTS_A5 = new Set(['20x10', '40x10']);
+/** Sehr flache Profile, bei denen laut Alvaris-Referenzbild NICHT jede Seite eine Nut in
+ *  der generisch angenommenen Anzahl hat — die Rasterformel unten geht von A=C (beide
+ *  = Breite/Rastermaß) und B=D (beide = Höhe/Rastermaß) aus, was für diese asymmetrischen
+ *  Profile nicht stimmt: B/D haben (schmale Seite) durchgehend GAR KEINE Nut, und bei
+ *  einigen ist sogar die Unterseite (C) leer oder hat abweichend viele Nuten von A.
+ *  Vermessen anhand der Referenzbilder (kein Nut-Ausschnitt = glatte, abgerundete Kante). */
+const SLOT_COUNT_OVERRIDE_A8: Record<string, { A: number; B: number; C: number; D: number }> = {
+  '40x16': { A: 1, B: 0, C: 0, D: 0 },
+  '80x16': { A: 2, B: 0, C: 0, D: 0 },
+  '160x16': { A: 4, B: 0, C: 0, D: 0 },
+  '160x28': { A: 4, B: 0, C: 3, D: 0 },
+};
+const SLOT_COUNT_OVERRIDE_A5: Record<string, { A: number; B: number; C: number; D: number }> = {
+  '20x10': { A: 1, B: 0, C: 0, D: 0 },
+  '40x10': { A: 2, B: 0, C: 0, D: 0 },
+};
 
-/** Anzahl Nuten je Seite (basierend auf modulePitch) */
+/** Anzahl Nuten je Seite (basierend auf modulePitch, außer für Größen mit Override oben) */
 export function getSlotCounts(section: ProfileSection): { A: number; B: number; C: number; D: number } {
+  const override = section.nut === 'A5' ? SLOT_COUNT_OVERRIDE_A5[section.sizeKey] : SLOT_COUNT_OVERRIDE_A8[section.sizeKey];
+  if (override) return override;
   const pitch = getModulePitch(section);
   const nW = Math.max(1, Math.round(section.w / pitch));
-  const noSideSlots = section.nut === 'A5' ? NO_SIDE_SLOTS_A5.has(section.sizeKey) : NO_SIDE_SLOTS_A8.has(section.sizeKey);
-  const nH = noSideSlots ? 0 : Math.max(1, Math.round(section.h / pitch));
+  const nH = Math.max(1, Math.round(section.h / pitch));
   return { A: nW, B: nH, C: nW, D: nH };
+}
+
+/** 160x28: die 3 unteren Nuten (C) sitzen NICHT auf demselben gleichmäßigen Raster wie
+ *  die 4 oberen (A) — sie liegen versetzt in den Zwischenräumen (bei 40/80/120mm statt
+ *  einer eigenen gleichmäßigen 3er-Teilung von 160mm), vermessen am Referenzbild. Ohne
+ *  dieses Override würde die generische Zellformel (Breite/Anzahl) die Nuten an eine
+ *  falsche Position setzen. */
+const SLOT_POSITION_OVERRIDE: Record<string, Partial<Record<SlotId, number[]>>> = {
+  '160x28': { C: [40, 80, 120] },
+};
+
+/** Liefert die Nut-Mittelpunkte (mm, entlang der sichtbaren Kante) für eine Seite — nutzt
+ *  ein Positions-Override falls hinterlegt (s. oben), sonst die generische Gleichverteilung
+ *  über die volle Breite/Höhe. */
+export function getSlotXPositions(section: ProfileSection, slot: SlotId): number[] {
+  const override = SLOT_POSITION_OVERRIDE[section.sizeKey]?.[slot];
+  if (override) return override;
+  const counts = getSlotCounts(section);
+  const n = counts[slot];
+  const dim = slot === 'A' || slot === 'C' ? section.w : section.h;
+  const cell = dim / (slot === 'A' || slot === 'C' ? counts.A : counts.B);
+  return Array.from({ length: n }, (_, i) => cell * (i + 0.5));
 }
 
 /** Liefert die fortlaufende Alvaris-Nutnummer (1-basiert) */

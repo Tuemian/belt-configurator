@@ -2,6 +2,7 @@ import {
   getModulePitch,
   getSlotCounts,
   getSlotNumber,
+  getSlotXPositions,
   getBoreCounts,
   getBorePositions,
   type ProfileSection,
@@ -114,14 +115,20 @@ export function ProfileCrossSection2D({
   // auf Basis der (beim echten Bild nicht mehr zutreffenden) Schema-Nuttiefe — sonst landen sie
   // je nach tatsächlicher Nuttiefe im Bild mitten auf der Zeichnung statt sauber daneben.
   const labelOutside = !!alvarisImage;
-  // Zellgröße je Achse = tatsächliche Breite/Höhe geteilt durch die Nutanzahl auf dieser
-  // Seite — NICHT das feste Rastermaß (MODULE). Bei Profilen, deren Höhe/Breite kein
-  // Vielfaches des Rastermaßes ist (z. B. 16/28mm hohe Profile), würde MODULE die Position
-  // sonst außerhalb der Zeichnung schieben (derselbe Fehler wie bei den Kernzügen).
+  // Nut-Mittelpunkte je Seite — nutzt ein Positions-Override für Profile, deren reales
+  // Bohrbild nicht dem generischen Gleichverteilungsraster entspricht (s. getSlotXPositions),
+  // sonst tatsächliche Breite/Höhe geteilt durch die Nutanzahl (NICHT das feste Rastermaß
+  // MODULE — bei Profilen, deren Höhe/Breite kein Vielfaches des Rastermaßes ist, würde
+  // MODULE die Position sonst außerhalb der Zeichnung schieben, derselbe Fehler wie bei
+  // den Kernzügen).
+  const xPositionsA = getSlotXPositions(section, 'A');
+  const yPositionsB = getSlotXPositions(section, 'B');
+  const xPositionsC = getSlotXPositions(section, 'C');
+  const yPositionsD = getSlotXPositions(section, 'D');
   const cellW = w / counts.A;
-  const cellH = h / counts.B;
-  for (let i = 0; i < counts.A; i++) {
-    const cx = PAD + cellW * (i + 0.5);
+  const cellH = h / Math.max(1, counts.B);
+  xPositionsA.forEach((x, i) => {
+    const cx = PAD + x;
     slots.push({
       slot: 'A', moduleIndex: i,
       number: getSlotNumber(section, 'A', i),
@@ -129,9 +136,9 @@ export function ProfileCrossSection2D({
       label: { x: cx, y: labelOutside ? -2.5 : PAD + slotDepth + fs * 0.9 },
       hit: { x: cx - cellW / 2, y: PAD - HIT, w: cellW, h: HIT + slotDepth + fs * 1.4 },
     });
-  }
-  for (let j = 0; j < counts.B; j++) {
-    const cy = PAD + cellH * (j + 0.5);
+  });
+  yPositionsB.forEach((y, j) => {
+    const cy = PAD + y;
     slots.push({
       slot: 'B', moduleIndex: j,
       number: getSlotNumber(section, 'B', j),
@@ -139,9 +146,9 @@ export function ProfileCrossSection2D({
       label: { x: labelOutside ? IMG_W + 2 + fs * 0.8 : PAD + w - slotDepth - fs * 0.7, y: cy + fs * 0.35 },
       hit: { x: PAD + w - slotDepth - fs * 1.4, y: cy - cellH / 2, w: HIT + slotDepth + fs * 1.4, h: cellH },
     });
-  }
-  for (let i = 0; i < counts.C; i++) {
-    const cx = PAD + cellW * (i + 0.5);
+  });
+  xPositionsC.forEach((x, i) => {
+    const cx = PAD + x;
     slots.push({
       slot: 'C', moduleIndex: i,
       number: getSlotNumber(section, 'C', i),
@@ -149,9 +156,9 @@ export function ProfileCrossSection2D({
       label: { x: cx, y: labelOutside ? IMG_H + fs * 1.0 + 1 : PAD + h - slotDepth - fs * 0.4 },
       hit: { x: cx - cellW / 2, y: PAD + h - slotDepth - fs * 0.4, w: cellW, h: HIT + slotDepth + fs * 0.6 },
     });
-  }
-  for (let j = 0; j < counts.D; j++) {
-    const cy = PAD + cellH * (j + 0.5);
+  });
+  yPositionsD.forEach((y, j) => {
+    const cy = PAD + y;
     slots.push({
       slot: 'D', moduleIndex: j,
       number: getSlotNumber(section, 'D', j),
@@ -159,7 +166,7 @@ export function ProfileCrossSection2D({
       label: { x: labelOutside ? -2 - fs * 0.8 : PAD + slotDepth + fs * 0.7, y: cy + fs * 0.35 },
       hit: { x: PAD - HIT, y: cy - cellH / 2, w: HIT + slotDepth + fs * 1.4, h: cellH },
     });
-  }
+  });
 
   // Effektive Größe nach optionaler 90°-Rotation
   const dispW = rotate90 ? size * (VB_H / VB_W) : size;
