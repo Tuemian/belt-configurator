@@ -296,21 +296,18 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
     orderCode: 'NM-PRO-A5-80x20-L', massPerMeter: 1.58, modulePitch: 20, nut: 'A5' },
 ];
 
-// Verbindersatz einfach/beidseitig entsprechen ITEM Art. 0.0.686.79 / 0.0.686.80
-// (einseitiger bzw. beidseitiger Verbindersatz für Nut 8) — genaue Zuordnung der
-// beiden Artikelnummern zu "einfach"/"beidseitig" beim Bestellen gegenprüfen.
 export const CONNECTOR_TYPES = [
   { id: 'screw-in-m8', label: 'Einschraubverbindersatz (M8)',  description: 'Einschraubverbinder, Nut 8' },
   { id: 'auto-m6',     label: 'Automatikverbindersatz (M6)',   description: 'Schnellverbinder ohne Werkzeug, Nut 6' },
-  { id: 'set-single',  label: 'Verbindersatz einfach',          description: 'Einseitiger Verbindersatz (vgl. ITEM 0.0.686.79)' },
-  { id: 'set-double',  label: 'Verbindersatz beidseitig',       description: 'Beidseitiger Verbindersatz (vgl. ITEM 0.0.686.80)' },
+  { id: 'set-single',  label: 'Verbindersatz einfach',          description: 'Einseitiger Verbindersatz' },
+  { id: 'set-double',  label: 'Verbindersatz beidseitig',       description: 'Beidseitiger Verbindersatz' },
 ] as const;
 
 // Kernloch wurde absichtlich entfernt (siehe Plan).
 export const HOLE_TYPES = [
-  { id: 'step-m5',       label: 'Stufenbohrung M5 (Ø9,5/4,2)', diameter: 9.5  },
-  { id: 'step-m6',       label: 'Stufenbohrung M6 (Ø11/5,0)',  diameter: 11.0 },
-  { id: 'step-m8',       label: 'Stufenbohrung M8 (Ø14/6,8)',  diameter: 14.0 },
+  { id: 'step-m5',       label: 'Stufenbohrung M5 (Ø10/5,5)',  diameter: 10.0 },
+  { id: 'step-m6',       label: 'Stufenbohrung M6 (Ø11/6,6)',  diameter: 11.0 },
+  { id: 'step-m8',       label: 'Stufenbohrung M8 (Ø15/9)',    diameter: 15.0 },
   { id: 'd45',           label: 'Durchgangsbohrung D4,5 mm',   diameter: 4.5  },
   { id: 'd75',           label: 'Durchgangsbohrung D7,5 mm',   diameter: 7.5  },
   { id: 'custom',        label: 'Durchgangsbohrung nach Wunsch (Ø frei wählbar)', diameter: 6.0 },
