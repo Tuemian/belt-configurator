@@ -228,50 +228,6 @@ export function ProfileCrossSection2D({
           </>
         )}
 
-        {/* Kernzüge */}
-        {borePositions.map((pos) => {
-          const cx = PAD + pos.x;
-          const cy = PAD + pos.y;
-          const num = pos.number;
-          const lblR = Math.max(boreRadius, boreFs * 0.95);
-          const isActiveBore = activeBores?.has(num);
-          const clickable = !!onSelectBore;
-          return (
-            <g
-              key={`bore-${num}`}
-              onClick={clickable ? (e) => { e.stopPropagation(); onSelectBore!(num); } : undefined}
-              style={{ cursor: clickable ? 'pointer' : 'default' }}
-            >
-              {/* Bei Referenzbild ist die Bohrung schon im Bild sichtbar — nur unsichtbare Klickfläche */}
-              <circle cx={cx} cy={cy} r={boreRadius} fill={alvarisImage ? 'transparent' : '#f1f5f9'} stroke={alvarisImage ? 'none' : '#94a3b8'} strokeWidth={0.3} />
-              {showLabels && !isActiveBore && (
-                <>
-                  <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#1d4ed8" strokeWidth="0.4" opacity="0.95" />
-                  <text
-                    x={cx}
-                    y={cy + boreFs * 0.36}
-                    textAnchor="middle"
-                    fontSize={boreFs}
-                    fontWeight="700"
-                    fill="#1d4ed8"
-                    fontFamily="ui-sans-serif, system-ui"
-                  >
-                    {num}
-                  </text>
-                </>
-              )}
-              {showLabels && isActiveBore && (
-                <>
-                  {/* X-Markierung für aktives Gewinde */}
-                  <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#dc2626" strokeWidth="0.6" />
-                  <line x1={cx - lblR * 0.6} y1={cy - lblR * 0.6} x2={cx + lblR * 0.6} y2={cy + lblR * 0.6} stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round" />
-                  <line x1={cx + lblR * 0.6} y1={cy - lblR * 0.6} x2={cx - lblR * 0.6} y2={cy + lblR * 0.6} stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round" />
-                </>
-              )}
-            </g>
-          );
-        })}
-
         {/* Nut-Öffnungen: bei Referenzbild nur Auswahl-Hervorhebung (Textur kommt vom Bild) */}
         {slots.map((s, i) => {
           const sel = isSelected(s.slot, s.moduleIndex);
@@ -316,6 +272,53 @@ export function ProfileCrossSection2D({
                 >
                   {s.number}
                 </text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Kernzüge — rendern NACH den Nut-Hitboxes, damit sie im Klick-Vorrang liegen: bei
+            sehr flachen Profilen (z. B. 16mm hoch) überdeckt die Nut-Hitbox (transparentes
+            Rechteck über der ganzen Nuttiefe) sonst den Kernzug in der Profilmitte und
+            blockiert dessen Klick zum Setzen des Stirnseiten-Gewindes. */}
+        {borePositions.map((pos) => {
+          const cx = PAD + pos.x;
+          const cy = PAD + pos.y;
+          const num = pos.number;
+          const lblR = Math.max(boreRadius, boreFs * 0.95);
+          const isActiveBore = activeBores?.has(num);
+          const clickable = !!onSelectBore;
+          return (
+            <g
+              key={`bore-${num}`}
+              onClick={clickable ? (e) => { e.stopPropagation(); onSelectBore!(num); } : undefined}
+              style={{ cursor: clickable ? 'pointer' : 'default', pointerEvents: clickable ? 'auto' : 'none' }}
+            >
+              {/* Bei Referenzbild ist die Bohrung schon im Bild sichtbar — nur unsichtbare Klickfläche */}
+              <circle cx={cx} cy={cy} r={boreRadius} fill={alvarisImage ? 'transparent' : '#f1f5f9'} stroke={alvarisImage ? 'none' : '#94a3b8'} strokeWidth={0.3} />
+              {showLabels && !isActiveBore && (
+                <>
+                  <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#1d4ed8" strokeWidth="0.4" opacity="0.95" />
+                  <text
+                    x={cx}
+                    y={cy + boreFs * 0.36}
+                    textAnchor="middle"
+                    fontSize={boreFs}
+                    fontWeight="700"
+                    fill="#1d4ed8"
+                    fontFamily="ui-sans-serif, system-ui"
+                  >
+                    {num}
+                  </text>
+                </>
+              )}
+              {showLabels && isActiveBore && (
+                <>
+                  {/* X-Markierung für aktives Gewinde */}
+                  <circle cx={cx} cy={cy} r={lblR} fill="white" stroke="#dc2626" strokeWidth="0.6" />
+                  <line x1={cx - lblR * 0.6} y1={cy - lblR * 0.6} x2={cx + lblR * 0.6} y2={cy + lblR * 0.6} stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round" />
+                  <line x1={cx + lblR * 0.6} y1={cy - lblR * 0.6} x2={cx - lblR * 0.6} y2={cy + lblR * 0.6} stroke="#dc2626" strokeWidth="0.9" strokeLinecap="round" />
+                </>
               )}
             </g>
           );
