@@ -106,18 +106,25 @@ create policy "hole_types_admin_write"
   ));
 
 -- Alter Katalog entfernt (durch den unten stehenden ersetzt) — falls dieses Skript
--- schon einmal mit dem alten Stand gelaufen ist, hier aufräumen. Admin-Anpassungen an
--- den NEUEN Zeilen (nach diesem Lauf) bleiben bei erneutem Ausführen unangetastet,
--- da der ON CONFLICT unten nur bei fehlender Zeile einfügt, nicht überschreibt.
+-- schon einmal mit dem alten Stand gelaufen ist, hier aufräumen.
 delete from public.hole_types where id in ('d55', 'd85', 'm6-thread', 'm8-thread');
 
 -- Seed: aktueller Katalog (Stufenbohrungen + zwei Durchgangsbohrungs-Festmaße).
 -- "Durchgangsbohrung/Gewindebohrung nach Wunsch" sind clientseitig fest hinterlegt
 -- (kein fester Durchmesser, daher nicht Teil dieser Tabelle).
+-- UPSERT (nicht nur "bei Fehlen einfügen"): bereits vorhandene Zeilen aus einem
+-- früheren, älteren Lauf dieses Skripts werden auf die aktuellen Maße/Labels
+-- nachgezogen statt stehen zu bleiben. Änderungen, die später über die
+-- "Bohrungstypen"-Admin-Oberfläche gemacht werden, bitte NICHT durch erneutes
+-- Ausführen dieses Skripts überschreiben.
 insert into public.hole_types (id, label_de, diameter_mm, sort_order) values
   ('step-m5', 'Stufenbohrung M5 (Ø10/5,5)',  10.0, 10),
   ('step-m6', 'Stufenbohrung M6 (Ø11/6,6)',  11.0, 20),
   ('step-m8', 'Stufenbohrung M8 (Ø15/9)',    15.0, 30),
   ('d45',     'Durchgangsbohrung D4,5 mm',   4.5,  40),
   ('d75',     'Durchgangsbohrung D7,5 mm',   7.5,  50)
-on conflict (id) do nothing;
+on conflict (id) do update set
+  label_de = excluded.label_de,
+  diameter_mm = excluded.diameter_mm,
+  sort_order = excluded.sort_order,
+  active = true;
