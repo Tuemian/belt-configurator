@@ -15,8 +15,7 @@ import {
   getModulePitch,
   getSlotCounts,
   getSlotNumber,
-  getBoreCounts,
-  getBoreNumber,
+  getBorePositions,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
@@ -510,6 +509,7 @@ export function ProfileWorkbench2D({
                   }}
                   size={88}
                   showLabels
+                  rotate90={section.w > section.h}
                 />
                 <span className="text-[9px] text-muted-foreground">Klick = Seite wählen</span>
               </div>
@@ -1386,16 +1386,7 @@ interface EndFacePanelProps {
 
 function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps) {
   const t: EndTreatment = treatment ?? { thread: false, scope: 'all' };
-  const bores = getBoreCounts(section);
-  const allBoreNums = useMemo(() => {
-    const out: number[] = [];
-    for (let iy = 0; iy < bores.y; iy++) {
-      for (let ix = 0; ix < bores.x; ix++) {
-        out.push(getBoreNumber(section, ix, iy));
-      }
-    }
-    return out;
-  }, [section, bores.x, bores.y]);
+  const allBoreNums = useMemo(() => getBorePositions(section).map((p) => p.number), [section]);
 
   const activeBores = useMemo(() => {
     if (!t.thread) return new Set<number>();
@@ -1444,6 +1435,7 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
           activeBores={activeBores}
           size={140}
           showLabels
+          rotate90={section.w > section.h}
         />
       </div>
       <div className="text-[9px] text-muted-foreground text-center mt-1">

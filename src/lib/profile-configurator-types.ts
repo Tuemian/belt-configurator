@@ -410,6 +410,48 @@ export function getBoreNumber(section: ProfileSection, ix: number, iy: number): 
 }
 
 // ---------------------------------------------------------------------------
+// Kernzug-Layout-Overrides für Profile, deren reales Bohrbild NICHT dem
+// generischen Modulraster (ein Kernzug pro Nut-Modulzelle) entspricht — v. a.
+// sehr flache Profile (16/28/10mm hoch), bei denen die Kernzüge unabhängig vom
+// Nut-Rastermaß sitzen. Koordinaten (mm) relativ zur Profil-Box (0,0)–(w,h),
+// aus dem realen Alvaris-Referenzbild vermessen (s. getAlvarisImage). '160x16'
+// hat laut Referenzbild GAR KEINE Kernzüge (nur Stegverbindungen zwischen den
+// Nuten, kein Gewindekanal) — daher bewusst eine leere Liste statt eines Rasters.
+const BORE_LAYOUT_OVERRIDE_A8: Record<string, { x: number; y: number }[]> = {
+  '40x16': [{ x: 6, y: 8 }, { x: 34, y: 8 }],
+  '80x16': [{ x: 6, y: 8 }, { x: 74, y: 8 }],
+  '160x16': [],
+  '160x28': [
+    { x: 40, y: 8 }, { x: 80, y: 8 }, { x: 120, y: 8 },
+    { x: 20, y: 20 }, { x: 60, y: 20 }, { x: 100, y: 20 }, { x: 140, y: 20 },
+  ],
+};
+const BORE_LAYOUT_OVERRIDE_A5: Record<string, { x: number; y: number }[]> = {
+  '20x10': [{ x: 3.5, y: 6.5 }, { x: 16.5, y: 6.5 }],
+  '40x10': [{ x: 3.5, y: 6.5 }, { x: 36.5, y: 6.5 }],
+};
+
+/** Liefert die tatsächlichen Kernzug-Positionen (mm, relativ zur Profil-Box) samt
+ *  fortlaufender Alvaris-Nummer — nutzt ein Layout-Override, falls für diese Größe
+ *  hinterlegt, sonst das generische Modulraster (Zellgröße = w/x bzw. h/y, NICHT
+ *  das Nut-Rastermaß — sonst landen die Kreise bei Profilen, deren Höhe/Breite
+ *  nicht durch den Rastermaß-Wert teilbar ist, außerhalb der Zeichnung). */
+export function getBorePositions(section: ProfileSection): { x: number; y: number; number: number }[] {
+  const override = section.nut === 'A5' ? BORE_LAYOUT_OVERRIDE_A5[section.sizeKey] : BORE_LAYOUT_OVERRIDE_A8[section.sizeKey];
+  if (override) return override.map((p, i) => ({ x: p.x, y: p.y, number: i + 1 }));
+  const bores = getBoreCounts(section);
+  const cellW = section.w / bores.x;
+  const cellH = section.h / bores.y;
+  const out: { x: number; y: number; number: number }[] = [];
+  for (let iy = 0; iy < bores.y; iy++) {
+    for (let ix = 0; ix < bores.x; ix++) {
+      out.push({ x: cellW * (ix + 0.5), y: cellH * (iy + 0.5), number: iy * bores.x + ix + 1 });
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Pricing (Fallback, wenn Excel nicht geladen)
 // ---------------------------------------------------------------------------
 
@@ -425,8 +467,7 @@ export const PRICE_END_THREAD = 1.90;
 /** Liefert die Anzahl tatsächlich gesetzter Kernzug-Gewinde an einer Stirnseite. */
 export function countActiveEndThreads(section: ProfileSection, t: EndTreatment | undefined): number {
   if (!t || !t.thread) return 0;
-  const bores = getBoreCounts(section);
-  const total = bores.x * bores.y;
+  const total = getBorePositions(section).length;
   if (t.scope === 'custom') return t.bores?.length ?? 0;
   if (t.scope === 'center') return 1;
   return total;
