@@ -275,8 +275,8 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
       const dir = SLOT_DIR[slot];
       const through = (Math.abs(dir.nx) > 0 ? w : h) + 4;
       const cylGeo = new THREE.CylinderGeometry(r, r, through, 24);
-      const isThread = hole.type === 'm8-thread' || hole.type === 'm6-thread';
-      const isStep   = hole.type === 'step-m6' || hole.type === 'step-m8';
+      const isThread = hole.type === 'custom-thread';
+      const isStep   = hole.type === 'step-m5' || hole.type === 'step-m6' || hole.type === 'step-m8';
       const color = isThread ? '#a07830' : isStep ? '#4a6fa5' : '#1e293b';
       const mat = new THREE.MeshStandardMaterial({ color, roughness: isThread ? 0.45 : 0.7, metalness: isThread ? 0.7 : 0.1 });
 

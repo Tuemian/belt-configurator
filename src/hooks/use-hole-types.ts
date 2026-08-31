@@ -8,8 +8,12 @@ export interface HoleTypeOption {
   diameter: number;
 }
 
-const CUSTOM_OPTION: HoleTypeOption = HOLE_TYPES_FALLBACK.find((t) => t.id === 'custom') as HoleTypeOption;
-const FALLBACK_FIXED: HoleTypeOption[] = HOLE_TYPES_FALLBACK.filter((t) => t.id !== 'custom') as HoleTypeOption[];
+// 'custom' (freier Durchmesser) und 'custom-thread' (freie Gewindegröße M3–M10) haben
+// keinen festen Durchmesser und sind daher nicht admin-verwaltet — immer clientseitig
+// angehängt, unabhängig vom DB-Inhalt.
+const ALWAYS_CLIENT_SIDE = new Set(['custom', 'custom-thread']);
+const CLIENT_OPTIONS: HoleTypeOption[] = HOLE_TYPES_FALLBACK.filter((t) => ALWAYS_CLIENT_SIDE.has(t.id)) as HoleTypeOption[];
+const FALLBACK_FIXED: HoleTypeOption[] = HOLE_TYPES_FALLBACK.filter((t) => !ALWAYS_CLIENT_SIDE.has(t.id)) as HoleTypeOption[];
 
 /**
  * Bohrungstypen für den Zuschnittskonfigurator — admin-editierbar über die
@@ -44,5 +48,5 @@ export function useHoleTypes(): HoleTypeOption[] {
     };
   }, []);
 
-  return [...fixed, CUSTOM_OPTION];
+  return [...fixed, ...CLIENT_OPTIONS];
 }

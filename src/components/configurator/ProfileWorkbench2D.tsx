@@ -68,8 +68,8 @@ const CONNECTOR_FOOTPRINT = 22; // mm
 const SLOT_ORDER: SlotId[] = ['A', 'B', 'C', 'D'];
 
 function holeColor(type: ProfileHole['type']): string {
-  if (type === 'm6-thread' || type === 'm8-thread') return '#b78628';
-  if (type === 'step-m6' || type === 'step-m8') return '#3b67a8';
+  if (type === 'custom-thread') return '#b78628';
+  if (type === 'step-m5' || type === 'step-m6' || type === 'step-m8') return '#3b67a8';
   return '#1e293b';
 }
 
@@ -120,8 +120,18 @@ export function ProfileWorkbench2D({
   /** Multi-Select: zusätzliche Nuten für Batch-Bearbeitung (enthält die aktive Nut nicht) */
   const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
   const [tool, setTool] = useState<Tool>('hole');
-  const [holeType, setHoleType] = useState<ProfileHole['type']>('d55');
-  const [connType, setConnType] = useState<ConnectorType>('tnut-m8');
+  const [holeType, setHoleType] = useState<ProfileHole['type']>('d45');
+  const [connType, setConnType] = useState<ConnectorType>('screw-in-m8');
+  // Bohrungstypen kommen ggf. asynchron aus der (admin-editierbaren) hole_types-Tabelle und
+  // können vom Code-Fallback abweichen (z. B. noch alte IDs, solange niemand die Tabelle
+  // aktualisiert hat) — falls der aktuell gewählte Typ dadurch ungültig wird, auf den ersten
+  // verfügbaren zurückfallen, statt beim Platzieren mit einem undefined-Lookup abzustürzen.
+  useEffect(() => {
+    if (!HOLE_TYPES.some((t) => t.id === holeType)) {
+      setHoleType(HOLE_TYPES[0]?.id ?? 'custom');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [HOLE_TYPES]);
   const [hoverZ, setHoverZ] = useState<{ key: string; z: number } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -333,14 +343,16 @@ export function ProfileWorkbench2D({
         const range = getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, s.slot, s.moduleIndex);
         if (range.min >= range.max) return [];
         const clampedZ = Math.max(range.min, Math.min(range.max, z));
+        const threadSize = holeType === 'custom-thread' ? 6 : undefined;
         return [{
           id: crypto.randomUUID(),
           zPosition: clampedZ,
-          diameter: typeDef.diameter,
+          diameter: threadSize ?? typeDef.diameter,
           slot: s.slot,
           moduleIndex: s.moduleIndex,
           type: holeType,
-          label: typeDef.label,
+          label: threadSize ? `Gewinde M${threadSize}` : typeDef.label,
+          threadSize,
         }];
       });
       if (newHoles.length === 0) return;
@@ -577,10 +589,11 @@ export function ProfileWorkbench2D({
             {sideRows.filter((s) => s.slot === activeKey.slot).map((side) => {
               const sideHoles = holes.filter((h) => ensureSlot(h) === side.slot);
               const sideConns = connectors.filter((c) => c.slot === side.slot);
-              // Bohrungen von der gegenüberliegenden Seite (A↔C, B↔D) als Geister-Marker
-              const oppositeSlot: SlotId =
-                side.slot === 'A' ? 'C' : side.slot === 'C' ? 'A' : side.slot === 'B' ? 'D' : 'B';
-              const ghostHoles = holes.filter((h) => ensureSlot(h) === oppositeSlot);
+              // Bohrungen von allen ANDEREN Seiten als leicht schraffierte Geister-Marker zur
+              // Orientierung (nicht nur von der geometrisch gegenüberliegenden Seite) — an
+              // gleicher Länge-Position, damit auf einen Blick erkennbar ist, wo an anderen
+              // Nuten bereits gebohrt wurde.
+              const ghostHoles = holes.filter((h) => ensureSlot(h) !== side.slot);
               const isActiveSide = side.slot === activeKey.slot;
               const isMultiSide = side.lanes.some((l) => multiSelected.has(keyOf(side.slot, l.moduleIndex)));
               return (
@@ -682,7 +695,12 @@ export function ProfileWorkbench2D({
                     value={selectedHole.type}
                     onValueChange={(v) => {
                       const td = HOLE_TYPES.find((t) => t.id === v as ProfileHole['type'])!;
-                      updateHole({ type: v as ProfileHole['type'], diameter: td.diameter, label: td.label });
+                      if (v === 'custom-thread') {
+                        const size = selectedHole.threadSize ?? 6;
+                        updateHole({ type: 'custom-thread', diameter: size, label: `Gewinde M${size}`, threadSize: size });
+                      } else {
+                        updateHole({ type: v as ProfileHole['type'], diameter: td.diameter, label: td.label });
+                      }
                     }}
                   >
                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -704,6 +722,25 @@ export function ProfileWorkbench2D({
                       onCommit={(d) => updateHole({ diameter: d })}
                       className="h-8 text-xs"
                     />
+                  </div>
+                )}
+                {selectedHole.type === 'custom-thread' && (
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground mb-1 block">Gewindegröße</Label>
+                    <Select
+                      value={String(selectedHole.threadSize ?? 6)}
+                      onValueChange={(v) => {
+                        const size = Number(v);
+                        updateHole({ threadSize: size, diameter: size, label: `Gewinde M${size}` });
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
+                          <SelectItem key={m} value={String(m)} className="text-xs">M{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
                 <div>
@@ -1251,7 +1288,7 @@ function SideRow({
                 >
                   <rect data-role="marker" x={x} y={cy - 7} width={w} height={14} fill="#94a3b8" stroke={isSel ? 'hsl(var(--primary))' : '#475569'} strokeWidth={isSel ? 1.4 : 0.6} rx="2" />
                   <text data-role="marker" x={x + w / 2} y={cy + 3} textAnchor="middle" fontSize="7" fill="white" fontWeight="600" pointerEvents="none">
-                    {c.type === 'tnut-m6' || c.type === 'tnut-m8' ? 'NS' : c.type === 'angle-8' ? 'WV' : 'AV'}
+                    {c.type === 'screw-in-m8' ? 'ES' : c.type === 'auto-m6' ? 'AV' : c.type === 'set-single' ? 'VE' : 'VB'}
                   </text>
                 </g>
               );
@@ -1558,6 +1595,15 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
     }
   }, [open, defaultType, activeKey]);
 
+  // Absicherung wie im Elternteil: falls HOLE_TYPES sich ändert (z. B. DB-Ladevorgang
+  // schließt ab) und der aktuelle Typ dadurch ungültig wird, auf den ersten gültigen zurückfallen.
+  useEffect(() => {
+    if (!HOLE_TYPES.some((t) => t.id === type)) {
+      setType(HOLE_TYPES[0]?.id ?? 'custom');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [HOLE_TYPES]);
+
   const allSlots = useMemo(() => {
     const counts = getSlotCounts(section);
     const list: { key: string; slot: SlotId; moduleIndex: number; number: number }[] = [];
@@ -1583,6 +1629,7 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
 
   const handleApply = () => {
     if (parsed.positions.length === 0 || selectedSlots.size === 0) return;
+    const threadSize = type === 'custom-thread' ? 6 : undefined;
     const newHoles: ProfileHole[] = [];
     selectedSlots.forEach((k) => {
       const [s, mi] = k.split(':');
@@ -1590,11 +1637,12 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
         newHoles.push({
           id: crypto.randomUUID(),
           zPosition: z,
-          diameter: typeDef.diameter,
+          diameter: threadSize ?? typeDef.diameter,
           slot: s as SlotId,
           moduleIndex: Number(mi),
           type,
-          label: typeDef.label,
+          label: threadSize ? `Gewinde M${threadSize}` : typeDef.label,
+          threadSize,
         });
       });
     });

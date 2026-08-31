@@ -571,8 +571,8 @@ function drawSideView(
 }
 
 function holePdfColor(type: ProfileHole['type']) {
-  if (type === 'm6-thread' || type === 'm8-thread') return { r: 183, g: 134, b: 40 };
-  if (type === 'step-m6' || type === 'step-m8') return { r: 59, g: 103, b: 168 };
+  if (type === 'custom-thread') return { r: 183, g: 134, b: 40 };
+  if (type === 'step-m5' || type === 'step-m6' || type === 'step-m8') return { r: 59, g: 103, b: 168 };
   return { r: 30, g: 41, b: 59 };
 }
 

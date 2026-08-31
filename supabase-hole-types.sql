@@ -38,13 +38,19 @@ create policy "hole_types_admin_write"
     where ur.user_id = auth.uid() and ur.role::text = 'admin'
   ));
 
--- Seed: aktuelle fest im Code hinterlegte Werte, damit sich am Verhalten
--- zunächst nichts ändert, bis ein Admin etwas anpasst.
+-- Alter Katalog entfernt (durch den unten stehenden ersetzt) — falls dieses Skript
+-- schon einmal mit dem alten Stand gelaufen ist, hier aufräumen. Admin-Anpassungen an
+-- den NEUEN Zeilen (nach diesem Lauf) bleiben bei erneutem Ausführen unangetastet,
+-- da der ON CONFLICT unten nur bei fehlender Zeile einfügt, nicht überschreibt.
+delete from public.hole_types where id in ('d55', 'd85', 'm6-thread', 'm8-thread');
+
+-- Seed: aktueller Katalog (Stufenbohrungen + zwei Durchgangsbohrungs-Festmaße).
+-- "Durchgangsbohrung/Gewindebohrung nach Wunsch" sind clientseitig fest hinterlegt
+-- (kein fester Durchmesser, daher nicht Teil dieser Tabelle).
 insert into public.hole_types (id, label_de, diameter_mm, sort_order) values
-  ('d55',       'D5,5 mm (Standardbohrung)',          5.5,  10),
-  ('d85',       'D8,5 mm (Verbinderbohrung)',          8.5,  20),
-  ('m6-thread', 'Gewinde M6',                          6.0,  30),
-  ('m8-thread', 'Gewinde M8',                          8.0,  40),
-  ('step-m6',   'Stufenbohrung M6 (Ø11/5,0)',          11.0, 50),
-  ('step-m8',   'Stufenbohrung M8 (Ø14/6,8)',          14.0, 60)
+  ('step-m5', 'Stufenbohrung M5 (Ø9,5/4,2)', 9.5,  10),
+  ('step-m6', 'Stufenbohrung M6 (Ø11/5,0)',  11.0, 20),
+  ('step-m8', 'Stufenbohrung M8 (Ø14/6,8)',  14.0, 30),
+  ('d45',     'Durchgangsbohrung D4,5 mm',   4.5,  40),
+  ('d75',     'Durchgangsbohrung D7,5 mm',   7.5,  50)
 on conflict (id) do nothing;
