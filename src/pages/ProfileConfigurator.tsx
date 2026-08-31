@@ -25,6 +25,7 @@ import {
   calculateProfilePrice,
   PRICE_MITER_CUT,
   PRICE_HOLE,
+  getEndThreadLabel,
   type ProfileConfig,
   type ProfileHole,
   type ProfileConnector,
@@ -371,7 +372,7 @@ export default function ProfileConfigurator() {
                 <div>
                   <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider">Stirnseiten-Gewinde</Label>
                   <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
-                    Detail-Auswahl direkt im 2D-Editor (Klick auf Kernzug = M8-Gewinde).
+                    Detail-Auswahl direkt im 2D-Editor (Klick auf Kernzug = {getEndThreadLabel(section)}-Gewinde).
                   </p>
                   <div className="space-y-2">
                     {(['endStart', 'endEnd'] as const).map((endKey) => {

@@ -545,8 +545,18 @@ export const MIN_EDGE_DISTANCE = 15;
 export const PRICE_MITER_CUT = 4.50;
 export const PRICE_HOLE = 1.80;
 export const PRICE_CONNECTOR = 3.50;
-/** Preis pro Stirnseiten-Gewinde (M8 in Kernzug) */
+/** Preis pro Stirnseiten-Gewinde (Kernzug) */
 export const PRICE_END_THREAD = 1.90;
+
+/** Gewindegröße im Kernzug — entspricht der Alvaris-Nutbreite (A5 → M5, A6 → M6,
+ *  A8 → M8), nicht pauschal M8 für alle Profilreihen. */
+export function getEndThreadLabel(section: ProfileSection): string {
+  switch (section.nut) {
+    case 'A5': return 'M5';
+    case 'A6': return 'M6';
+    default: return 'M8';
+  }
+}
 
 /** Liefert die Anzahl tatsächlich gesetzter Kernzug-Gewinde an einer Stirnseite. */
 export function countActiveEndThreads(section: ProfileSection, t: EndTreatment | undefined): number {

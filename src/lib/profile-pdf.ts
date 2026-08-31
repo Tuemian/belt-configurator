@@ -15,6 +15,7 @@ import {
   getSlotNumber,
   getAllSlots,
   calculateProfilePrice,
+  getEndThreadLabel,
   type ProfileConfig,
   type ProfileSection,
   type ProfileHole,
@@ -131,8 +132,8 @@ export function buildProfileInquirySummary(cart: CartItemLike[]): string {
     lines.push(`  Länge: ${item.config.length} mm   Menge: ${item.config.quantity} Stk.`);
     if (item.config.angleStart !== 0) lines.push(`  Schrägschnitt Anfang: ${item.config.angleStart}°`);
     if (item.config.angleEnd !== 0)   lines.push(`  Schrägschnitt Ende:   ${item.config.angleEnd}°`);
-    if (item.config.endStart.thread)  lines.push(`  Gewinde Anfang: M8 (${item.config.endStart.scope ?? 'all'})`);
-    if (item.config.endEnd.thread)    lines.push(`  Gewinde Ende:   M8 (${item.config.endEnd.scope ?? 'all'})`);
+    if (item.config.endStart.thread)  lines.push(`  Gewinde Anfang: ${getEndThreadLabel(s)} (${item.config.endStart.scope ?? 'all'})`);
+    if (item.config.endEnd.thread)    lines.push(`  Gewinde Ende:   ${getEndThreadLabel(s)} (${item.config.endEnd.scope ?? 'all'})`);
     if (item.config.holes.length) {
       lines.push(`  Bohrungen (${item.config.holes.length}):`);
       item.config.holes.forEach((h) => {
@@ -589,8 +590,8 @@ function drawCutsBlock(doc: jsPDF, config: ProfileConfig, section: ProfileSectio
   const partsRight: string[] = [];
   partsLeft.push(`Anfang: ${config.angleStart === 0 ? '90° (gerade)' : `${config.angleStart}°`}`);
   partsRight.push(`Ende: ${config.angleEnd === 0 ? '90° (gerade)' : `${config.angleEnd}°`}`);
-  if (config.endStart.thread) partsLeft.push(`Gewinde M8 · ${scopeLabel(config.endStart.scope, section)}`);
-  if (config.endEnd.thread)   partsRight.push(`Gewinde M8 · ${scopeLabel(config.endEnd.scope, section)}`);
+  if (config.endStart.thread) partsLeft.push(`Gewinde ${getEndThreadLabel(section)} · ${scopeLabel(config.endStart.scope, section)}`);
+  if (config.endEnd.thread)   partsRight.push(`Gewinde ${getEndThreadLabel(section)} · ${scopeLabel(config.endEnd.scope, section)}`);
   doc.text(partsLeft.join('   ·   '),  x, y + 7);
   doc.text(partsRight.join('   ·   '), x + w / 2, y + 7);
 }

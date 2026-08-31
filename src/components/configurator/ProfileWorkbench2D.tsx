@@ -17,6 +17,7 @@ import {
   getSlotNumber,
   getBorePositions,
   getMaterialZRange,
+  getEndThreadLabel,
   type ProfileSection,
   type ProfileHole,
   type ProfileConnector,
@@ -497,7 +498,7 @@ export function ProfileWorkbench2D({
                 onChange={(t) => onUpdateEndEnd?.(t)}
               />
               <p className="text-[9px] text-muted-foreground leading-tight px-1">
-                Klick auf Kernzug = M8-Gewinde (× = aktiv).
+                Klick auf Kernzug = {getEndThreadLabel(section)}-Gewinde (× = aktiv).
               </p>
             </aside>
           )}
@@ -651,7 +652,7 @@ export function ProfileWorkbench2D({
                 onChange={(t) => onUpdateEndStart?.(t)}
               />
               <p className="text-[9px] text-muted-foreground leading-tight px-1">
-                Klick auf Kernzug = M8-Gewinde (× = aktiv).
+                Klick auf Kernzug = {getEndThreadLabel(section)}-Gewinde (× = aktiv).
               </p>
             </aside>
           )}
@@ -1486,7 +1487,7 @@ function EndFacePanel({ label, section, treatment, onChange }: EndFacePanelProps
         />
       </div>
       <div className="text-[9px] text-muted-foreground text-center mt-1">
-        {t.thread ? `M8 in ${activeBores.size}/${allBoreNums.length}` : 'kein Gewinde'}
+        {t.thread ? `${getEndThreadLabel(section)} in ${activeBores.size}/${allBoreNums.length}` : 'kein Gewinde'}
       </div>
     </div>
   );
