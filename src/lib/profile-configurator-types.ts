@@ -544,7 +544,8 @@ export function getBorePositions(section: ProfileSection): { x: number; y: numbe
 /** Mindestabstand vom Bohrungs-Mittelpunkt zur Profilkante (mm) */
 export const MIN_EDGE_DISTANCE = 15;
 
-export const PRICE_MITER_CUT = 4.50;
+/** Schrägschnitte sind im Grundpreis enthalten (kein Aufpreis). */
+export const PRICE_MITER_CUT = 0;
 export const PRICE_HOLE = 1.80;
 export const PRICE_CONNECTOR = 3.50;
 /** Preis pro Stirnseiten-Gewinde (Kernzug) */

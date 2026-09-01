@@ -23,7 +23,6 @@ import {
   PROFILE_SECTIONS,
   PROFILE_SIZES,
   calculateProfilePrice,
-  PRICE_MITER_CUT,
   PRICE_HOLE,
   getEndThreadLabel,
   type ProfileConfig,
@@ -323,7 +322,7 @@ export default function ProfileConfigurator() {
                                 step={1}
                                 value={val}
                                 onCommit={(v) => update({ [key]: Math.max(-60, Math.min(60, v)) })}
-                                className="h-8 w-14 text-right text-sm"
+                                className="h-8 w-16 px-1.5 text-right text-sm"
                               />
                               <span className="text-muted-foreground text-xs">°</span>
                             </div>
@@ -335,9 +334,6 @@ export default function ProfileConfigurator() {
                             value={[val]}
                             onValueChange={([v]) => update({ [key]: v })}
                           />
-                          {val !== 0 && (
-                            <span className="text-[10px] text-amber-600 font-medium">+{fmt.format(PRICE_MITER_CUT)}</span>
-                          )}
                         </div>
                       );
                     })}

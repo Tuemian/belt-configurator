@@ -55,7 +55,10 @@ export function NumericInput({ value, min, max, step = 1, onCommit, className, a
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className={cn(className)}
+      className={cn(
+        '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+        className,
+      )}
     />
   );
 }
