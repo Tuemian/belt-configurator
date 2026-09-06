@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "sdk_version": "2.0.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://axwgistssiqkuvhcdcam.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "configurator",
+      "version": "0.1.0",
+      "title": "Configurator"
+    },
+    "tools": [
+      {
+        "name": "list_inquiries",
+        "title": "List inquiries",
+        "description": "List customer inquiries sent from the belt conveyor or profile cutting configurator, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "enum": [
+                "belt",
+                "profile"
+              ],
+              "description": "Which configurator the inquiries came from."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "description": "Maximum number of inquiries."
+            }
+          },
+          "required": [
+            "tool"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_configurator_references",
+        "title": "List configuration references",
+        "description": "List reserved configuration reference IDs (FT-YYYYMMDD-NNN) with their saved configuration and whether a PDF or inquiry followed.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "enum": [
+                "belt",
+                "profile"
+              ],
+              "description": "Filter by configurator."
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Look up one exact reference ID."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "description": "Maximum number of rows."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_pricing_components",
+        "title": "List pricing components",
+        "description": "List the priced components of a configurator (key, labels, unit, price in EUR, article number, price source). Requires an account with pricing access.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "enum": [
+                "belt",
+                "profile"
+              ],
+              "default": "belt",
+              "description": "Which configurator's price list."
+            },
+            "includeInactive": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also return deactivated components."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "build_conveyor_link",
+        "title": "Build belt conveyor link",
+        "description": "Turn a belt conveyor specification into a shareable link that opens the configurator with that setup preloaded.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "frameWidth": {
+              "type": "number",
+              "minimum": 100,
+              "maximum": 2000,
+              "default": 400,
+              "description": "Frame width in mm."
+            },
+            "beltLength": {
+              "type": "number",
+              "minimum": 500,
+              "maximum": 12000,
+              "default": 2000,
+              "description": "Belt length in mm."
+            },
+            "sideGuideHeight": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 300,
+              "default": 30,
+              "description": "Side guide height in mm."
+            },
+            "inclineAngle": {
+              "type": "number",
+              "minimum": -10,
+              "maximum": 10,
+              "default": 0,
+              "description": "Incline angle in degrees."
+            },
+            "beltType": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "grip",
+                "heavy-grip",
+                "food-safe"
+              ],
+              "default": "standard"
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 120,
+              "default": 15,
+              "description": "Belt speed in m/min."
+            },
+            "loadCapacity": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50,
+              "description": "Load in kg."
+            },
+            "driveType": {
+              "type": "string",
+              "enum": [
+                "direct",
+                "indirect",
+                "center",
+                "drum"
+              ],
+              "default": "direct"
+            },
+            "motorPosition": {
+              "type": "string",
+              "enum": [
+                "left",
+                "right"
+              ],
+              "default": "left"
+            },
+            "motorAngle": {
+              "type": "number",
+              "enum": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "default": 0
+            },
+            "centerDriveOffset": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 6000,
+              "default": 0,
+              "description": "Center drive offset in mm."
+            },
+            "withStand": {
+              "type": "boolean",
+              "default": true
+            },
+            "standHeight": {
+              "type": "number",
+              "minimum": 300,
+              "maximum": 2000,
+              "default": 800,
+              "description": "Stand height in mm."
+            },
+            "floorElement": {
+              "type": "string",
+              "enum": [
+                "feet",
+                "castors"
+              ],
+              "default": "feet"
+            },
+            "heightAdjust": {
+              "type": "boolean",
+              "default": false
+            },
+            "floorBolts": {
+              "type": "boolean",
+              "default": false
+            },
+            "step": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 5,
+              "description": "Wizard step to open (1-5)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
