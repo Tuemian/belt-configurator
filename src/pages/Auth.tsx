@@ -15,7 +15,9 @@ const AuthPage = () => {
   const { signIn, session, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = (location.state as { from?: string } | null)?.from ?? '/profile-configurator';
+  const rawNext = new URLSearchParams(location.search).get('next');
+  const safeNext = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null;
+  const redirectTo = safeNext ?? (location.state as { from?: string } | null)?.from ?? '/profile-configurator';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
