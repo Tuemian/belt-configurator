@@ -18,6 +18,7 @@ const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const AdminPricing = lazy(() => import("./pages/AdminPricing.tsx"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers.tsx"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent.tsx"));
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/belt-conveyor" element={<BeltConfigurator />} />
+                    <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route path="/deflection" element={<DeflectionCalculator />} />
                     <Route
                       path="/profile-configurator"
