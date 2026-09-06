@@ -37,11 +37,14 @@ Deno.serve(async (req) => {
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) return json(401, { error: 'Invalid session' });
 
-  const { data: isAdmin } = await supabase.rpc('has_role', {
-    _user_id: userData.user.id,
-    _role: 'admin',
-  });
-  if (!isAdmin) return json(403, { error: 'Admin role required' });
+  // Role check via RLS-protected table (users may read their own roles).
+  const { data: roleRow } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userData.user.id)
+    .eq('role', 'admin')
+    .maybeSingle();
+  if (!roleRow) return json(403, { error: 'Admin role required' });
 
   // Parse request body.
   let body: { article_numbers?: unknown };
