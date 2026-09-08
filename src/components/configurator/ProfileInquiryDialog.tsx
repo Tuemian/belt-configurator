@@ -21,10 +21,20 @@ import {
   type CustomerInfo,
 } from '@/lib/profile-pdf';
 
+// Ein aus dem NOVAMOTIS-Webshop übernommener Warenkorbeintrag (siehe
+// ?fromShop=… Parameter, gesetzt vom Shop beim Verlinken hierher).
+export interface ShopHandoffItem {
+  title: string;
+  sku: string | null;
+  quantityLabel: string;
+  lineTotal: string;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cart: CartItemLike[];
+  shopItems?: ShopHandoffItem[];
   onSubmitted: () => void;
 }
 
@@ -42,7 +52,7 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: Props) {
+export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [], onSubmitted }: Props) {
   const { toast } = useToast();
   const [form, setForm] = useState({
     name: '',
@@ -106,7 +116,13 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
       const cust = customer();
       const pdfBlob = await buildProfileInquiryPdf(cart, cust);
       const pdfBase64 = await blobToBase64(pdfBlob);
-      const summary = buildProfileInquirySummary(cart);
+      const shopSummary = shopItems.length
+        ? '\n\n--- Zusätzlich aus dem Webshop ---\n' +
+          shopItems
+            .map((i) => `- ${i.title}${i.sku ? ` (Art.-Nr. ${i.sku})` : ''}: ${i.quantityLabel} — ${i.lineTotal}`)
+            .join('\n')
+        : '';
+      const summary = buildProfileInquirySummary(cart) + shopSummary;
 
       const response = await fetch('/api/send-inquiry', {
         method: 'POST',
@@ -165,6 +181,13 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, onSubmitted }: 
             {cart.length} Position{cart.length !== 1 ? 'en' : ''} · Richtpreis netto&nbsp;
             <span className="font-semibold text-primary">{fmt.format(total)}</span>. Sie erhalten eine
             Bestätigung mit PDF-Datenblatt; eine Kopie geht an <code className="text-[11px]">office@novamotis.com</code>.
+            {shopItems.length > 0 && (
+              <>
+                {' '}
+                Zusätzlich werden {shopItems.length} Artikel aus Ihrem Webshop-Warenkorb in diese Anfrage
+                übernommen.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 

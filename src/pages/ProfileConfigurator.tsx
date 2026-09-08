@@ -16,7 +16,7 @@ import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileViewer3D } from '@/components/configurator/ProfileViewer3D';
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
-import { ProfileInquiryDialog } from '@/components/configurator/ProfileInquiryDialog';
+import { ProfileInquiryDialog, type ShopHandoffItem } from '@/components/configurator/ProfileInquiryDialog';
 import { NumericInput } from '@/components/configurator/NumericInput';
 import { ProfileCrossSection2D } from '@/components/configurator/ProfileCrossSection2D';
 import {
@@ -84,6 +84,24 @@ export default function ProfileConfigurator() {
 
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Warenkorb-Übernahme vom NOVAMOTIS-Webshop (Link mit ?fromShop=<base64-JSON>,
+  // siehe produkt.$handle.tsx im Shop) — wird nur an die Anfrage-Mail angehängt,
+  // nicht in den Konfigurator-Warenkorb selbst gemischt (andere Artikelart).
+  const [shopItems] = useState<ShopHandoffItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = new URLSearchParams(window.location.search).get('fromShop');
+      if (!raw) return [];
+      const binary = atob(decodeURIComponent(raw));
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+      const json = new TextDecoder().decode(bytes);
+      const parsed = JSON.parse(json);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.warn('Konnte fromShop-Parameter nicht lesen:', err);
+      return [];
+    }
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   // A10 hat kein Referenzbild vom Alvaris-Blatt und bleibt daher ein Hinweis statt der
@@ -706,6 +724,7 @@ export default function ProfileConfigurator() {
         open={inquiryOpen}
         onOpenChange={setInquiryOpen}
         cart={cart}
+        shopItems={shopItems}
         onSubmitted={() => { setCart([]); setCartOpen(false); }}
       />
     </div>
