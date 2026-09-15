@@ -5,7 +5,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLanguage } from "@/hooks/use-language";
-import { useIsEmbedded } from "@/hooks/use-embedded";
 import { t } from "@/lib/i18n";
 import Index from "./pages/Index.tsx";
 import { AuthProvider } from "./hooks/use-auth.tsx";
@@ -25,7 +24,6 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [lang] = useLanguage();
-  const isEmbedded = useIsEmbedded();
 
   useEffect(() => {
     document.title = "NOVAMOTIS Configurator";
@@ -75,19 +73,17 @@ const App = () => {
                   </Routes>
                 </Suspense>
               </div>
-              {!isEmbedded && (
-                <footer className="border-t border-slate-200 bg-white/90 backdrop-blur">
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm text-muted-foreground flex items-center justify-center gap-4">
-                    <a href="https://www.novamotis.com/impressum" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
-                      {t('imprintLink', lang)}
-                    </a>
-                    <span aria-hidden="true">|</span>
-                    <a href="https://www.novamotis.com/protection" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
-                      {t('privacyPolicyLink', lang)}
-                    </a>
-                  </div>
-                </footer>
-              )}
+              <footer className="border-t border-slate-200 bg-white/90 backdrop-blur">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-sm text-muted-foreground flex items-center justify-center gap-4">
+                  <a href="https://www.novamotis.com/impressum" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
+                    {t('imprintLink', lang)}
+                  </a>
+                  <span aria-hidden="true">|</span>
+                  <a href="https://www.novamotis.com/protection" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
+                    {t('privacyPolicyLink', lang)}
+                  </a>
+                </div>
+              </footer>
             </div>
           </AuthProvider>
         </BrowserRouter>

@@ -12,7 +12,6 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
-import { useIsEmbedded } from '@/hooks/use-embedded';
 import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileViewer3D } from '@/components/configurator/ProfileViewer3D';
@@ -82,7 +81,6 @@ interface CartItem {
 export default function ProfileConfigurator() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isEmbedded = useIsEmbedded();
 
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -499,10 +497,7 @@ export default function ProfileConfigurator() {
         <meta property="og:url" content="https://konfigurator.novamotis.com/profile-configurator" />
       </Helmet>
       <ProfileOnboarding />
-      {/* Header — im eingebetteten Modus (iframe im Webshop) bleibt nur das
-          Funktionale (Mobil-Menü, Warenkorb) stehen; Logo/Titel/Zurück-Button
-          entfallen, weil die einbettende Seite bereits ihr eigenes
-          Branding/Navigation zeigt. */}
+      {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-20 md:h-28 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
@@ -516,16 +511,12 @@ export default function ProfileConfigurator() {
                 {sidebarBody}
               </SheetContent>
             </Sheet>
-            {!isEmbedded && (
-              <>
-                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex" aria-label="Zurück zur Startseite">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <img src={logo} alt="NOVAMOTIS Logo" className="h-12 md:h-20 w-auto" />
-                <span className="text-slate-300 text-xl font-light hidden md:block">|</span>
-                <h1 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden md:block">Profilzuschnitte Konfigurator</h1>
-              </>
-            )}
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex" aria-label="Zurück zur Startseite">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <img src={logo} alt="NOVAMOTIS Logo" className="h-12 md:h-20 w-auto" />
+            <span className="text-slate-300 text-xl font-light hidden md:block">|</span>
+            <h1 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase hidden md:block">Profilzuschnitte Konfigurator</h1>
           </div>
 
           <div className="flex items-center gap-2">
