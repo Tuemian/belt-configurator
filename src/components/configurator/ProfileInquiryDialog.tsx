@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Loader2, Mail, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import {
   buildProfileInquiryPdf,
   buildProfileInquirySummary,
@@ -124,12 +125,13 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
         : '';
       const summary = buildProfileInquirySummary(cart) + shopSummary;
 
-      const response = await fetch('/api/send-inquiry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Selbe Supabase Edge Function wie der Gurtförderer-Konfigurator
+      // (siehe StepSummary.tsx) statt der alten Vercel-Route — ein
+      // einheitlicher Versandweg für beide Tools.
+      const { data, error } = await supabase.functions.invoke('send-inquiry', {
+        body: {
+          type: 'profile',
           lang: 'de',
-          configuratorLabel: 'Profilzuschnitte',
           form: {
             name: cust.name,
             company: cust.company,
@@ -138,18 +140,21 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
             message: cust.message,
             desiredDelivery: cust.desiredDelivery,
           },
+          configuration: cart,
           summary,
           attachment: {
             filename: getInquiryPdfFilename(),
             contentType: 'application/pdf',
             contentBase64: pdfBase64,
           },
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errBody = await response.text();
-        throw new Error(`Inquiry failed (${response.status}): ${errBody}`);
+      if (error) {
+        throw new Error(`Inquiry request failed: ${error.message}`);
+      }
+      if (data && (data as { error?: string }).error) {
+        throw new Error((data as { error: string }).error);
       }
 
       toast({

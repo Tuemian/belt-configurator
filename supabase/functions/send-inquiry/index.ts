@@ -22,6 +22,7 @@ interface InquiryBody {
     email: string;
     phone?: string;
     message?: string;
+    desiredDelivery?: string;
   };
   configuration: unknown;
   summary?: string;
@@ -156,6 +157,7 @@ Deno.serve(async (req) => {
   const email = (body.form?.email ?? "").toString().trim().slice(0, 254);
   const phone = (body.form?.phone ?? "").toString().trim().slice(0, 60);
   const message = (body.form?.message ?? "").toString().trim().slice(0, 4000);
+  const desiredDelivery = (body.form?.desiredDelivery ?? "").toString().trim().slice(0, 120);
   const summary = (body.summary ?? "").toString().slice(0, 25000);
   const lang = (body.lang ?? "de").toString().slice(0, 5);
 
@@ -274,6 +276,7 @@ Deno.serve(async (req) => {
     `E-Mail:  ${email}`,
     `Telefon: ${phone || "-"}`,
     `Sprache: ${lang}`,
+    ...(desiredDelivery ? [`Wunschliefertermin: ${desiredDelivery}`] : []),
     ``,
     `Nachricht:`,
     message || "-",
@@ -292,6 +295,7 @@ Deno.serve(async (req) => {
         <tr><td style="padding:4px 12px 4px 0;"><strong>E-Mail</strong></td><td>${escapeHtml(email)}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;"><strong>Telefon</strong></td><td>${escapeHtml(phone || "-")}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;"><strong>Sprache</strong></td><td>${escapeHtml(lang)}</td></tr>
+        ${desiredDelivery ? `<tr><td style="padding:4px 12px 4px 0;"><strong>Wunschliefertermin</strong></td><td>${escapeHtml(desiredDelivery)}</td></tr>` : ""}
       </table>
       ${message ? `<p><strong>Nachricht:</strong></p><p style="white-space: pre-wrap;">${escapeHtml(message)}</p>` : ""}
       <hr/>
