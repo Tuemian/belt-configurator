@@ -4,44 +4,48 @@
 
 @layer base {
   :root {
+    /* NOVAMOTIS CD Manual v0.0 (21.08.2026), Kapitel 3 "Farben": Blau
+       #0273AC, Grau/Anthrazit #303234, Flächenfarbe Hellgrau #F1F1F1 — als
+       HSL, wie von diesem (Tailwind v3 / shadcn) Theme erwartet. Gleicher
+       Abgleich wie im Webshop (src/styles.css dort). */
     --background: 0 0% 100%;
-    --foreground: 210 20% 16%;
+    --foreground: 210 4% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 16%;
+    --card-foreground: 210 4% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 16%;
+    --popover-foreground: 210 4% 20%;
 
-    --primary: 204 63% 48%;
+    --primary: 200 98% 34%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 204 30% 95%;
-    --secondary-foreground: 204 63% 32%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 210 4% 20%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 210 10% 45%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 210 4% 40%;
 
-    --accent: 204 30% 95%;
-    --accent-foreground: 204 63% 32%;
+    --accent: 200 98% 34%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 204 63% 48%;
+    --border: 210 4% 88%;
+    --input: 210 4% 88%;
+    --ring: 200 98% 34%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 204 63% 48%;
+    --sidebar-foreground: 210 4% 20%;
+    --sidebar-primary: 200 98% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 204 30% 95%;
-    --sidebar-accent-foreground: 204 63% 32%;
-    --sidebar-border: 210 20% 90%;
-    --sidebar-ring: 204 63% 48%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 210 4% 20%;
+    --sidebar-border: 210 4% 88%;
+    --sidebar-ring: 200 98% 34%;
   }
 
   .dark {
@@ -54,7 +58,7 @@
     --popover: 210 25% 10%;
     --popover-foreground: 210 20% 95%;
 
-    --primary: 204 70% 55%;
+    --primary: 200 90% 45%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 20% 15%;
@@ -63,24 +67,24 @@
     --muted: 210 20% 15%;
     --muted-foreground: 210 10% 60%;
 
-    --accent: 210 20% 15%;
-    --accent-foreground: 210 20% 90%;
+    --accent: 200 90% 45%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 20% 95%;
 
     --border: 210 20% 18%;
     --input: 210 20% 18%;
-    --ring: 204 70% 55%;
+    --ring: 200 90% 45%;
 
     --sidebar-background: 210 25% 8%;
     --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 204 70% 55%;
+    --sidebar-primary: 200 90% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 20% 15%;
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 210 20% 18%;
-    --sidebar-ring: 204 70% 55%;
+    --sidebar-ring: 200 90% 45%;
   }
 }
 
@@ -91,6 +95,10 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* CD Manual Kapitel 4 "Typografie": Aptos → Calibri → Carlito. Aptos/
+       Calibri greifen nur auf Windows+Office; Carlito ist als Web Font
+       geladen (index.html) und dient allen anderen Besuchern als
+       metrisch kompatibler Ersatz — wie im Webshop (src/styles.css). */
+    font-family: 'Aptos', 'Calibri', 'Carlito', system-ui, -apple-system, sans-serif;
   }
 }
