@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { useIsEmbedded } from '@/hooks/use-embedded';
-import { useEmbeddedAutoResize } from '@/hooks/use-embedded-resize';
 import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileViewer3D } from '@/components/configurator/ProfileViewer3D';
@@ -84,7 +83,6 @@ export default function ProfileConfigurator() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isEmbedded = useIsEmbedded();
-  useEmbeddedAutoResize();
 
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
