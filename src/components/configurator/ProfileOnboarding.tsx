@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Settings2, MousePointerClick, Wrench, Mail } from 'lucide-react';
+import { Settings2, Scissors, MousePointerClick, Mail } from 'lucide-react';
 
 const STORAGE_KEY = 'profile-configurator.onboarding-dismissed';
 
@@ -15,23 +15,23 @@ interface Step {
 const STEPS: Step[] = [
   {
     icon: Settings2,
-    title: '1. Profil & Länge wählen',
-    body: 'Wähle links Größe (z. B. 40 × 40), Variante, Länge und Stückzahl. Schrägschnitte können positiv oder negativ sein.',
+    title: '1. Profil wählen',
+    body: 'Wählen Sie links unter „Basis-Konfiguration“ die Nutreihe (A5 / A6 / A8), den Querschnitt (z. B. 40 × 40), die Variante (ECO, Leicht, Schwer), die Länge (50–6000 mm) und die Stückzahl.',
+  },
+  {
+    icon: Scissors,
+    title: '2. Enden bearbeiten',
+    body: 'Unter „Enden-Bearbeitung“ stellen Sie Schrägschnitte von −60° bis +60° ein und legen fest, ob die Stirnseiten ein Gewinde erhalten.',
   },
   {
     icon: MousePointerClick,
-    title: '2. Nut auswählen',
-    body: 'Im Querschnitt links oben siehst du die vier Nuten A / B / C / D. Klicke darauf — die gewählte Nut wird in der 2D-Werkbank angezeigt.',
-  },
-  {
-    icon: Wrench,
-    title: '3. Bohrungen & Verbinder per Drag-and-Drop',
-    body: 'Klicke direkt auf die Nut-Spur, um eine Bohrung zu setzen. Verbinder rasten automatisch an Anfang oder Ende ein. Per Maus verschiebbar, „Entf“ löscht.',
+    title: '3. Bohrungen & Verbinder setzen',
+    body: 'In der 2D-Werkbank wählen Sie im Querschnitt die Nut (rot nummeriert, Shift-Klick für mehrere). Mit „+ Bohrung“ (Taste B) oder „+ Verbinder“ (Taste V) setzen Sie per Klick auf das Profil Bohrungen bzw. Verbinder — Verbinder rasten am Profilanfang oder -ende ein. Per Maus verschieben, mit „Entf“ löschen.',
   },
   {
     icon: Mail,
     title: '4. In den Warenkorb & Anfrage senden',
-    body: 'Jede Konfiguration landet im Warenkorb. Versende die Anfrage am Ende per E-Mail — du erhältst eine Bestätigung, NOVAMOTIS bekommt eine Kopie.',
+    body: 'Mit „In den Warenkorb“ übernehmen Sie die Konfiguration als Position. Über „Anfrage senden“ geht sie per E-Mail an NOVAMOTIS — Sie erhalten eine Bestätigung mit PDF-Datenblatt, NOVAMOTIS bekommt eine Kopie.',
   },
 ];
 
@@ -61,7 +61,7 @@ export function ProfileOnboarding() {
         <DialogHeader>
           <DialogTitle className="text-xl">Willkommen im Profilzuschnitt-Konfigurator</DialogTitle>
           <DialogDescription>
-            In nur vier Schritten zum maßgeschneiderten Aluminium-Profil — mit Live-Preis und direktem Anfrage-Versand.
+            In vier Schritten zum maßgeschneiderten Aluminium-Profil. Die Preise stammen aus der Preisliste des NOVAMOTIS-Webshops; ist dort keiner hinterlegt, nennen wir ihn mit dem Angebot zu Ihrer Anfrage.
           </DialogDescription>
         </DialogHeader>
 

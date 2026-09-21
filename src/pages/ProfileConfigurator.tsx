@@ -18,6 +18,7 @@ import { ProfileViewer3D } from '@/components/configurator/ProfileViewer3D';
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
 import { ProfileInquiryDialog, type ShopHandoffItem } from '@/components/configurator/ProfileInquiryDialog';
 import { NumericInput } from '@/components/configurator/NumericInput';
+import { useShopPrices } from '@/lib/shop-prices';
 import { ProfileCrossSection2D } from '@/components/configurator/ProfileCrossSection2D';
 import {
   PROFILE_SECTIONS,
@@ -81,6 +82,8 @@ interface CartItem {
 export default function ProfileConfigurator() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  // Materialpreise kommen aus der Preisliste des Webshops (siehe shop-prices.ts)
+  const shopPriceStatus = useShopPrices();
 
   const [config, setConfig] = useState<ProfileConfig>(DEFAULT_CONFIG);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -150,12 +153,13 @@ export default function ProfileConfigurator() {
     };
     setCart((prev) => [...prev, item]);
     setCartOpen(true);
-    toast({ title: 'Position hinzugefügt', description: `${section.label} × ${config.quantity} — ${fmt.format(item.price.total)}` });
+    toast({ title: 'Position hinzugefügt', description: `${section.label} × ${config.quantity} — ${item.price.onRequest ? 'Preis auf Anfrage' : fmt.format(item.price.total)}` });
   };
 
   const removeCartItem = (id: string) => setCart((prev) => prev.filter((i) => i.id !== id));
 
   const cartTotal = cart.reduce((sum, i) => sum + i.price.total, 0);
+  const cartOnRequestCount = cart.filter((i) => i.price.onRequest).length;
 
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const openInquiry = () => {
@@ -266,7 +270,11 @@ export default function ProfileConfigurator() {
                       </div>
                       <div className="flex justify-between text-[11px] text-muted-foreground mt-2">
                         <span>{section.label}</span>
-                        <span className="font-medium">{fmt.format(section.pricePerMeter)}/m</span>
+                        <span className="font-medium">
+                          {section.priceOnRequest === false
+                            ? `${fmt.format(section.pricePerMeter)}/m`
+                            : shopPriceStatus === 'loading' ? 'Preis wird geladen …' : 'Preis auf Anfrage'}
+                        </span>
                       </div>
                     </div>
 
@@ -481,8 +489,8 @@ export default function ProfileConfigurator() {
     </div>
   );
 
-  // VAT 19 % zur Anzeige in der Floating-Card
-  const tax = +(price.total * 0.19).toFixed(2);
+  // Österreichische USt. (20 %) — wie im Webshop; nur zur Anzeige in der Floating-Card
+  const tax = +(price.total * 0.2).toFixed(2);
   const grossTotal = +(price.total + tax).toFixed(2);
   const processingTotal = +(price.miterCuts + price.holes + price.endThreads + price.connectors).toFixed(2);
 
@@ -620,31 +628,45 @@ export default function ProfileConfigurator() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 space-y-2">
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Material</span>
-                        <span className="font-mono text-foreground">{fmt.format(price.material)}</span>
+                    {price.onRequest ? (
+                      <div className="border-t border-slate-200 pt-2">
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Preis</div>
+                        <div className="text-xl font-bold text-primary leading-tight">
+                          {shopPriceStatus === 'loading' ? 'Preis wird geladen …' : 'Preis auf Anfrage'}
+                        </div>
+                        <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                          Für dieses Profil nennen wir den Preis mit dem Angebot zu Ihrer Anfrage.
+                        </p>
                       </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Bearbeitung</span>
-                        <span className="font-mono text-foreground">{fmt.format(processingTotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>MwSt. (19 %)</span>
-                        <span className="font-mono text-foreground">{fmt.format(tax)}</span>
-                      </div>
-                    </div>
-                    <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
-                      <div>
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (netto)</div>
-                        <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(price.total)}</div>
-                      </div>
-                      <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
-                        Richtpreis · zzgl. Versand
-                        <br />
-                        inkl. MwSt.: {fmt.format(grossTotal)}
-                      </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Material</span>
+                            <span className="font-mono text-foreground">{fmt.format(price.material)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Bearbeitung</span>
+                            <span className="font-mono text-foreground">{fmt.format(processingTotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>MwSt. (20 %)</span>
+                            <span className="font-mono text-foreground">{fmt.format(tax)}</span>
+                          </div>
+                        </div>
+                        <div className="border-t border-slate-200 pt-2 flex items-end justify-between">
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Gesamt (netto)</div>
+                            <div className="text-2xl font-bold text-primary leading-tight">{fmt.format(price.total)}</div>
+                          </div>
+                          <div className="text-[9px] text-muted-foreground text-right leading-tight max-w-[110px]">
+                            Richtpreis · zzgl. Versand
+                            <br />
+                            inkl. MwSt.: {fmt.format(grossTotal)}
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <Button onClick={addToCart} size="lg" className="w-full gap-2 font-semibold mt-1">
                       <ShoppingCart className="h-4 w-4" />
                       In den Warenkorb
@@ -694,7 +716,7 @@ export default function ProfileConfigurator() {
                       {item.config.angleStart !== 0 && <div>Schrägschnitt Anfang {item.config.angleStart}°</div>}
                       {item.config.angleEnd !== 0   && <div>Schrägschnitt Ende {item.config.angleEnd}°</div>}
                       {item.config.holes.length > 0 && <div>{item.config.holes.length} Bohrung{item.config.holes.length !== 1 ? 'en' : ''}</div>}
-                      <div className="text-primary font-semibold pt-1">{fmt.format(item.price.total)}</div>
+                      <div className="text-primary font-semibold pt-1">{item.price.onRequest ? 'Preis auf Anfrage' : fmt.format(item.price.total)}</div>
                     </CardContent>
                   </Card>
                 );
@@ -705,10 +727,17 @@ export default function ProfileConfigurator() {
               <div className="border-t border-slate-200 px-5 py-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Gesamtbetrag (netto)</span>
-                  <span className="text-xl font-bold text-primary">{fmt.format(cartTotal)}</span>
+                  <span className="text-xl font-bold text-primary">
+                    {cartOnRequestCount === cart.length ? 'Preis auf Anfrage' : fmt.format(cartTotal)}
+                  </span>
                 </div>
+                {cartOnRequestCount > 0 && cartOnRequestCount < cart.length && (
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    zzgl. Preis auf Anfrage für {cartOnRequestCount} Position{cartOnRequestCount !== 1 ? 'en' : ''}
+                  </p>
+                )}
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Unverbindlicher Richtpreis · zzgl. Versandkosten &amp; MwSt. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
+                  Unverbindlicher Richtpreis · zzgl. Versandkosten &amp; 20 % MwSt. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
                 </p>
                 <Button onClick={openInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />

@@ -57,8 +57,13 @@ export interface ProfileSection {
   cornerR: number;
   boreRadius: number;
   webThickness: number;
+  /** Interner Platzhalterpreis — wird NICHT mehr angezeigt. Maßgeblich ist die Preisliste des
+   *  Webshops (siehe shop-prices.ts); nur wenn dort ein Preis steht, ist priceOnRequest === false. */
   pricePerMeter: number;
-  /** NOVAMOTIS-Artikelnummer (Schema NM-PRO-{Größe}-{Variante}) */
+  /** false = Preis stammt aus der Webshop-Preisliste. Alles andere (undefined = noch nicht
+   *  geladen, true = im Shop "Preis auf Anfrage" / nicht gelistet) gilt als "Preis auf Anfrage". */
+  priceOnRequest?: boolean;
+  /** NOVAMOTIS-Artikelnummer (Webshop-Artikelnummer, sonst Platzhalter NM-PRO-{Größe}-{Variante}) */
   orderCode?: string;
   /** Massenpro-Meter (kg/m) – für PDF, Statik, Versand */
   massPerMeter?: number;
@@ -538,7 +543,8 @@ export function getBorePositions(section: ProfileSection): { x: number; y: numbe
 }
 
 // ---------------------------------------------------------------------------
-// Pricing (Fallback, wenn Excel nicht geladen)
+// Pricing — Materialpreis kommt aus der Webshop-Preisliste (shop-prices.ts),
+// die Bearbeitungspreise (Bohrung, Verbinder, Gewinde) sind hier hinterlegt.
 // ---------------------------------------------------------------------------
 
 /** Mindestabstand vom Bohrungs-Mittelpunkt zur Profilkante (mm) */
@@ -577,8 +583,15 @@ export function calculateProfilePrice(config: ProfileConfig): {
   connectors: number;
   endThreads: number;
   total: number;
+  /** true, wenn der Materialpreis im Webshop nicht hinterlegt ist — dann sind alle Beträge 0
+   *  und im UI/PDF/E-Mail ist "Preis auf Anfrage" auszugeben. */
+  onRequest: boolean;
 } {
   const section = PROFILE_SECTIONS.find((s) => s.id === config.sectionId)!;
+  const onRequest = section.priceOnRequest !== false;
+  if (onRequest) {
+    return { material: 0, miterCuts: 0, holes: 0, connectors: 0, endThreads: 0, total: 0, onRequest: true };
+  }
   const material = (config.length / 1000) * section.pricePerMeter * config.quantity;
   const cuts = (config.angleStart !== 0 ? 1 : 0) + (config.angleEnd !== 0 ? 1 : 0);
   const endThreadCount =
@@ -595,5 +608,6 @@ export function calculateProfilePrice(config: ProfileConfig): {
     connectors: +connectors.toFixed(2),
     endThreads: +endThreads.toFixed(2),
     total: +(material + miterCuts + holes + connectors + endThreads).toFixed(2),
+    onRequest: false,
   };
 }

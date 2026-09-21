@@ -148,11 +148,11 @@ export function buildProfileInquirySummary(cart: CartItemLike[]): string {
         lines.push(`    – ${c.label} · Nut ${n} (${SLOT_SIDE_DE[c.slot]}) · ${c.end === 'start' ? 'Anfang' : 'Ende'}`);
       });
     }
-    lines.push(`  Positionspreis: ${fmtEur.format(item.price.total)}`);
+    lines.push(`  Positionspreis: ${priceLabel(item.price)}`);
     lines.push('');
   });
   const total = cart.reduce((sum, i) => sum + i.price.total, 0);
-  lines.push(`Gesamt (netto): ${fmtEur.format(total)}`);
+  lines.push(`Gesamt (netto): ${totalLabel(cart, total)}`);
   return lines.join('\n');
 }
 
@@ -169,6 +169,7 @@ function drawCoverPage(
   footerImg: CachedImage | null,
   totalPages: number,
 ) {
+  const onRequestCount = cart.filter((i) => i.price.onRequest).length;
   const bodyStart = drawHeader(doc, headerImg, 'NOVAMOTIS – Profilzuschnitte', 'Anfrage mit Inhaltsverzeichnis und Positionsdetails');
   let y = bodyStart;
 
@@ -252,7 +253,7 @@ function drawCoverPage(
     doc.text(`${item.config.length} mm`, MARGIN + 114, y);
     doc.text(`${item.config.quantity} ×`, MARGIN + 134, y);
     setText(doc, SLATE_900, 9, 'bold');
-    doc.text(fmtEur.format(item.price.total), PAGE_W - MARGIN, y, { align: 'right' });
+    doc.text(priceLabel(item.price), PAGE_W - MARGIN, y, { align: 'right' });
     y += 6;
   });
 
@@ -265,10 +266,13 @@ function drawCoverPage(
   setText(doc, BRAND, 9.5, 'bold');
   doc.text('GESAMTPREIS (RICHTPREIS, NETTO)', MARGIN + 5, y + 8);
   setText(doc, BRAND, 19, 'bold');
-  doc.text(fmtEur.format(totalNet), PAGE_W - MARGIN - 5, y + 13, { align: 'right' });
+  doc.text(onRequestCount === cart.length ? 'Preis auf Anfrage' : fmtEur.format(totalNet), PAGE_W - MARGIN - 5, y + 13, { align: 'right' });
   setText(doc, BRAND_GRAY, 7.5, 'normal');
   doc.text(
-    'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS. Preise verstehen sich netto, zzgl. MwSt. und Versand.',
+    'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS. Preise verstehen sich netto, zzgl. MwSt. und Versand.' +
+      (onRequestCount > 0 && onRequestCount < cart.length
+        ? ` Zzgl. Preis auf Anfrage für ${onRequestCount} Position${onRequestCount !== 1 ? 'en' : ''}.`
+        : ''),
     MARGIN + 5, y + 21,
     { maxWidth: PAGE_W - MARGIN * 2 - 10 },
   );
@@ -309,7 +313,7 @@ function drawProfilePage(
   const massTotal = (s.massPerMeter ?? 0) * (item.config.length / 1000) * item.config.quantity;
   doc.text(s.massPerMeter ? `${massTotal.toFixed(2)} kg` : '—', MARGIN + 100, y + 10);
   setText(doc, BRAND, 11, 'bold');
-  doc.text(fmtEur.format(item.price.total), PAGE_W - MARGIN - 3, y + 10, { align: 'right' });
+  doc.text(priceLabel(item.price), PAGE_W - MARGIN - 3, y + 10, { align: 'right' });
   y += 20;
 
   // Drawings: cross-section (left) + side view (right)
@@ -680,6 +684,19 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section
   return y + 4;
 }
 
+type PriceLike = { total: number; onRequest: boolean };
+
+function priceLabel(price: PriceLike): string {
+  return price.onRequest ? 'Preis auf Anfrage' : fmtEur.format(price.total);
+}
+
+function totalLabel(cart: { price: PriceLike }[], total: number): string {
+  const requests = cart.filter((i) => i.price.onRequest).length;
+  if (requests === 0) return fmtEur.format(total);
+  if (requests === cart.length) return 'Preis auf Anfrage';
+  return `${fmtEur.format(total)} zzgl. Preis auf Anfrage für ${requests} Position${requests !== 1 ? 'en' : ''}`;
+}
+
 function drawPriceBreakdown(
   doc: jsPDF,
   price: ReturnType<typeof calculateProfilePrice>,
@@ -687,6 +704,15 @@ function drawPriceBreakdown(
 ) {
   setFill(doc, ACCENT_BG);
   doc.rect(x, y, w, 22, 'F');
+  if (price.onRequest) {
+    setText(doc, SLATE_500, 7, 'bold');
+    doc.text('PREIS', x + 3, y + 5);
+    setText(doc, BRAND, 12, 'bold');
+    doc.text('Preis auf Anfrage', x + 3, y + 13);
+    setText(doc, SLATE_500, 6.5, 'italic');
+    doc.text('Den Preis nennt NOVAMOTIS mit dem Angebot zu dieser Anfrage.', x + 3, y + 19);
+    return;
+  }
   setText(doc, SLATE_500, 7, 'bold');
   doc.text('MATERIAL', x + 3, y + 5);
   doc.text('SCHRÄGSCHN.', x + 32, y + 5);

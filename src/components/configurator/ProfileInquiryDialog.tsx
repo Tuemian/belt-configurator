@@ -69,6 +69,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const total = cart.reduce((s, i) => s + i.price.total, 0);
+  const onRequestCount = cart.filter((i) => i.price.onRequest).length;
   const canSubmit = form.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && form.privacy && cart.length > 0;
 
   const formatDeliveryForPdf = (): string | undefined => {
@@ -183,8 +184,17 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
         <DialogHeader>
           <DialogTitle>Anfrage senden</DialogTitle>
           <DialogDescription>
-            {cart.length} Position{cart.length !== 1 ? 'en' : ''} · Richtpreis netto&nbsp;
-            <span className="font-semibold text-primary">{fmt.format(total)}</span>. Sie erhalten eine
+            {cart.length} Position{cart.length !== 1 ? 'en' : ''} ·{' '}
+            {onRequestCount === cart.length ? (
+              <span className="font-semibold text-primary">Preis auf Anfrage</span>
+            ) : (
+              <>
+                Richtpreis netto&nbsp;
+                <span className="font-semibold text-primary">{fmt.format(total)}</span>
+                {onRequestCount > 0 && <> zzgl. Preis auf Anfrage für {onRequestCount} Position{onRequestCount !== 1 ? 'en' : ''}</>}
+              </>
+            )}
+            . Sie erhalten eine
             Bestätigung mit PDF-Datenblatt; eine Kopie geht an <code className="text-[11px]">office@novamotis.com</code>.
             {shopItems.length > 0 && (
               <>
