@@ -737,7 +737,9 @@ export default function ProfileConfigurator() {
                   </p>
                 )}
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Unverbindlicher Richtpreis · zzgl. Versandkosten &amp; 20 % MwSt. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.
+                  {cartOnRequestCount === cart.length
+                    ? 'Den Preis nennen wir mit dem Angebot zu Ihrer Anfrage.'
+                    : 'Unverbindlicher Richtpreis · zzgl. Versandkosten & 20 % MwSt. Finaler Preis nach technischer Prüfung durch NOVAMOTIS.'}
                 </p>
                 <Button onClick={openInquiry} className="w-full gap-2 font-semibold" size="lg">
                   <ShoppingCart className="h-4 w-4" />

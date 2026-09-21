@@ -264,12 +264,14 @@ function drawCoverPage(
   doc.setLineWidth(0.5);
   doc.roundedRect(MARGIN, y, PAGE_W - MARGIN * 2, 26, 3, 3, 'FD');
   setText(doc, BRAND, 9.5, 'bold');
-  doc.text('GESAMTPREIS (RICHTPREIS, NETTO)', MARGIN + 5, y + 8);
+  doc.text(onRequestCount === cart.length ? 'GESAMTPREIS' : 'GESAMTPREIS (RICHTPREIS, NETTO)', MARGIN + 5, y + 8);
   setText(doc, BRAND, 19, 'bold');
   doc.text(onRequestCount === cart.length ? 'Preis auf Anfrage' : fmtEur.format(totalNet), PAGE_W - MARGIN - 5, y + 13, { align: 'right' });
   setText(doc, BRAND_GRAY, 7.5, 'normal');
   doc.text(
-    'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS. Preise verstehen sich netto, zzgl. MwSt. und Versand.' +
+    (onRequestCount === cart.length
+      ? 'Den Preis nennt NOVAMOTIS mit dem Angebot zu dieser Anfrage. Preise verstehen sich netto, zzgl. MwSt. und Versand.'
+      : 'Unverbindlicher Richtpreis. Finaler Preis nach technischer Prüfung durch NOVAMOTIS. Preise verstehen sich netto, zzgl. MwSt. und Versand.') +
       (onRequestCount > 0 && onRequestCount < cart.length
         ? ` Zzgl. Preis auf Anfrage für ${onRequestCount} Position${onRequestCount !== 1 ? 'en' : ''}.`
         : ''),
