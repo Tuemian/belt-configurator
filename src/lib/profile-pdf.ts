@@ -338,14 +338,28 @@ function drawProfilePage(
   drawCutsBlock(doc, item.config, s, MARGIN, y, drawAreaW);
   y += 18;
 
-  // Holes table
+  // Bohrungen- + Verbinder-Tabelle teilen sich den Platz bis zur Preisbox — Zeilenhöhe
+  // wird gemeinsam geplant (siehe planTableRows), damit bei vielen Einträgen nichts
+  // stillschweigend wegfällt, sondern höchstens eine "+N weitere"-Notiz erscheint.
+  const plan = planTableRows(PAGE_H - 68 - y, item.config.holes.length, item.config.connectors.length);
+
   if (item.config.holes.length > 0) {
-    y = drawHolesTable(doc, item.config.holes, s, MARGIN, y, drawAreaW);
+    y = drawHolesTable(doc, item.config.holes, s, MARGIN, y, drawAreaW, plan.rowH, plan.holesShown);
   }
 
-  // Connectors table
   if (item.config.connectors.length > 0) {
-    y = drawConnectorsTable(doc, item.config.connectors, s, MARGIN, y, drawAreaW);
+    y = drawConnectorsTable(doc, item.config.connectors, s, MARGIN, y, drawAreaW, plan.rowH, plan.connShown);
+  }
+
+  if (plan.overflow > 0) {
+    const missingHoles = item.config.holes.length - plan.holesShown;
+    const missingConn = item.config.connectors.length - plan.connShown;
+    const parts: string[] = [];
+    if (missingHoles > 0) parts.push(`${missingHoles} weitere Bohrung${missingHoles !== 1 ? 'en' : ''}`);
+    if (missingConn > 0) parts.push(`${missingConn} weitere Verbinder`);
+    setText(doc, BRAND, 7, 'bold');
+    doc.text(`+ ${parts.join(' · ')} — vollständige Liste in der Anfrage-Zusammenfassung.`, MARGIN, y);
+    y += 4;
   }
 
   // Price breakdown
@@ -620,7 +634,40 @@ function scopeLabel(scope: string | undefined, section: ProfileSection): string 
   }
 }
 
-function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSection, x: number, y: number, w: number): number {
+// Fester Kopf-Anteil je Tabelle (Titel + Trennlinie + Spaltenüberschrift), bevor die
+// erste Zeile gezeichnet wird — siehe drawHolesTable/drawConnectorsTable.
+const TABLE_HEADER_H = 8;
+// Nie kleiner als das, sonst wird die Zeile unleserlich (Schrift skaliert mit).
+const MIN_ROW_H = 3.4;
+const DEFAULT_ROW_H = 5;
+
+/** Reihenhöhe für Bohrungen- und Verbinder-Tabelle gemeinsam planen, statt Zeilen
+ *  bei Platzmangel stillschweigend abzuschneiden (der ursprüngliche Bug): schrumpft
+ *  erst die Zeilenhöhe, damit möglichst alles auf die Seite passt; reicht selbst das
+ *  Minimum nicht, wird der Rest über eine "+N weitere"-Notiz sichtbar gemacht statt
+ *  einfach zu verschwinden — die vollständige Liste steht ohnehin in der
+ *  Text-Zusammenfassung der Anfrage (siehe buildProfileInquirySummary). */
+function planTableRows(availableH: number, holesCount: number, connCount: number) {
+  const overhead = (holesCount > 0 ? TABLE_HEADER_H : 0) + (connCount > 0 ? TABLE_HEADER_H : 0);
+  const totalRows = holesCount + connCount;
+  if (totalRows === 0) return { rowH: DEFAULT_ROW_H, holesShown: 0, connShown: 0, overflow: 0 };
+
+  const idealRowH = (availableH - overhead) / totalRows;
+  const rowH = Math.max(MIN_ROW_H, Math.min(DEFAULT_ROW_H, idealRowH));
+  const maxRowsFit = Math.max(0, Math.floor((availableH - overhead) / rowH));
+
+  if (maxRowsFit >= totalRows) {
+    return { rowH, holesShown: holesCount, connShown: connCount, overflow: 0 };
+  }
+  // Reicht selbst die kleinste Zeilenhöhe nicht für alle Zeilen: eine Zeile Platz für
+  // die Überlauf-Notiz reservieren, Bohrungen zuerst auffüllen, Rest an Verbinder.
+  const shownBudget = Math.max(0, maxRowsFit - 1);
+  const holesShown = Math.min(holesCount, shownBudget);
+  const connShown = Math.max(0, Math.min(connCount, shownBudget - holesShown));
+  return { rowH, holesShown, connShown, overflow: totalRows - holesShown - connShown };
+}
+
+function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSection, x: number, y: number, w: number, rowH: number, maxShow: number): number {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text(`BOHRUNGEN (${holes.length})`, x, y);
   y += 2;
@@ -638,25 +685,25 @@ function drawHolesTable(doc: jsPDF, holes: ProfileHole[], section: ProfileSectio
   doc.text('VOM ENDE', x + 162, y);
   y += 3;
 
-  holes.forEach((h, idx) => {
-    if (y > PAGE_H - 68) return; // keep room for price
+  const rowFontSize = rowH >= DEFAULT_ROW_H ? 8.5 : Math.max(6, rowH * 1.7);
+  holes.slice(0, maxShow).forEach((h, idx) => {
     if (idx % 2 === 1) {
       setFill(doc, SLATE_50);
-      doc.rect(x - 1, y - 3.2, w + 2, 5, 'F');
+      doc.rect(x - 1, y - rowH + 1.8, w + 2, rowH, 'F');
     }
-    setText(doc, SLATE_900, 8.5, 'normal');
+    setText(doc, SLATE_900, rowFontSize, 'normal');
     doc.text(String(idx + 1), x, y);
     doc.text(truncate(HOLE_TYPES.find((t) => t.id === h.type)?.label ?? h.label, 36), x + 12, y);
     doc.text(`${h.diameter} mm`, x + 70, y);
     const slotN = getSlotNumber(section, h.slot, h.moduleIndex ?? 0);
     doc.text(`Nut ${slotN} (${SLOT_SIDE_DE[h.slot]})`, x + 90, y);
     doc.text(`${h.zPosition} mm`, x + 130, y);
-    y += 5;
+    y += rowH;
   });
   return y + 4;
 }
 
-function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section: ProfileSection, x: number, y: number, w: number): number {
+function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section: ProfileSection, x: number, y: number, w: number, rowH: number, maxShow: number): number {
   setText(doc, SLATE_500, 7.5, 'bold');
   doc.text(`VERBINDER (${connectors.length})`, x, y);
   y += 2;
@@ -671,20 +718,20 @@ function drawConnectorsTable(doc: jsPDF, connectors: ProfileConnector[], section
   doc.text('POSITION', x + 140, y);
   y += 3;
 
-  connectors.forEach((c, idx) => {
-    if (y > PAGE_H - 68) return;
+  const rowFontSize = rowH >= DEFAULT_ROW_H ? 8.5 : Math.max(6, rowH * 1.7);
+  connectors.slice(0, maxShow).forEach((c, idx) => {
     if (idx % 2 === 1) {
       setFill(doc, SLATE_50);
-      doc.rect(x - 1, y - 3.2, w + 2, 5, 'F');
+      doc.rect(x - 1, y - rowH + 1.8, w + 2, rowH, 'F');
     }
     const def = CONNECTOR_TYPES.find((t) => t.id === c.type);
-    setText(doc, SLATE_900, 8.5, 'normal');
+    setText(doc, SLATE_900, rowFontSize, 'normal');
     doc.text(String(idx + 1), x, y);
     doc.text(truncate(def?.label ?? c.label, 40), x + 12, y);
     const slotN = getSlotNumber(section, c.slot, c.moduleIndex ?? 0);
     doc.text(`Nut ${slotN} (${SLOT_SIDE_DE[c.slot]})`, x + 96, y);
     doc.text(c.end === 'start' ? 'Anfang' : 'Ende', x + 140, y);
-    y += 5;
+    y += rowH;
   });
   return y + 4;
 }
