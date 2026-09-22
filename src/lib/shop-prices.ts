@@ -16,7 +16,7 @@ const SHOP_PRICE_URL: string =
 
 const FETCH_TIMEOUT_MS = 8000;
 
-interface ShopProfilePrice {
+export interface ShopProfilePrice {
   sku: string | null;
   title: string;
   nut: 'A5' | 'A6' | 'A8';
@@ -33,6 +33,9 @@ export type ShopPriceStatus = 'loading' | 'ready' | 'error';
 let status: ShopPriceStatus = 'loading';
 let inflight: Promise<void> | null = null;
 const listeners = new Set<() => void>();
+// Zuletzt erfolgreich geladene Rohliste — auch für dxf-profile-shape.ts (SKU-Zuordnung
+// für die echte Kontur), damit dafür nicht noch einmal dieselbe URL geladen wird.
+let lastProfiles: ShopProfilePrice[] | null = null;
 
 const notify = () => listeners.forEach((l) => l());
 
@@ -113,6 +116,7 @@ export function loadShopPrices(): Promise<void> {
       const data: unknown = await res.json();
       if (!isShopPriceList(data)) throw new Error('unerwartetes Format');
       applyShopPrices(data.profiles);
+      lastProfiles = data.profiles;
       status = 'ready';
     } catch (err) {
       console.warn('Webshop-Preisliste nicht verfügbar — Preise auf Anfrage:', err);
@@ -124,6 +128,14 @@ export function loadShopPrices(): Promise<void> {
     }
   })();
   return inflight;
+}
+
+/** Lädt (bzw. wartet auf) die Preisliste und liefert die Rohliste — für die
+ *  DXF-Kontur-Zuordnung (dxf-profile-shape.ts). `null`, wenn (noch) keine
+ *  erfolgreiche Ladung vorliegt. */
+export async function getShopProfiles(): Promise<ShopProfilePrice[] | null> {
+  await loadShopPrices();
+  return lastProfiles;
 }
 
 /** Lädt die Shop-Preisliste einmalig und rendert neu, sobald sie da ist. */

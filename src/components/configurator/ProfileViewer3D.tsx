@@ -1,8 +1,9 @@
-import { useRef, useMemo, Suspense } from 'react';
+import { useRef, useMemo, useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
+import { getDxfProfileShape, type DxfProfileShapeResult } from '@/lib/dxf-profile-shape';
 
 // Slot direction vectors in cross-section space (X right, Y up).
 // Slot A=top, B=right, C=bottom, D=left. We need both an outward normal
@@ -242,21 +243,43 @@ interface ProfileMeshProps {
 function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', holes, connectors }: ProfileMeshProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
+  // Echte Kontur aus der Shop-DXF statt der von Hand angenäherten Form (buildProfileShape)
+  // — siehe dxf-profile-shape.ts. Lädt asynchron pro section (gecached); bis dahin bzw. wenn
+  // keine passende Shop-Artikelnummer/DXF gefunden wird, bleibt es bei der Näherung.
+  const [dxfResult, setDxfResult] = useState<DxfProfileShapeResult | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setDxfResult(null);
+    getDxfProfileShape(section).then((result) => {
+      if (cancelled || !result) return;
+      // Grobe Plausibilitätsprüfung — falsch zugeordnete DXF lieber verwerfen als eine
+      // Kontur mit falschen Außenmaßen zeigen.
+      if (Math.abs(result.width - section.w) > 2 || Math.abs(result.height - section.h) > 2) return;
+      setDxfResult(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [section]);
+  const usingDxf = dxfResult !== null;
+
   const geometry = useMemo(() => {
-    const shape = buildProfileShape(section);
+    const shape = dxfResult?.shape ?? buildProfileShape(section);
     const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
     applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
     return geo;
-  }, [section, length, angleStart, angleEnd, angleAxis]);
+  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult]);
 
-  // Verstärkungsringe um jeden Kernzug — eigene Extrusionen, derselbe Gehrungsschnitt.
+  // Verstärkungsringe um jeden Kernzug — nur für die Näherung nötig (kein echtes
+  // Wandmaterial um die Bohrung). Die reale DXF-Kontur hat das Material dort schon.
   const bossGeometries = useMemo(() => {
+    if (usingDxf) return [];
     return buildBoreBossShapes(section).map((shape) => {
       const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
       applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
       return geo;
     });
-  }, [section, length, angleStart, angleEnd, angleAxis]);
+  }, [section, length, angleStart, angleEnd, angleAxis, usingDxf]);
 
   // Bore / hole cylinders — drilled THROUGH the profile from the chosen slot.
   // The hole orientation depends on which slot it sits on:
