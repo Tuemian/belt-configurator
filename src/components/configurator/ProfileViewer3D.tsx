@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type ConnectorType, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
+import { getModulePitch, getBorePositions, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
 import { getDxfProfileShape, type DxfProfileShapeResult } from '@/lib/dxf-profile-shape';
 import { getConnectorGeometry, type ConnectorGeometryResult } from '@/lib/step-connector-shape';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
@@ -344,15 +344,54 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
 }
 
 // ---------------------------------------------------------------------------
-// Verbinder-Position — Hülse/Bolzen-Ende am Nutgrund, Rest ragt nach außen (so
-// sitzt bei einer echten STEP-Geometrie z. B. beim Einschraubverbinder die Hülse
-// in der Nut und der Nutenstein außerhalb des Profils, statt am Platzhalter-Maß
-// vorbei mittig auf der Oberfläche zu schweben).
+// Verbinder-Position
 // ---------------------------------------------------------------------------
+//
+// Zwei grundsätzlich verschiedene Einbauarten, per Referenzbild bestätigt:
+//   - Automatikverbinder: der Bolzen geht AXIAL (entlang der Profillänge) in
+//     den Kernzug (die runde Bohrung in der Profilmitte/-ecke, dieselbe, in
+//     die auch das Stirngewinde geschnitten wird) — nicht radial durch die
+//     Wandung. Der Kernzug ist in der Grundgeometrie schon ein Loch (echte
+//     DXF-Kontur) bzw. eine Aussparung (Näherung), es braucht keinen
+//     zusätzlichen Ausschnitt.
+//   - Einschraubverbinder/Verbindersatz: Hülse sitzt IN der Nut (Nuttiefe),
+//     der Rest (Nutenstein) ragt nach außen — Achse weiter entlang der
+//     Profillänge, aber lateral am Nutgrund verankert statt am Kernzug.
 
 interface ConnectorPlacement {
   pos: [number, number, number];
   rot: [number, number, number];
+  /** true = Automatikverbinder-Fall: axial in den Kernzug, kein Wand-Ausschnitt nötig. */
+  axialIntoBore: boolean;
+}
+
+/** Nächstgelegene reale Kernzug-Position (mm, auf die Profilmitte zentriert) zur
+ *  gewählten Nut/Modulspur — nutzt getBorePositions() (dieselbe Quelle wie die
+ *  2D-Werkbank für die Stirngewinde-Auswahl), nicht das generische Bohrungsraster
+ *  der Näherung, damit es auch bei Sonderprofilen (Layout-Override) passt. */
+function nearestBoreCenter(section: ProfileSection, slot: SlotId, moduleIndex: number): { x: number; y: number } {
+  const { w, h } = section;
+  const hw = w / 2;
+  const hh = h / 2;
+  const raw = getBorePositions(section);
+  if (raw.length === 0) return { x: 0, y: 0 };
+  const PITCH = getModulePitch(section);
+  const numW = Math.max(1, Math.round(w / PITCH));
+  const numH = Math.max(1, Math.round(h / PITCH));
+  const wantX = slot === 'A' || slot === 'C' ? -hw + PITCH * (Math.min(moduleIndex, numW - 1) + 0.5) : null;
+  const wantY = slot === 'B' || slot === 'D' ? -hh + PITCH * (Math.min(moduleIndex, numH - 1) + 0.5) : null;
+  let best = raw[0];
+  let bestD = Infinity;
+  for (const p of raw) {
+    const bx = p.x - hw;
+    const by = p.y - hh;
+    const d = wantX !== null ? Math.abs(bx - wantX) : Math.abs(by - wantY!);
+    if (d < bestD) {
+      bestD = d;
+      best = p;
+    }
+  }
+  return { x: best.x - hw, y: best.y - hh };
 }
 
 function connectorPlacement(
@@ -367,63 +406,29 @@ function connectorPlacement(
   const hh = h / 2;
   const numW = Math.max(1, Math.round(w / PITCH));
   const numH = Math.max(1, Math.round(h / PITCH));
+  const slot: SlotId = conn.slot ?? 'A';
+  const dir = SLOT_DIR[slot];
+  const mi = conn.moduleIndex ?? 0;
   // Platzhalter-Maße (Quader), wenn (noch) keine echte Geometrie geladen ist.
   const dW = realSize ? realSize.y : sw * 0.80;
   const dL = realSize ? realSize.z : 22;
   const z = conn.end === 'start' ? dL / 2 : length - dL / 2;
-  const slot: SlotId = conn.slot ?? 'A';
-  const dir = SLOT_DIR[slot];
-  const mi = conn.moduleIndex ?? 0;
+
+  if (conn.type === 'auto-m6') {
+    const bore = nearestBoreCenter(section, slot, mi);
+    return { pos: [bore.x, bore.y, z], rot: [0, 0, 0], axialIntoBore: true };
+  }
 
   if (slot === 'A' || slot === 'C') {
     const idxM = Math.min(mi, numW - 1);
     const xOff = -hw + PITCH * (idxM + 0.5);
     const yOff = dir.ny * (hh - sd + dW / 2);
-    return { pos: [xOff, yOff, z], rot: [0, 0, 0] };
+    return { pos: [xOff, yOff, z], rot: [0, 0, 0], axialIntoBore: false };
   }
   const idxM = Math.min(mi, numH - 1);
   const yOff = -hh + PITCH * (idxM + 0.5);
   const xOff = dir.nx * (hw - sd + dW / 2);
-  return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2] };
-}
-
-// Verbindertypen, bei denen ein dicker Bolzen quer durchs Profil geht (statt nur
-// eine Hülse in der Nut zu sitzen) — dafür braucht das Profil einen echten
-// Ausschnitt, sonst steckt der Bolzen im massiven Material.
-const CONNECTOR_NEEDS_CLEARANCE: Partial<Record<ConnectorType, boolean>> = {
-  'auto-m6': true,
-};
-
-function cutConnectorClearances(
-  geo: THREE.BufferGeometry,
-  connectors: ProfileConnector[],
-  connectorGeo: Map<string, ConnectorGeometryResult | null>,
-  section: ProfileSection,
-  length: number,
-): THREE.BufferGeometry {
-  const relevant = connectors.filter((c) => CONNECTOR_NEEDS_CLEARANCE[c.type] && connectorGeo.get(c.type));
-  if (relevant.length === 0) return geo;
-
-  const evaluator = new Evaluator();
-  let brush = new Brush(geo);
-  brush.updateMatrixWorld(true);
-
-  for (const conn of relevant) {
-    const real = connectorGeo.get(conn.type)!;
-    const { pos } = connectorPlacement(conn, section, length, real.size);
-    const slot: SlotId = conn.slot ?? 'A';
-    // Bolzen-Ø aus der schmalsten Quer-Achse der Verbinder-Geometrie genähert
-    // (die Länge selbst — size.z — ist die Achse entlang der Nut, nicht des Bolzens).
-    const boltR = Math.min(real.size.x, real.size.y) / 2;
-    const axisLen = slot === 'A' || slot === 'C' ? section.h : section.w;
-    const lateral = slot === 'A' || slot === 'C' ? pos[0] : pos[1];
-    // Bohrachse bei 0 zentriert = quer durchs ganze Profil (Mitte zu Mitte), mit EPS-
-    // Überhang über beide Oberflächen hinaus, damit der Schnitt sauber durchgeht.
-    const drillBrush = makeDrillBrush(boltR, axisLen + 2 * CSG_EPS, 0, slot, lateral, pos[2]);
-    brush = evaluator.evaluate(brush, drillBrush, SUBTRACTION);
-  }
-
-  return brush.geometry;
+  return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2], axialIntoBore: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -467,9 +472,7 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
   // Echte Verbinder-Geometrie aus dem Shop-STEP (pro verwendetem Typ geladen +
   // gecached, siehe step-connector-shape.ts) — fällt pro Verbinder einzeln auf den
   // bisherigen Platzhalter-Quader zurück, solange sie noch lädt oder keine passende
-  // Shop-Artikelnummer existiert (v. a. Nut 5/A5). Vor `geometry` deklariert, weil
-  // manche Verbinder (Bolzen, der quer durchs Profil geht) einen echten Ausschnitt
-  // in der Hauptgeometrie brauchen (cutConnectorClearances).
+  // Shop-Artikelnummer existiert (v. a. Nut 5/A5).
   const [connectorGeo, setConnectorGeo] = useState<Map<string, ConnectorGeometryResult | null>>(new Map());
   useEffect(() => {
     let cancelled = false;
@@ -490,9 +493,8 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
     const shape = dxfResult?.shape ?? buildProfileShape(section);
     const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
     applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
-    const withHoles = cutHoles(geo, holes, section, length);
-    return cutConnectorClearances(withHoles, connectors, connectorGeo, section, length);
-  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult, holes, connectors, connectorGeo]);
+    return cutHoles(geo, holes, section, length);
+  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult, holes]);
 
   // Verstärkungsringe um jeden Kernzug — nur für die Näherung nötig (kein echtes
   // Wandmaterial um die Bohrung). Die reale DXF-Kontur hat das Material dort schon.
