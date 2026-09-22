@@ -121,6 +121,11 @@ export function ProfileWorkbench2D({
   const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
   const [tool, setTool] = useState<Tool>('hole');
   const [holeType, setHoleType] = useState<ProfileHole['type']>('d45');
+  // Ø bzw. Gewindegröße für "nach Wunsch"-Bohrungen — direkt beim Werkzeug abgefragt,
+  // statt erst nach dem Platzieren per Zweitschritt im Auswahl-Panel nachtragen zu
+  // müssen (der Wert gilt dann für alle weiteren Klicks, bis er geändert wird).
+  const [customDiameter, setCustomDiameter] = useState(6);
+  const [customThreadSize, setCustomThreadSize] = useState(6);
   const [connType, setConnType] = useState<ConnectorType>('screw-in-m8');
   // Bohrungstypen kommen ggf. asynchron aus der (admin-editierbaren) hole_types-Tabelle und
   // können vom Code-Fallback abweichen (z. B. noch alte IDs, solange niemand die Tabelle
@@ -343,11 +348,12 @@ export function ProfileWorkbench2D({
         const range = getMaterialZRange(section, length, angleStart, angleEnd, angleAxis, s.slot, s.moduleIndex);
         if (range.min >= range.max) return [];
         const clampedZ = Math.max(range.min, Math.min(range.max, z));
-        const threadSize = holeType === 'custom-thread' ? 6 : undefined;
+        const threadSize = holeType === 'custom-thread' ? customThreadSize : undefined;
+        const diameter = holeType === 'custom' ? customDiameter : (threadSize ?? typeDef.diameter);
         return [{
           id: crypto.randomUUID(),
           zPosition: clampedZ,
-          diameter: threadSize ?? typeDef.diameter,
+          diameter,
           slot: s.slot,
           moduleIndex: s.moduleIndex,
           type: holeType,
@@ -381,7 +387,7 @@ export function ProfileWorkbench2D({
       const primary = additions.find((c) => c.slot === row.slot && c.moduleIndex === row.moduleIndex);
       setSelectedId(primary?.id ?? additions[0].id);
     }
-  }, [tool, holeType, connType, length, holes, connectors, snapPointsFor, draggingId, activeKey, multiSelected, selectedSlots, onUpdateHoles, onUpdateConnectors, section, angleStart, angleEnd, angleAxis]);
+  }, [tool, holeType, customDiameter, customThreadSize, connType, length, holes, connectors, snapPointsFor, draggingId, activeKey, multiSelected, selectedSlots, onUpdateHoles, onUpdateConnectors, section, angleStart, angleEnd, angleAxis]);
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -433,6 +439,32 @@ export function ProfileWorkbench2D({
                   <SelectContent>
                     {HOLE_TYPES.map((t) => (
                       <SelectItem key={t.id} value={t.id} className="text-xs">{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {/* Ø bzw. Gewindegröße direkt beim Werkzeug abfragen (nicht erst nach dem
+                  Platzieren im Auswahl-Panel) — gilt für jeden weiteren Klick, bis geändert. */}
+              {tool === 'hole' && holeType === 'custom' && (
+                <div className="flex items-center gap-1">
+                  <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Ø</Label>
+                  <NumericInput
+                    value={customDiameter}
+                    min={1}
+                    max={30}
+                    step={0.1}
+                    onCommit={setCustomDiameter}
+                    className="h-7 w-16 text-xs"
+                  />
+                  <span className="text-[10px] text-muted-foreground">mm</span>
+                </div>
+              )}
+              {tool === 'hole' && holeType === 'custom-thread' && (
+                <Select value={String(customThreadSize)} onValueChange={(v) => setCustomThreadSize(Number(v))}>
+                  <SelectTrigger className="h-7 w-[76px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
+                      <SelectItem key={m} value={String(m)} className="text-xs">M{m}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1585,6 +1617,8 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
   const HOLE_TYPES = useHoleTypes();
   const [text, setText] = useState('');
   const [type, setType] = useState<ProfileHole['type']>(defaultType);
+  const [customDiameter, setCustomDiameter] = useState(6);
+  const [customThreadSize, setCustomThreadSize] = useState(6);
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(() => new Set([keyOf(activeKey.slot, activeKey.moduleIndex)]));
 
   // Reset, wenn Dialog frisch geöffnet wird
@@ -1629,7 +1663,8 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
 
   const handleApply = () => {
     if (parsed.positions.length === 0 || selectedSlots.size === 0) return;
-    const threadSize = type === 'custom-thread' ? 6 : undefined;
+    const threadSize = type === 'custom-thread' ? customThreadSize : undefined;
+    const diameter = type === 'custom' ? customDiameter : (threadSize ?? typeDef.diameter);
     const newHoles: ProfileHole[] = [];
     selectedSlots.forEach((k) => {
       const [s, mi] = k.split(':');
@@ -1637,7 +1672,7 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
         newHoles.push({
           id: crypto.randomUUID(),
           zPosition: z,
-          diameter: threadSize ?? typeDef.diameter,
+          diameter,
           slot: s as SlotId,
           moduleIndex: Number(mi),
           type,
@@ -1698,6 +1733,33 @@ function BulkHolesDialog({ open, onOpenChange, section, length, activeKey, defau
                 </SelectContent>
               </Select>
             </div>
+
+            {type === 'custom' && (
+              <div>
+                <Label className="text-xs">Durchmesser (mm)</Label>
+                <NumericInput
+                  value={customDiameter}
+                  min={1}
+                  max={30}
+                  step={0.1}
+                  onCommit={setCustomDiameter}
+                  className="h-8 text-xs mt-1"
+                />
+              </div>
+            )}
+            {type === 'custom-thread' && (
+              <div>
+                <Label className="text-xs">Gewindegröße</Label>
+                <Select value={String(customThreadSize)} onValueChange={(v) => setCustomThreadSize(Number(v))}>
+                  <SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
+                      <SelectItem key={m} value={String(m)} className="text-xs">M{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-1">
