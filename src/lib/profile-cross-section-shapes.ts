@@ -15,11 +15,10 @@ export const ALVARIS_PAD_PX = 20;
 export const ALVARIS_PAD_MM = ALVARIS_PAD_PX / ALVARIS_PX_PER_MM;
 
 /**
- * Alvaris zeichnet 120er/160er-Varianten immer mit der langen Seite als Breite
- * (Querformat); NOVAMOTIS' Katalog listet einige davon aber im Hochformat
- * (40×120 statt 120×40 usw. — dieselbe Extrusion, nur gedreht verwendet). Für diese
- * Fälle liefern wir das Querformat-Bild plus `rotated: true`, damit der Aufrufer es
- * um 90° gedreht in seine (bereits korrekt hochformatige) Interaktions-viewBox legt.
+ * Für 30×60/80×120/80×160 (die größere Kantenlänge nicht in erster Stelle, weil die
+ * schmalere Kante die Katalog-"Breite" ist) liefern wir das querformatige Alvaris-
+ * Referenzbild plus `rotated: true`, damit der Aufrufer es um 90° gedreht in seine
+ * (bereits korrekt hochformatige) Interaktions-viewBox legt.
  *
  * `series` wählt die Alvaris-Profilreihe (Nutbreite): A8 (Zuschnittskonfigurator hat
  * nur Nut 8, daher Default) deckt "Profilreihe 8_40" plus die 30er-Untervariante aus
@@ -41,10 +40,9 @@ export function getAlvarisImage(sizeKey: string, series: 'A5' | 'A6' | 'A8' | 'A
   }
   if (series === 'A10') return null;
 
-  const native = new Set(['30x30', '40x16', '40x40', '60x30', '60x60', '80x16', '80x40', '80x80', '160x16', '160x28']);
+  const native = new Set(['30x30', '40x16', '40x40', '60x30', '60x60', '80x16', '80x40', '80x80', '120x40', '160x16', '160x28', '160x40']);
   const rotatedFrom: Record<string, string> = {
     '30x60': '60x30',
-    '40x80': '80x40', '40x120': '120x40', '40x160': '160x40',
     '80x120': '120x80', '80x160': '160x80',
   };
   if (native.has(sizeKey)) return { path: `/profiles/cross-sections/${sizeKey}.png`, rotated: false };

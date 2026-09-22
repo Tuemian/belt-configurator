@@ -147,17 +147,16 @@ export const PROFILE_SIZES: ProfileSize[] = [
   { key: '30x60',  label: '30 × 60',  w: 30,  h: 60,  variants: ['leicht'] },
   { key: '40x16',  label: '40 × 16',  w: 40,  h: 16,  variants: ['leicht'] },
   { key: '40x40',  label: '40 × 40',  w: 40,  h: 40,  variants: ['eco', 'leicht', 'schwer'] },
-  { key: '40x80',  label: '40 × 80',  w: 40,  h: 80,  variants: ['leicht', 'schwer'] },
-  { key: '40x120', label: '40 × 120', w: 40,  h: 120, variants: ['leicht'] },
-  { key: '40x160', label: '40 × 160', w: 40,  h: 160, variants: ['leicht'] },
   { key: '60x60',  label: '60 × 60',  w: 60,  h: 60,  variants: ['leicht'] },
   { key: '80x16',  label: '80 × 16',  w: 80,  h: 16,  variants: ['leicht'] },
   { key: '80x40',  label: '80 × 40',  w: 80,  h: 40,  variants: ['eco', 'leicht', 'schwer'] },
   { key: '80x80',  label: '80 × 80',  w: 80,  h: 80,  variants: ['leicht', 'schwer'] },
   { key: '80x120', label: '80 × 120', w: 80,  h: 120, variants: ['leicht'] },
   { key: '80x160', label: '80 × 160', w: 80,  h: 160, variants: ['leicht', 'schwer'] },
+  { key: '120x40', label: '120 × 40', w: 120, h: 40,  variants: ['leicht'] },
   { key: '160x16', label: '160 × 16', w: 160, h: 16,  variants: ['leicht'] },
   { key: '160x28', label: '160 × 28', w: 160, h: 28,  variants: ['leicht'] },
+  { key: '160x40', label: '160 × 40', w: 160, h: 40,  variants: ['leicht'] },
 
   // --- Nut 5 (Alvaris "Profilreihe 5") — eigene, kleinere Nut-Geometrie ---------
   { key: '20x20', label: '20 × 20', w: 20, h: 20, variants: ['leicht'], nut: 'A5' },
@@ -203,24 +202,6 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
     w: 40, h: 40, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 12.40,
     orderCode: 'NM-PRO-40x40-S', massPerMeter: 2.10 },
 
-  // 40 × 80
-  { id: '40x80-leicht', sizeKey: '40x80', variant: 'leicht', label: '40 × 80 · Leicht',
-    w: 40, h: 80, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 14.20,
-    orderCode: 'NM-PRO-40x80-L', massPerMeter: 2.95 },
-  { id: '40x80-schwer', sizeKey: '40x80', variant: 'schwer', label: '40 × 80 · Schwer',
-    w: 40, h: 80, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 19.80,
-    orderCode: 'NM-PRO-40x80-S', massPerMeter: 3.95 },
-
-  // 40 × 120
-  { id: '40x120-leicht', sizeKey: '40x120', variant: 'leicht', label: '40 × 120 · Leicht',
-    w: 40, h: 120, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 19.80,
-    orderCode: 'NM-PRO-40x120-L', massPerMeter: 4.30 },
-
-  // 40 × 160
-  { id: '40x160-leicht', sizeKey: '40x160', variant: 'leicht', label: '40 × 160 · Leicht',
-    w: 40, h: 160, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 25.40,
-    orderCode: 'NM-PRO-40x160-L', massPerMeter: 5.65 },
-
   // 60 × 60 (Alvaris PRO8.6060, Profilreihe 8_30).
   { id: '60x60-leicht', sizeKey: '60x60', variant: 'leicht', label: '60 × 60 · Leicht',
     w: 60, h: 60, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 13.40,
@@ -237,10 +218,10 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
     orderCode: 'NM-PRO-80x40-E' },
   { id: '80x40-leicht', sizeKey: '80x40', variant: 'leicht', label: '80 × 40 · Leicht',
     w: 80, h: 40, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 14.20,
-    orderCode: 'NM-PRO-80x40-L' },
+    orderCode: 'NM-PRO-80x40-L', massPerMeter: 2.95 },
   { id: '80x40-schwer', sizeKey: '80x40', variant: 'schwer', label: '80 × 40 · Schwer',
     w: 80, h: 40, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 19.80,
-    orderCode: 'NM-PRO-80x40-S' },
+    orderCode: 'NM-PRO-80x40-S', massPerMeter: 3.95 },
 
   // 80 × 80
   { id: '80x80-leicht', sizeKey: '80x80', variant: 'leicht', label: '80 × 80 · Leicht',
@@ -263,6 +244,11 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
     w: 80, h: 160, ...NUT8_GEO, webThickness: 5.0, pricePerMeter: 56.00,
     orderCode: 'NM-PRO-80x160-S', massPerMeter: 11.20 },
 
+  // 120 × 40
+  { id: '120x40-leicht', sizeKey: '120x40', variant: 'leicht', label: '120 × 40 · Leicht',
+    w: 120, h: 40, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 19.80,
+    orderCode: 'NM-PRO-120x40-L', massPerMeter: 4.30 },
+
   // 160 × 16 / 160 × 28 (Alvaris PRO16016 / PRO16028, aus Profilbearbeitungscode-Blatt).
   // ACHTUNG: pricePerMeter/massPerMeter sind nicht von Alvaris bestätigt, sondern aus dem
   // Preis/Umfang-Verhältnis der übrigen Nut-8-Größen linear interpoliert (vorläufiger
@@ -273,6 +259,11 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   { id: '160x28-leicht', sizeKey: '160x28', variant: 'leicht', label: '160 × 28 · Leicht',
     w: 160, h: 28, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 24.90,
     orderCode: 'NM-PRO-160x28-L', massPerMeter: 4.61 },
+
+  // 160 × 40
+  { id: '160x40-leicht', sizeKey: '160x40', variant: 'leicht', label: '160 × 40 · Leicht',
+    w: 160, h: 40, ...NUT8_GEO, webThickness: 3.5, pricePerMeter: 25.40,
+    orderCode: 'NM-PRO-160x40-L', massPerMeter: 5.65 },
 
   // --- Nut 5 (Alvaris "Profilreihe 5") -----------------------------------------
   // Nut-/Steg-Geometrie (slotWidth/grooveWidth/…) ist mangels echter Maßangaben von
