@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { getModulePitch, getBorePositions, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
+import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
 import { getDxfProfileShape, type DxfProfileShapeResult } from '@/lib/dxf-profile-shape';
 import { getConnectorGeometry, type ConnectorGeometryResult } from '@/lib/step-connector-shape';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
@@ -347,51 +347,15 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
 // Verbinder-Position
 // ---------------------------------------------------------------------------
 //
-// Zwei grundsätzlich verschiedene Einbauarten, per Referenzbild bestätigt:
-//   - Automatikverbinder: der Bolzen geht AXIAL (entlang der Profillänge) in
-//     den Kernzug (die runde Bohrung in der Profilmitte/-ecke, dieselbe, in
-//     die auch das Stirngewinde geschnitten wird) — nicht radial durch die
-//     Wandung. Der Kernzug ist in der Grundgeometrie schon ein Loch (echte
-//     DXF-Kontur) bzw. eine Aussparung (Näherung), es braucht keinen
-//     zusätzlichen Ausschnitt.
-//   - Einschraubverbinder/Verbindersatz: Hülse sitzt IN der Nut (Nuttiefe),
-//     der Rest (Nutenstein) ragt nach außen — Achse weiter entlang der
-//     Profillänge, aber lateral am Nutgrund verankert statt am Kernzug.
+// Per Referenzbild (Detailaufnahme) korrigiert: auch beim Automatikverbinder
+// läuft der Bolzen längs durch den NUTKANAL (Hülse im Kanal, Kopf an der Ecke),
+// nicht axial in die runde Kernzug-Bohrung wie zunächst angenommen — beide
+// Verbindertypen nutzen daher dasselbe Nut-Modell (Hülse am Nutgrund, Rest ragt
+// nach außen).
 
 interface ConnectorPlacement {
   pos: [number, number, number];
   rot: [number, number, number];
-  /** true = Automatikverbinder-Fall: axial in den Kernzug, kein Wand-Ausschnitt nötig. */
-  axialIntoBore: boolean;
-}
-
-/** Nächstgelegene reale Kernzug-Position (mm, auf die Profilmitte zentriert) zur
- *  gewählten Nut/Modulspur — nutzt getBorePositions() (dieselbe Quelle wie die
- *  2D-Werkbank für die Stirngewinde-Auswahl), nicht das generische Bohrungsraster
- *  der Näherung, damit es auch bei Sonderprofilen (Layout-Override) passt. */
-function nearestBoreCenter(section: ProfileSection, slot: SlotId, moduleIndex: number): { x: number; y: number } {
-  const { w, h } = section;
-  const hw = w / 2;
-  const hh = h / 2;
-  const raw = getBorePositions(section);
-  if (raw.length === 0) return { x: 0, y: 0 };
-  const PITCH = getModulePitch(section);
-  const numW = Math.max(1, Math.round(w / PITCH));
-  const numH = Math.max(1, Math.round(h / PITCH));
-  const wantX = slot === 'A' || slot === 'C' ? -hw + PITCH * (Math.min(moduleIndex, numW - 1) + 0.5) : null;
-  const wantY = slot === 'B' || slot === 'D' ? -hh + PITCH * (Math.min(moduleIndex, numH - 1) + 0.5) : null;
-  let best = raw[0];
-  let bestD = Infinity;
-  for (const p of raw) {
-    const bx = p.x - hw;
-    const by = p.y - hh;
-    const d = wantX !== null ? Math.abs(bx - wantX) : Math.abs(by - wantY!);
-    if (d < bestD) {
-      bestD = d;
-      best = p;
-    }
-  }
-  return { x: best.x - hw, y: best.y - hh };
 }
 
 function connectorPlacement(
@@ -414,21 +378,16 @@ function connectorPlacement(
   const dL = realSize ? realSize.z : 22;
   const z = conn.end === 'start' ? dL / 2 : length - dL / 2;
 
-  if (conn.type === 'auto-m6') {
-    const bore = nearestBoreCenter(section, slot, mi);
-    return { pos: [bore.x, bore.y, z], rot: [0, 0, 0], axialIntoBore: true };
-  }
-
   if (slot === 'A' || slot === 'C') {
     const idxM = Math.min(mi, numW - 1);
     const xOff = -hw + PITCH * (idxM + 0.5);
     const yOff = dir.ny * (hh - sd + dW / 2);
-    return { pos: [xOff, yOff, z], rot: [0, 0, 0], axialIntoBore: false };
+    return { pos: [xOff, yOff, z], rot: [0, 0, 0] };
   }
   const idxM = Math.min(mi, numH - 1);
   const yOff = -hh + PITCH * (idxM + 0.5);
   const xOff = dir.nx * (hw - sd + dW / 2);
-  return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2], axialIntoBore: false };
+  return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2] };
 }
 
 // ---------------------------------------------------------------------------
