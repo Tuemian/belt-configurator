@@ -53,7 +53,10 @@ const SLATE_50    = { r: 248, g: 250, b: 252 };
 const ACCENT_BG   = { r: 235, g: 244, b: 255 };
 const PANEL_FILL  = { r: 255, g: 255, b: 255 };
 
-const FOOTER_TEXT_COLUMNS = [
+// Nur für den Fall, dass Hintergrund_Fusszeile.png nicht lädt — das Bild selbst hat
+// dieselben Angaben schon eingedruckt (3 Spalten), diese 4-Spalten-Variante ist nur
+// der Text-Fallback, siehe drawFooter().
+const FOOTER_TEXT_FALLBACK = [
   ['Erste Bank und Sparkasse', 'BIC/SWIFT: DOSPAT2DXXX', 'IBAN: AT10 2060 2000 0068 0215'],
   ['Gerichtsstand: LG Feldkirch', 'Firmenbuch: FN 669496 d', 'UID: ATU82899035'],
   ['Geschäftsführung:', 'Simon Martin', 'Slovyana Votchyna'],
@@ -787,34 +790,38 @@ function drawFooter(doc: jsPDF, footerImg: CachedImage | null, page: number, tot
   const footerHeight = 30;
   const footerY = PAGE_H - footerHeight;
 
+  // Hintergrund_Fusszeile.png hat die Bank-/Firmen-/Kontaktangaben schon als Text
+  // eingedruckt (Layout: 3 Spalten) — wird das Bild geladen, brauchen wir hier keinen
+  // eigenen Text mehr. Nur wenn das Bild fehlschlägt, tippen wir dieselben Angaben
+  // (4 Spalten) als Fallback, damit die Angaben nicht ganz fehlen.
+  let usedImage = false;
   if (footerImg) {
     try {
       doc.addImage(footerImg.dataUrl, 'PNG', 0, footerY, PAGE_W, footerHeight, undefined, 'FAST');
+      usedImage = true;
     } catch {
-      setFill(doc, { r: 247, g: 249, b: 252 });
-      doc.rect(0, footerY, PAGE_W, footerHeight, 'F');
+      /* fällt unten auf den Text-Fallback zurück */
     }
-  } else {
+  }
+  if (!usedImage) {
     setFill(doc, { r: 247, g: 249, b: 252 });
     doc.rect(0, footerY, PAGE_W, footerHeight, 'F');
+    setText(doc, { r: 57, g: 63, b: 70 }, 5.6, 'normal');
+    const innerPad = 12;
+    const contentWidth = PAGE_W - innerPad * 2;
+    const columnGap = 4;
+    const numColumns = FOOTER_TEXT_FALLBACK.length;
+    const columnWidth = (contentWidth - columnGap * (numColumns - 1)) / numColumns;
+    const columnsY = footerY + 5;
+    FOOTER_TEXT_FALLBACK.forEach((lines, index) => {
+      const wrapped = lines.flatMap((line) => doc.splitTextToSize(line, columnWidth) as string[]);
+      doc.text(wrapped, innerPad + index * (columnWidth + columnGap), columnsY, { lineHeightFactor: 1.05 });
+    });
   }
 
   setStroke(doc, { r: 220, g: 225, b: 232 });
   doc.setLineWidth(0.2);
   doc.line(0, footerY, PAGE_W, footerY);
-
-  // 4 columns, kleinere Schrift, mehr Innenabstand
-  setText(doc, { r: 57, g: 63, b: 70 }, 5.6, 'normal');
-  const innerPad = 12;
-  const contentWidth = PAGE_W - innerPad * 2;
-  const columnGap = 4;
-  const numColumns = FOOTER_TEXT_COLUMNS.length;
-  const columnWidth = (contentWidth - columnGap * (numColumns - 1)) / numColumns;
-  const columnsY = footerY + 5;
-  FOOTER_TEXT_COLUMNS.forEach((lines, index) => {
-    const wrapped = lines.flatMap((line) => doc.splitTextToSize(line, columnWidth) as string[]);
-    doc.text(wrapped, innerPad + index * (columnWidth + columnGap), columnsY, { lineHeightFactor: 1.05 });
-  });
 
   // Seitenzahl unten zentriert
   setText(doc, BRAND_GRAY, 6.5, 'bold');
