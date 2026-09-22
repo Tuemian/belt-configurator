@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
+import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type ConnectorType, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
 import { getDxfProfileShape, type DxfProfileShapeResult } from '@/lib/dxf-profile-shape';
 import { getConnectorGeometry, type ConnectorGeometryResult } from '@/lib/step-connector-shape';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
@@ -318,14 +318,16 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
     const r = hole.diameter / 2;
 
     if (STEPPED_TYPES.includes(hole.type)) {
+      // Ansenkung (großer Ø) bleibt auf ihre eigene Tiefe begrenzt — bis zu ihrem
+      // "Grund" für den Schraubenkopf. Das Pilotloch (kleiner Ø) geht wie eine normale
+      // Durchgangsbohrung ganz durch, nicht nur durch die nahe Wandung.
       const counterDepth = Math.min(STEP_COUNTERBORE_DEPTH[hole.type] ?? 6, webThickness + 1);
-      const drillDepth = Math.min(webThickness + 2, axisLen);
       const pilotR = (STEP_PILOT_DIAMETER[hole.type] ?? hole.diameter * 0.55) / 2;
 
       const cb = drillSegment(dirSign, halfExtent, -CSG_EPS, counterDepth);
       brush = evaluator.evaluate(brush, makeDrillBrush(r, cb.len, cb.center, slot, lateral, z), SUBTRACTION);
 
-      const pilot = drillSegment(dirSign, halfExtent, counterDepth - CSG_EPS, Math.max(drillDepth, counterDepth + CSG_EPS));
+      const pilot = drillSegment(dirSign, halfExtent, counterDepth - CSG_EPS, axisLen + CSG_EPS);
       brush = evaluator.evaluate(brush, makeDrillBrush(pilotR, pilot.len, pilot.center, slot, lateral, z), SUBTRACTION);
     } else if (hole.type === 'custom-thread') {
       const drillDepth = Math.min(webThickness + 2, axisLen);
@@ -336,6 +338,89 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
       const seg = drillSegment(dirSign, halfExtent, -CSG_EPS, axisLen + CSG_EPS);
       brush = evaluator.evaluate(brush, makeDrillBrush(r, seg.len, seg.center, slot, lateral, z), SUBTRACTION);
     }
+  }
+
+  return brush.geometry;
+}
+
+// ---------------------------------------------------------------------------
+// Verbinder-Position — Hülse/Bolzen-Ende am Nutgrund, Rest ragt nach außen (so
+// sitzt bei einer echten STEP-Geometrie z. B. beim Einschraubverbinder die Hülse
+// in der Nut und der Nutenstein außerhalb des Profils, statt am Platzhalter-Maß
+// vorbei mittig auf der Oberfläche zu schweben).
+// ---------------------------------------------------------------------------
+
+interface ConnectorPlacement {
+  pos: [number, number, number];
+  rot: [number, number, number];
+}
+
+function connectorPlacement(
+  conn: ProfileConnector,
+  section: ProfileSection,
+  length: number,
+  realSize: THREE.Vector3 | undefined,
+): ConnectorPlacement {
+  const { w, h, slotDepth: sd, slotWidth: sw } = section;
+  const PITCH = getModulePitch(section);
+  const hw = w / 2;
+  const hh = h / 2;
+  const numW = Math.max(1, Math.round(w / PITCH));
+  const numH = Math.max(1, Math.round(h / PITCH));
+  // Platzhalter-Maße (Quader), wenn (noch) keine echte Geometrie geladen ist.
+  const dW = realSize ? realSize.y : sw * 0.80;
+  const dL = realSize ? realSize.z : 22;
+  const z = conn.end === 'start' ? dL / 2 : length - dL / 2;
+  const slot: SlotId = conn.slot ?? 'A';
+  const dir = SLOT_DIR[slot];
+  const mi = conn.moduleIndex ?? 0;
+
+  if (slot === 'A' || slot === 'C') {
+    const idxM = Math.min(mi, numW - 1);
+    const xOff = -hw + PITCH * (idxM + 0.5);
+    const yOff = dir.ny * (hh - sd + dW / 2);
+    return { pos: [xOff, yOff, z], rot: [0, 0, 0] };
+  }
+  const idxM = Math.min(mi, numH - 1);
+  const yOff = -hh + PITCH * (idxM + 0.5);
+  const xOff = dir.nx * (hw - sd + dW / 2);
+  return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2] };
+}
+
+// Verbindertypen, bei denen ein dicker Bolzen quer durchs Profil geht (statt nur
+// eine Hülse in der Nut zu sitzen) — dafür braucht das Profil einen echten
+// Ausschnitt, sonst steckt der Bolzen im massiven Material.
+const CONNECTOR_NEEDS_CLEARANCE: Partial<Record<ConnectorType, boolean>> = {
+  'auto-m6': true,
+};
+
+function cutConnectorClearances(
+  geo: THREE.BufferGeometry,
+  connectors: ProfileConnector[],
+  connectorGeo: Map<string, ConnectorGeometryResult | null>,
+  section: ProfileSection,
+  length: number,
+): THREE.BufferGeometry {
+  const relevant = connectors.filter((c) => CONNECTOR_NEEDS_CLEARANCE[c.type] && connectorGeo.get(c.type));
+  if (relevant.length === 0) return geo;
+
+  const evaluator = new Evaluator();
+  let brush = new Brush(geo);
+  brush.updateMatrixWorld(true);
+
+  for (const conn of relevant) {
+    const real = connectorGeo.get(conn.type)!;
+    const { pos } = connectorPlacement(conn, section, length, real.size);
+    const slot: SlotId = conn.slot ?? 'A';
+    // Bolzen-Ø aus der schmalsten Quer-Achse der Verbinder-Geometrie genähert
+    // (die Länge selbst — size.z — ist die Achse entlang der Nut, nicht des Bolzens).
+    const boltR = Math.min(real.size.x, real.size.y) / 2;
+    const axisLen = slot === 'A' || slot === 'C' ? section.h : section.w;
+    const lateral = slot === 'A' || slot === 'C' ? pos[0] : pos[1];
+    // Bohrachse bei 0 zentriert = quer durchs ganze Profil (Mitte zu Mitte), mit EPS-
+    // Überhang über beide Oberflächen hinaus, damit der Schnitt sauber durchgeht.
+    const drillBrush = makeDrillBrush(boltR, axisLen + 2 * CSG_EPS, 0, slot, lateral, pos[2]);
+    brush = evaluator.evaluate(brush, drillBrush, SUBTRACTION);
   }
 
   return brush.geometry;
@@ -379,31 +464,12 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
   }, [section]);
   const usingDxf = dxfResult !== null;
 
-  const geometry = useMemo(() => {
-    const shape = dxfResult?.shape ?? buildProfileShape(section);
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
-    applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
-    return cutHoles(geo, holes, section, length);
-  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult, holes]);
-
-  // Verstärkungsringe um jeden Kernzug — nur für die Näherung nötig (kein echtes
-  // Wandmaterial um die Bohrung). Die reale DXF-Kontur hat das Material dort schon.
-  const bossGeometries = useMemo(() => {
-    if (usingDxf) return [];
-    return buildBoreBossShapes(section).map((shape) => {
-      const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
-      applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
-      return geo;
-    });
-  }, [section, length, angleStart, angleEnd, angleAxis, usingDxf]);
-
-  // Bohrungen sind jetzt echte Aussparungen in `geometry` (siehe cutHoles oben) statt
-  // aufgesetzter Farb-Zylinder — kein separates holeMeshes-Array mehr nötig.
-
   // Echte Verbinder-Geometrie aus dem Shop-STEP (pro verwendetem Typ geladen +
   // gecached, siehe step-connector-shape.ts) — fällt pro Verbinder einzeln auf den
   // bisherigen Platzhalter-Quader zurück, solange sie noch lädt oder keine passende
-  // Shop-Artikelnummer existiert (v. a. Nut 5/A5).
+  // Shop-Artikelnummer existiert (v. a. Nut 5/A5). Vor `geometry` deklariert, weil
+  // manche Verbinder (Bolzen, der quer durchs Profil geht) einen echten Ausschnitt
+  // in der Hauptgeometrie brauchen (cutConnectorClearances).
   const [connectorGeo, setConnectorGeo] = useState<Map<string, ConnectorGeometryResult | null>>(new Map());
   useEffect(() => {
     let cancelled = false;
@@ -420,40 +486,37 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
     };
   }, [connectors, section]);
 
-  // Connector meshes — echtes STEP-Modell seated inside the T-slot, mit
-  // Platzhalter-Quader-Fallback (silver block) pro Verbinder ohne Shop-Treffer.
+  const geometry = useMemo(() => {
+    const shape = dxfResult?.shape ?? buildProfileShape(section);
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
+    applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
+    const withHoles = cutHoles(geo, holes, section, length);
+    return cutConnectorClearances(withHoles, connectors, connectorGeo, section, length);
+  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult, holes, connectors, connectorGeo]);
+
+  // Verstärkungsringe um jeden Kernzug — nur für die Näherung nötig (kein echtes
+  // Wandmaterial um die Bohrung). Die reale DXF-Kontur hat das Material dort schon.
+  const bossGeometries = useMemo(() => {
+    if (usingDxf) return [];
+    return buildBoreBossShapes(section).map((shape) => {
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
+      applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
+      return geo;
+    });
+  }, [section, length, angleStart, angleEnd, angleAxis, usingDxf]);
+
+  // Bohrungen sind jetzt echte Aussparungen in `geometry` (siehe cutHoles oben) statt
+  // aufgesetzter Farb-Zylinder — kein separates holeMeshes-Array mehr nötig.
+
+  // Connector meshes — echtes STEP-Modell seated inside the T-slot (Position über die
+  // gemeinsame connectorPlacement()-Funktion, damit sie exakt zum Ausschnitt oben
+  // passt), mit Platzhalter-Quader-Fallback (silver block) pro Verbinder ohne
+  // Shop-Treffer.
   const connectorMeshes = useMemo(() => {
-    const { w, h, slotWidth: sw, slotDepth: sd } = section;
-    const PITCH = getModulePitch(section);
-    const hw = w / 2;
-    const hh = h / 2;
-    const numW = Math.max(1, Math.round(w / PITCH));
-    const numH = Math.max(1, Math.round(h / PITCH));
     return connectors.map((conn, idx) => {
-      const tW = sw * 0.88;
-      const tD = sd * 0.80;
-      const tL = 22;
-      const z = conn.end === 'start' ? tL / 2 : length - tL / 2;
-      const slot: SlotId = conn.slot ?? 'A';
-      const dir = SLOT_DIR[slot];
-      const mi = conn.moduleIndex ?? 0;
-
-      let pos: [number, number, number];
-      let rot: [number, number, number] = [0, 0, 0];
-      if (slot === 'A' || slot === 'C') {
-        const idxM = Math.min(mi, numW - 1);
-        const xOff = -hw + PITCH * (idxM + 0.5);
-        const yOff = dir.ny * (hh - tD / 2);
-        pos = [xOff, yOff, z];
-      } else {
-        const idxM = Math.min(mi, numH - 1);
-        const yOff = -hh + PITCH * (idxM + 0.5);
-        const xOff = dir.nx * (hw - tD / 2);
-        pos = [xOff, yOff, z];
-        rot = [0, 0, Math.PI / 2];
-      }
-
       const geo = connectorGeo.get(conn.type);
+      const { pos, rot } = connectorPlacement(conn, section, length, geo?.size);
+
       if (geo) {
         return (
           <group key={idx} position={pos} rotation={rot}>
@@ -470,9 +533,10 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
           </group>
         );
       }
+      const { slotWidth: sw, slotDepth: sd } = section;
       return (
         <mesh key={idx} position={pos} rotation={rot}>
-          <boxGeometry args={[tW, tD, tL]} />
+          <boxGeometry args={[sw * 0.88, sd * 0.80, 22]} />
           <meshStandardMaterial color="#94a3b8" metalness={0.85} roughness={0.2} />
         </mesh>
       );
