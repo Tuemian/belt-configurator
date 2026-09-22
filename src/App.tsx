@@ -8,7 +8,6 @@ import { useLanguage } from "@/hooks/use-language";
 import { t } from "@/lib/i18n";
 import Index from "./pages/Index.tsx";
 import { AuthProvider } from "./hooks/use-auth.tsx";
-import ProfilePasswordGate from "./components/ProfilePasswordGate.tsx";
 import AdminRoute from "./components/AdminRoute.tsx";
 
 const BeltConfigurator = lazy(() => import("./pages/BeltConfigurator.tsx"));
@@ -45,14 +44,7 @@ const App = () => {
                     <Route path="/belt-conveyor" element={<BeltConfigurator />} />
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route path="/deflection" element={<DeflectionCalculator />} />
-                    <Route
-                      path="/profile-configurator"
-                      element={
-                        <ProfilePasswordGate>
-                          <ProfileConfigurator />
-                        </ProfilePasswordGate>
-                      }
-                    />
+                    <Route path="/profile-configurator" element={<ProfileConfigurator />} />
                     <Route
                       path="/admin/pricing"
                       element={
