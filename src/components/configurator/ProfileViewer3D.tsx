@@ -358,6 +358,13 @@ interface ConnectorPlacement {
   rot: [number, number, number];
 }
 
+// Per Live-Screenshot nachjustiert: der Einschraubverbinder saß 12mm zu weit
+// außen (Richtung Nutöffnung) — dieser Betrag zieht ihn Richtung Profilzentrum.
+// Noch nicht für die anderen Nut-Verbindertypen bestätigt, daher vorerst nur hier.
+const CONNECTOR_INWARD_OFFSET: Partial<Record<ProfileConnector['type'], number>> = {
+  'screw-in-m8': 12,
+};
+
 function connectorPlacement(
   conn: ProfileConnector,
   section: ProfileSection,
@@ -377,16 +384,17 @@ function connectorPlacement(
   const dW = realSize ? realSize.y : sw * 0.80;
   const dL = realSize ? realSize.z : 22;
   const z = conn.end === 'start' ? dL / 2 : length - dL / 2;
+  const inward = CONNECTOR_INWARD_OFFSET[conn.type] ?? 0;
 
   if (slot === 'A' || slot === 'C') {
     const idxM = Math.min(mi, numW - 1);
     const xOff = -hw + PITCH * (idxM + 0.5);
-    const yOff = dir.ny * (hh - sd + dW / 2);
+    const yOff = dir.ny * (hh - sd + dW / 2 - inward);
     return { pos: [xOff, yOff, z], rot: [0, 0, 0] };
   }
   const idxM = Math.min(mi, numH - 1);
   const yOff = -hh + PITCH * (idxM + 0.5);
-  const xOff = dir.nx * (hw - sd + dW / 2);
+  const xOff = dir.nx * (hw - sd + dW / 2 - inward);
   return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2] };
 }
 
