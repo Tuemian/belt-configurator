@@ -254,7 +254,11 @@ const cache = new Map<string, Promise<DxfProfileShapeResult | null>>();
 
 async function fetchAndBuild(sku: string): Promise<DxfProfileShapeResult | null> {
   try {
-    const res = await fetch(`${SHOP_BASE_URL}/downloads/dxf/${sku}.dxf`);
+    // /api/dxf/<sku> statt des statischen /downloads/dxf/<sku>.dxf: der Shop liefert
+    // die statischen Downloads über Cloudflare Workers' Static-Assets-Auslieferung aus,
+    // die keine CORS-Header setzen kann (keine Cloudflare-Pages-_headers-Unterstützung).
+    // Die API-Route holt intern dieselbe Datei und hängt CORS selbst an.
+    const res = await fetch(`${SHOP_BASE_URL}/api/dxf/${sku}`);
     if (!res.ok) return null;
     const text = await res.text();
     return buildShapeFromDxfText(text);
