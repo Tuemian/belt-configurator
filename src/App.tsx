@@ -10,6 +10,8 @@ import Index from "./pages/Index.tsx";
 import { AuthProvider } from "./hooks/use-auth.tsx";
 import ProfilePasswordGate from "./components/ProfilePasswordGate.tsx";
 import AdminRoute from "./components/AdminRoute.tsx";
+import { CookieConsentBanner } from "./components/CookieConsentBanner.tsx";
+import { resetConsent } from "./lib/cookie-consent.ts";
 
 const BeltConfigurator = lazy(() => import("./pages/BeltConfigurator.tsx"));
 const ProfileConfigurator = lazy(() => import("./pages/ProfileConfigurator.tsx"));
@@ -82,8 +84,13 @@ const App = () => {
                   <a href="https://www.novamotis.com/protection" target="_blank" rel="noreferrer" className="hover:text-foreground underline underline-offset-4">
                     {t('privacyPolicyLink', lang)}
                   </a>
+                  <span aria-hidden="true">|</span>
+                  <button type="button" onClick={() => resetConsent()} className="hover:text-foreground underline underline-offset-4">
+                    {t('cookieSettingsLink', lang)}
+                  </button>
                 </div>
               </footer>
+              <CookieConsentBanner />
             </div>
           </AuthProvider>
         </BrowserRouter>

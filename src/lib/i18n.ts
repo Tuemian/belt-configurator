@@ -150,6 +150,10 @@ const translations = {
     required: 'Pflichtfeld',
     imprintLink: 'Impressum',
     privacyPolicyLink: 'Datenschutz',
+    cookieSettingsLink: 'Cookie-Einstellungen',
+    cookieBannerText: 'Wir verwenden Cookies, um unsere Website zu betreiben und ihre Nutzung zu analysieren. Notwendige Cookies sind für den Betrieb erforderlich; weitere Cookies setzen wir nur mit Ihrer Einwilligung.',
+    cookieBannerNecessaryOnly: 'Nur notwendige',
+    cookieBannerAcceptAll: 'Alle akzeptieren',
 
     // Pricing
     priceIndicative: 'Orientierungspreis',
@@ -301,6 +305,10 @@ const translations = {
     required: 'Required',
     imprintLink: 'Legal notice',
     privacyPolicyLink: 'Privacy policy',
+    cookieSettingsLink: 'Cookie settings',
+    cookieBannerText: 'We use cookies to operate our website and analyze its usage. Necessary cookies are required for operation; we only set additional cookies with your consent.',
+    cookieBannerNecessaryOnly: 'Necessary only',
+    cookieBannerAcceptAll: 'Accept all',
 
     priceIndicative: 'Approximate Price',
     priceTotal: 'Total (net, excl. VAT)',
@@ -451,6 +459,10 @@ const translations = {
     required: 'Obbligatorio',
     imprintLink: 'Note legali',
     privacyPolicyLink: 'Privacy policy',
+    cookieSettingsLink: 'Impostazioni cookie',
+    cookieBannerText: 'Utilizziamo i cookie per gestire il nostro sito e analizzarne l\'utilizzo. I cookie necessari sono richiesti per il funzionamento; impostiamo altri cookie solo con il tuo consenso.',
+    cookieBannerNecessaryOnly: 'Solo necessari',
+    cookieBannerAcceptAll: 'Accetta tutti',
 
     priceIndicative: 'Prezzo orientativo',
     priceTotal: 'Totale (netto, IVA esclusa)',
