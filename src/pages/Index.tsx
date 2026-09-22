@@ -69,7 +69,7 @@ type Tool = {
 
 const tools: Tool[] = [
   { slug: 'belt-conveyor', titleKey: 'hubToolBeltTitle', descKey: 'hubToolBeltDesc', statusKey: 'hubAvailableNow', available: true, icon: BeltConveyorIcon },
-  { slug: 'profile-configurator', titleKey: 'hubToolProfileTitle', descKey: 'hubToolProfileDesc', statusKey: 'hubBeta', available: true, requiresAuth: true, icon: ProfileIcon },
+  { slug: 'profile-configurator', titleKey: 'hubToolProfileTitle', descKey: 'hubToolProfileDesc', statusKey: 'hubAvailableNow', available: true, icon: ProfileIcon },
   { slug: 'deflection', titleKey: 'hubToolDeflectionTitle', descKey: 'hubToolDeflectionDesc', statusKey: 'hubAvailableNow', available: true, icon: DeflectionIcon },
   { slug: 'high-speed-door', titleKey: 'hubToolDoorTitle', descKey: 'hubToolDoorDesc', statusKey: 'hubPlanned', available: false, icon: DoorConfiguratorIcon },
   { slug: 'roller-conveyor', titleKey: 'hubToolRollerTitle', descKey: 'hubToolRollerDesc', statusKey: 'hubPlanned', available: false, icon: RollerConveyorIcon },

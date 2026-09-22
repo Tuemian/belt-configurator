@@ -551,7 +551,9 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, angleAx
     try {
       const exporter = new STLExporter();
       const result = exporter.parse(group, { binary: true }) as unknown as DataView;
-      const blob = new Blob([result], { type: 'application/vnd.ms-pki.stl' });
+      const bytes = new Uint8Array(result.byteLength);
+      bytes.set(new Uint8Array(result.buffer as ArrayBuffer, result.byteOffset, result.byteLength));
+      const blob = new Blob([bytes], { type: 'application/vnd.ms-pki.stl' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
