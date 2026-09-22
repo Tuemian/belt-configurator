@@ -4,7 +4,6 @@ import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
 import { getDxfProfileShape, type DxfProfileShapeResult } from '@/lib/dxf-profile-shape';
-import { getConnectorGeometry, type ConnectorGeometryResult } from '@/lib/step-connector-shape';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { Download } from 'lucide-react';
@@ -344,34 +343,19 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
 }
 
 // ---------------------------------------------------------------------------
-// Verbinder-Position
+// Verbinder-Position — nur noch Platzhalter-Quader (kein STEP-Geometrie-Ladepfad
+// mehr, siehe git-Historie: die reale Ausrichtung ließ sich ohne verlässliche
+// Referenz nicht sauber genug treffen, mehrere Iterationen dazu blieben ohne
+// stabiles Ergebnis).
 // ---------------------------------------------------------------------------
-//
-// Per Referenzbild (Detailaufnahme) korrigiert: auch beim Automatikverbinder
-// läuft der Bolzen längs durch den NUTKANAL (Hülse im Kanal, Kopf an der Ecke),
-// nicht axial in die runde Kernzug-Bohrung wie zunächst angenommen — beide
-// Verbindertypen nutzen daher dasselbe Nut-Modell (Hülse am Nutgrund, Rest ragt
-// nach außen).
 
 interface ConnectorPlacement {
   pos: [number, number, number];
   rot: [number, number, number];
 }
 
-// Per Live-Screenshot nachjustiert: der Einschraubverbinder saß 12mm zu weit
-// außen (Richtung Nutöffnung) — dieser Betrag zieht ihn Richtung Profilzentrum.
-// Noch nicht für die anderen Nut-Verbindertypen bestätigt, daher vorerst nur hier.
-const CONNECTOR_INWARD_OFFSET: Partial<Record<ProfileConnector['type'], number>> = {
-  'screw-in-m8': 12,
-};
-
-function connectorPlacement(
-  conn: ProfileConnector,
-  section: ProfileSection,
-  length: number,
-  realSize: THREE.Vector3 | undefined,
-): ConnectorPlacement {
-  const { w, h, slotDepth: sd, slotWidth: sw } = section;
+function connectorPlacement(conn: ProfileConnector, section: ProfileSection, length: number): ConnectorPlacement {
+  const { w, h, slotDepth: sd } = section;
   const PITCH = getModulePitch(section);
   const hw = w / 2;
   const hh = h / 2;
@@ -380,21 +364,19 @@ function connectorPlacement(
   const slot: SlotId = conn.slot ?? 'A';
   const dir = SLOT_DIR[slot];
   const mi = conn.moduleIndex ?? 0;
-  // Platzhalter-Maße (Quader), wenn (noch) keine echte Geometrie geladen ist.
-  const dW = realSize ? realSize.y : sw * 0.80;
-  const dL = realSize ? realSize.z : 22;
-  const z = conn.end === 'start' ? dL / 2 : length - dL / 2;
-  const inward = CONNECTOR_INWARD_OFFSET[conn.type] ?? 0;
+  const tD = sd * 0.80;
+  const tL = 22;
+  const z = conn.end === 'start' ? tL / 2 : length - tL / 2;
 
   if (slot === 'A' || slot === 'C') {
     const idxM = Math.min(mi, numW - 1);
     const xOff = -hw + PITCH * (idxM + 0.5);
-    const yOff = dir.ny * (hh - sd + dW / 2 - inward);
+    const yOff = dir.ny * (hh - tD / 2);
     return { pos: [xOff, yOff, z], rot: [0, 0, 0] };
   }
   const idxM = Math.min(mi, numH - 1);
   const yOff = -hh + PITCH * (idxM + 0.5);
-  const xOff = dir.nx * (hw - sd + dW / 2 - inward);
+  const xOff = dir.nx * (hw - tD / 2);
   return { pos: [xOff, yOff, z], rot: [0, 0, Math.PI / 2] };
 }
 
@@ -436,26 +418,6 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
   }, [section]);
   const usingDxf = dxfResult !== null;
 
-  // Echte Verbinder-Geometrie aus dem Shop-STEP (pro verwendetem Typ geladen +
-  // gecached, siehe step-connector-shape.ts) — fällt pro Verbinder einzeln auf den
-  // bisherigen Platzhalter-Quader zurück, solange sie noch lädt oder keine passende
-  // Shop-Artikelnummer existiert (v. a. Nut 5/A5).
-  const [connectorGeo, setConnectorGeo] = useState<Map<string, ConnectorGeometryResult | null>>(new Map());
-  useEffect(() => {
-    let cancelled = false;
-    setConnectorGeo(new Map());
-    const types = Array.from(new Set(connectors.map((c) => c.type)));
-    for (const type of types) {
-      getConnectorGeometry(type, section).then((result) => {
-        if (cancelled) return;
-        setConnectorGeo((prev) => new Map(prev).set(type, result));
-      });
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [connectors, section]);
-
   const geometry = useMemo(() => {
     const shape = dxfResult?.shape ?? buildProfileShape(section);
     const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
@@ -477,32 +439,13 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
   // Bohrungen sind jetzt echte Aussparungen in `geometry` (siehe cutHoles oben) statt
   // aufgesetzter Farb-Zylinder — kein separates holeMeshes-Array mehr nötig.
 
-  // Connector meshes — echtes STEP-Modell seated inside the T-slot (Position über die
-  // gemeinsame connectorPlacement()-Funktion, damit sie exakt zum Ausschnitt oben
-  // passt), mit Platzhalter-Quader-Fallback (silver block) pro Verbinder ohne
-  // Shop-Treffer.
+  // Connector (T-nut) meshes — silver blocks seated inside the T-slot at one of the
+  // two ends. Nur Platzhalter, keine reale Verbinder-Geometrie (siehe Kommentar bei
+  // connectorPlacement).
   const connectorMeshes = useMemo(() => {
+    const { slotWidth: sw, slotDepth: sd } = section;
     return connectors.map((conn, idx) => {
-      const geo = connectorGeo.get(conn.type);
-      const { pos, rot } = connectorPlacement(conn, section, length, geo?.size);
-
-      if (geo) {
-        return (
-          <group key={idx} position={pos} rotation={rot}>
-            {geo.parts.map((part, pi) => (
-              <group key={pi}>
-                <mesh geometry={part.geometry} castShadow receiveShadow>
-                  <meshStandardMaterial color="#9aa4b0" metalness={0.85} roughness={0.25} />
-                </mesh>
-                <lineSegments geometry={part.edges}>
-                  <lineBasicMaterial color="#33404d" />
-                </lineSegments>
-              </group>
-            ))}
-          </group>
-        );
-      }
-      const { slotWidth: sw, slotDepth: sd } = section;
+      const { pos, rot } = connectorPlacement(conn, section, length);
       return (
         <mesh key={idx} position={pos} rotation={rot}>
           <boxGeometry args={[sw * 0.88, sd * 0.80, 22]} />
@@ -510,7 +453,7 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
         </mesh>
       );
     });
-  }, [connectors, section, length, connectorGeo]);
+  }, [connectors, section, length]);
 
   return (
     <group ref={exportGroupRef} position={[0, 0, -length / 2]}>
