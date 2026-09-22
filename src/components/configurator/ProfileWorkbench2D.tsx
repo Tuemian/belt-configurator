@@ -73,6 +73,24 @@ function holeColor(type: ProfileHole['type']): string {
   return '#1e293b';
 }
 
+// Durchgangsbohrungen (d45/d75/custom) durchdringen die ganze Wandstärke bis zur
+// Gegenseite — Stufen-/Gewindebohrungen (step-*/custom-thread) gehen nur ein Stück in
+// die nahe Wandung, siehe cutHoles() in ProfileViewer3D.tsx (dieselbe Klassifizierung,
+// dort fürs echte Herausschneiden aus dem 3D-Modell).
+function isThroughHole(type: ProfileHole['type']): boolean {
+  return type === 'd45' || type === 'd75' || type === 'custom';
+}
+
+// A/C liegen auf derselben Bohrachse (durch die Breite), B/D auf der anderen (durch
+// die Höhe) — bestimmt, ob eine Bohrung von einer anderen Seite aus als Kreis (man
+// blickt entlang derselben Achse, sieht sie am Ende wieder herauskommen) oder als
+// Linie (man blickt seitlich drauf, die Bohrung verläuft quer durchs Bild) dargestellt
+// werden muss.
+function isSameBoreAxis(a: SlotId, b: SlotId): boolean {
+  const axisOf = (s: SlotId) => (s === 'A' || s === 'C') ? 'y' : 'x';
+  return axisOf(a) === axisOf(b);
+}
+
 function snapValue(raw: number, snap: number, snapPoints: number[], length: number): number {
   if (snap <= 1) {
     for (const p of snapPoints) {
@@ -1326,22 +1344,46 @@ function SideRow({
               );
             })}
 
-            {/* Geister-Bohrungen von der gegenüberliegenden Seite (durchsichtig, gestrichelt) */}
-            {ghostHoles.map((h) => {
-              // Gleiche Spur (modulIndex), gleiche z-Position
-              const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
-              if (laneIdx < 0) return null;
-              const cy = laneCy(laneIdx);
-              const r = Math.max(3, Math.min(8, h.diameter * 0.6));
+            {/* Geister-Bohrungen von anderen Seiten (durchsichtig, gestrichelt) — nur für
+                Durchgangsbohrungen, die überhaupt bis dorthin reichen (Stufen-/Gewinde-
+                bohrungen gehen nur ein Stück in die nahe Wandung, siehe isThroughHole).
+                Zwei Fälle, je nachdem wie man auf die andere Bohrung blickt:
+                  - Gegenüberliegende Seite (A↔C, B↔D — dieselbe Bohrachse): man blickt
+                    entlang derselben Achse, die Bohrung kommt hier als echter Kreis
+                    wieder heraus (gleiche Spur/moduleIndex wie auf der Ursprungsseite).
+                  - Rechtwinklige Seite (A/C↔B/D): man blickt seitlich drauf, die Bohrung
+                    verläuft quer durchs Bild — als Linie über die volle Höhe der Ansicht,
+                    nicht als Kreis (den sieht man nur, wenn man in die Bohrung hineinblickt). */}
+            {ghostHoles.filter((h) => isThroughHole(h.type)).map((h) => {
+              const hSlot = ensureSlot(h);
               const color = holeColor(h.type);
               const hx = dx(h.zPosition);
-              return (
-                <g key={`ghost-${h.id}`} pointerEvents="none" opacity={0.55}>
-                  <g transform={`translate(${hx} ${cy}) scale(${circleScaleX} 1) translate(${-hx} ${-cy})`}>
-                    <circle cx={hx} cy={cy} r={r + 1} fill="none" stroke={color} strokeWidth="0.8" strokeDasharray="2 1.5" />
+
+              if (isSameBoreAxis(hSlot, side.slot)) {
+                const laneIdx = side.lanes.findIndex((l) => l.moduleIndex === (h.moduleIndex ?? 0));
+                if (laneIdx < 0) return null;
+                const cy = laneCy(laneIdx);
+                const r = Math.max(3, Math.min(8, h.diameter * 0.6));
+                return (
+                  <g key={`ghost-${h.id}`} pointerEvents="none" opacity={0.55}>
+                    <g transform={`translate(${hx} ${cy}) scale(${circleScaleX} 1) translate(${-hx} ${-cy})`}>
+                      <circle cx={hx} cy={cy} r={r + 1} fill="none" stroke={color} strokeWidth="0.8" strokeDasharray="2 1.5" />
+                    </g>
+                    <line x1={hx - r * 0.7} y1={cy - r * 0.7} x2={hx + r * 0.7} y2={cy + r * 0.7} stroke={color} strokeWidth="0.6" strokeDasharray="1 1" />
                   </g>
-                  <line x1={hx - r * 0.7} y1={cy - r * 0.7} x2={hx + r * 0.7} y2={cy + r * 0.7} stroke={color} strokeWidth="0.6" strokeDasharray="1 1" />
-                </g>
+                );
+              }
+
+              return (
+                <line
+                  key={`ghost-${h.id}`}
+                  x1={hx} y1={top} x2={hx} y2={top + ROW_PIX_HEIGHT}
+                  stroke={color}
+                  strokeWidth="0.8"
+                  strokeDasharray="2.5 2"
+                  opacity={0.55}
+                  pointerEvents="none"
+                />
               );
             })}
 
