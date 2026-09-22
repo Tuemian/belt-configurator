@@ -31,6 +31,17 @@ export interface ShopHandoffItem {
   lineTotal: string;
 }
 
+// Vorlaufzeit für die Fertigung/Lieferung — der Liefertermin ist erst ab
+// diesem Datum wählbar.
+const MIN_DELIVERY_LEAD_DAYS = 7;
+
+function getMinDeliveryDate(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + MIN_DELIVERY_LEAD_DAYS);
+  return d;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,6 +76,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
   });
   const [desiredDelivery, setDesiredDelivery] = useState<Date | undefined>();
   const [deliveryFlexibility, setDeliveryFlexibility] = useState<'on' | 'asap' | 'around'>('on');
+  const minDeliveryDate = getMinDeliveryDate();
   const [sending, setSending] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
@@ -264,6 +276,9 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
               <CalendarIcon className="h-3.5 w-3.5 text-primary" />
               Wunschliefertermin
             </Label>
+            <p className="text-[11px] text-muted-foreground">
+              Frühestens ab {format(minDeliveryDate, 'd. MMMM yyyy', { locale: de })} wählbar (Vorlaufzeit für Fertigung &amp; Versand).
+            </p>
             <div className="flex items-center gap-2">
               <Popover>
                 <PopoverTrigger asChild>
@@ -287,7 +302,8 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
                     mode="single"
                     selected={desiredDelivery}
                     onSelect={setDesiredDelivery}
-                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    disabled={(d) => d < minDeliveryDate}
+                    defaultMonth={minDeliveryDate}
                     initialFocus
                     locale={de}
                     className={cn('p-3 pointer-events-auto')}
