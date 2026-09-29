@@ -6,54 +6,55 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, Globe, Lock, LogOut } from 'lucide-react';
 import heroImage from '@/assets/hero-modular-systems.webp';
+import pictoFoerdertechnik from '@/assets/pictograms/icon_foerdertechnik.png';
+import pictoProfiltechnik from '@/assets/pictograms/icon_aluminiumprofiltechnik.png';
+import pictoCadEngineering from '@/assets/pictograms/icon_cad-engineering.png';
+import pictoSchnelllauftore from '@/assets/pictograms/icon_schnelllauftore.png';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
 type ToolIconProps = { className?: string };
 
+// Piktogramme aus dem NOVAMOTIS-CD (dieselben wie im Webshop, src/assets/pictograms)
+// statt der bisherigen schlanken Lucide-artigen Linien-Icons — für optische
+// Konsistenz zwischen Webshop und Konfigurator.
 const BeltConveyorIcon = ({ className }: ToolIconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <rect x="2" y="9" width="20" height="6" rx="3" stroke="currentColor" strokeWidth="1.7" />
-    <path d="M6 12h12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M14.5 10.3L17.2 12l-2.7 1.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <img src={pictoFoerdertechnik} alt="" className={className} />
 );
 
 const DeflectionIcon = ({ className }: ToolIconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <path d="M3 8.5h18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M4.2 8.5c3.4 6.2 12.2 6.2 15.6 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M4 18.5h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M8 16.8v3.4M12 16.8v3.4M16 16.8v3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-  </svg>
+  <img src={pictoCadEngineering} alt="" className={className} />
 );
 
 const DoorConfiguratorIcon = ({ className }: ToolIconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.7" />
-    <path d="M8 20V8h8v12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M12 14V9.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    <path d="M10.3 10.8 12 9.1l1.7 1.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <img src={pictoSchnelllauftore} alt="" className={className} />
 );
 
+// Kein eigenes Piktogramm im CD-Set für Rollenbahnen vorhanden — im selben Stil
+// (Farbe/Strichstärke aus den echten Piktogrammen abgetastet: #0277B8) nachgezeichnet:
+// Rahmen mit Tragrollen quer zur Förderrichtung, davor ein Richtungspfeil.
 const RollerConveyorIcon = ({ className }: ToolIconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <rect x="2.2" y="7.6" width="19.6" height="8.8" rx="4.4" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="6" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="10.4" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="14.8" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
-    <circle cx="19.2" cy="12" r="1.95" stroke="currentColor" strokeWidth="1.5" />
+  <svg viewBox="0 0 230 200" fill="none" className={className} aria-hidden="true">
+    <path d="M92 46 L138 46" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
+    <path d="M124 34 L138 46 L124 58" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="22" y="78" width="186" height="48" rx="8" stroke="#0277B8" strokeWidth="4.2" />
+    {[42, 72, 102, 132, 162, 188].map((x) => (
+      <g key={x}>
+        <line x1={x} y1="74" x2={x} y2="106" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
+        <circle cx={x} cy="74" r="4.4" fill="#0277B8" />
+        <circle cx={x} cy="106" r="4.4" fill="#0277B8" />
+      </g>
+    ))}
+    <path d="M50 126 L50 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
+    <path d="M180 126 L180 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
+    <path d="M36 160 L64 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
+    <path d="M166 160 L194 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
   </svg>
 );
 
 const ProfileIcon = ({ className }: ToolIconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-    <rect x="3" y="3" width="18" height="18" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
-    <rect x="7" y="7" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" />
-    <path d="M3 10h4M3 14h4M17 10h4M17 14h4M10 3v4M14 3v4M10 17v4M14 17v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-  </svg>
+  <img src={pictoProfiltechnik} alt="" className={className} />
 );
 
 type TKey = Parameters<typeof t>[0];
@@ -172,7 +173,7 @@ const Index = () => {
                   <CardHeader className="space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-primary">
-                        <Icon className="h-8 w-8" />
+                        <Icon className="h-10 w-10 object-contain" />
                       </div>
                       <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm shadow-sm ring-1 ring-black/5 ${
                         isBeta
