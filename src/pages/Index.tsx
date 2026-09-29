@@ -31,26 +31,10 @@ const DoorConfiguratorIcon = ({ className }: ToolIconProps) => (
   <img src={pictoSchnelllauftore} alt="" className={className} />
 );
 
-// Kein eigenes Piktogramm im CD-Set für Rollenbahnen vorhanden — im selben Stil
-// (Farbe/Strichstärke aus den echten Piktogrammen abgetastet: #0277B8) nachgezeichnet:
-// Rahmen mit Tragrollen quer zur Förderrichtung, davor ein Richtungspfeil.
+// Kein eigenes Piktogramm im CD-Set für Rollenbahnen vorhanden — nutzt bis dahin
+// dasselbe Fördertechnik-Piktogramm wie beim Gurtförderer (beide sind Fördertechnik).
 const RollerConveyorIcon = ({ className }: ToolIconProps) => (
-  <svg viewBox="0 0 230 200" fill="none" className={className} aria-hidden="true">
-    <path d="M92 46 L138 46" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
-    <path d="M124 34 L138 46 L124 58" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
-    <rect x="22" y="78" width="186" height="48" rx="8" stroke="#0277B8" strokeWidth="4.2" />
-    {[42, 72, 102, 132, 162, 188].map((x) => (
-      <g key={x}>
-        <line x1={x} y1="74" x2={x} y2="106" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
-        <circle cx={x} cy="74" r="4.4" fill="#0277B8" />
-        <circle cx={x} cy="106" r="4.4" fill="#0277B8" />
-      </g>
-    ))}
-    <path d="M50 126 L50 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
-    <path d="M180 126 L180 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
-    <path d="M36 160 L64 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
-    <path d="M166 160 L194 160" stroke="#0277B8" strokeWidth="4.2" strokeLinecap="round" />
-  </svg>
+  <img src={pictoFoerdertechnik} alt="" className={className} />
 );
 
 const ProfileIcon = ({ className }: ToolIconProps) => (
