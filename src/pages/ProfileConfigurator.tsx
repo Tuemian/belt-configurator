@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, RotateCcw, Menu, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart, RotateCcw, Menu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -160,11 +160,21 @@ export default function ProfileConfigurator() {
       price: calculateProfilePrice(config),
     };
     setCart((prev) => [...prev, item]);
+    // Öffnet den Warenkorb direkt, statt zusätzlich einen Toast einzublenden — der
+    // überlagerte sonst kurz die einblendende Warenkorb-Ansicht rechts (beide oben rechts).
     setCartOpen(true);
-    toast({ title: 'Position hinzugefügt', description: `${section.label} × ${config.quantity} — ${item.price.onRequest ? 'Preis auf Anfrage' : fmt.format(item.price.total)}` });
   };
 
   const removeCartItem = (id: string) => setCart((prev) => prev.filter((i) => i.id !== id));
+
+  const updateCartItemQuantity = (id: string, quantity: number) => {
+    const q = Math.max(1, quantity);
+    setCart((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      const newConfig = { ...item.config, quantity: q };
+      return { ...item, config: newConfig, price: calculateProfilePrice(newConfig) };
+    }));
+  };
 
   const cartTotal = cart.reduce((sum, i) => sum + i.price.total, 0);
   const cartOnRequestCount = cart.filter((i) => i.price.onRequest).length;
@@ -711,27 +721,72 @@ export default function ProfileConfigurator() {
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto pr-2 min-h-0 space-y-3">
-                  {cart.map((item, idx) => {
+                <div className="flex-1 overflow-y-auto pr-2 min-h-0 space-y-4">
+                  {cart.map((item) => {
                     const s = PROFILE_SECTIONS.find((p) => p.id === item.config.sectionId)!;
+                    const details = [
+                      `${item.config.length} mm`,
+                      item.config.angleStart !== 0 ? `Schrägschnitt Anfang ${item.config.angleStart}°` : null,
+                      item.config.angleEnd !== 0 ? `Schrägschnitt Ende ${item.config.angleEnd}°` : null,
+                      item.config.holes.length > 0 ? `${item.config.holes.length} Bohrung${item.config.holes.length !== 1 ? 'en' : ''}` : null,
+                    ].filter(Boolean).join(' · ');
                     return (
-                      <Card key={item.id} className="border-slate-200">
-                        <CardHeader className="py-2 px-3 flex flex-row items-start justify-between">
-                          <CardTitle className="text-sm text-foreground font-medium">
-                            Pos. {idx + 1} – {s.label}
-                          </CardTitle>
-                          <button onClick={() => removeCartItem(item.id)} className="text-muted-foreground hover:text-red-500 mt-0.5">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </CardHeader>
-                        <CardContent className="py-2 px-3 text-xs space-y-0.5 text-muted-foreground">
-                          <div>{item.config.length} mm · {item.config.quantity} Stk.</div>
-                          {item.config.angleStart !== 0 && <div>Schrägschnitt Anfang {item.config.angleStart}°</div>}
-                          {item.config.angleEnd !== 0   && <div>Schrägschnitt Ende {item.config.angleEnd}°</div>}
-                          {item.config.holes.length > 0 && <div>{item.config.holes.length} Bohrung{item.config.holes.length !== 1 ? 'en' : ''}</div>}
-                          <div className="text-primary font-semibold pt-1">{item.price.onRequest ? 'Preis auf Anfrage' : fmt.format(item.price.total)}</div>
-                        </CardContent>
-                      </Card>
+                      <div key={item.id} className="flex flex-wrap gap-x-4 gap-y-3 p-2 sm:flex-nowrap">
+                        <div className="w-16 h-16 flex-shrink-0 rounded-md bg-secondary overflow-hidden flex items-center justify-center">
+                          <ProfileCrossSection2D
+                            section={s}
+                            activeSlot="A"
+                            onSelectSlot={() => {}}
+                            noSlotHighlight
+                            showLabels={false}
+                            size={56}
+                            rotate90={s.w > s.h}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 basis-40">
+                          <h4 className="font-medium truncate">{s.label}</h4>
+                          <p className="text-sm text-muted-foreground">{details}</p>
+                          {item.price.onRequest ? (
+                            <p className="text-muted-foreground">Preis auf Anfrage</p>
+                          ) : (
+                            <>
+                              <p className="text-xs text-muted-foreground">
+                                {fmt.format(item.price.total / item.config.quantity)} / Stk
+                              </p>
+                              <p className="font-semibold">{fmt.format(item.price.total)}</p>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex w-full flex-shrink-0 flex-row-reverse items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeCartItem(item.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => updateCartItemQuantity(item.id, item.config.quantity - 1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center text-sm">{item.config.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => updateCartItemQuantity(item.id, item.config.quantity + 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
