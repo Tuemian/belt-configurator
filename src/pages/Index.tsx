@@ -125,29 +125,35 @@ const Index = () => {
       </header>
 
       <main>
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center">
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+        {/* Hero — full-width image with overlaid card (item24-style, wie im Webshop) */}
+        <section className="relative">
+          <div className="relative w-full overflow-hidden md:h-[480px]">
+            <img
+              src={heroImage}
+              alt="NOVAMOTIS Modulare Systeme"
+              width={2100}
+              height={700}
+              className="h-[200px] w-full object-cover object-[85%_center] sm:h-[260px] md:absolute md:inset-0 md:h-full md:object-[center_60%]"
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
+            />
+            <div className="absolute inset-0 hidden bg-gradient-to-r from-background/40 to-transparent md:block" />
+            <div className="relative mx-auto md:h-full md:max-w-7xl md:px-6 lg:px-8">
+              <div className="bg-background px-6 py-8 sm:py-10 md:absolute md:left-6 md:top-1/2 md:w-[560px] md:-translate-y-1/2 md:bg-background/95 md:p-10 md:shadow-xl md:backdrop-blur lg:left-8">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight text-foreground">
                   {t('hubTitle', lang)}
                 </h1>
-                <p className="max-w-xl text-lg text-muted-foreground leading-relaxed">
+                <div className="mt-4 h-0.5 w-12 bg-primary" />
+                <p className="mt-5 text-sm md:text-base text-muted-foreground leading-relaxed">
                   {t('hubSubtitle', lang)}
                 </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-sky-200/10 to-transparent blur-2xl" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
-                <img src={heroImage} alt="NOVAMOTIS Modulare Systeme" className="w-full h-auto" width={2100} height={700} fetchPriority="high" loading="eager" decoding="async" />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20">
           <div className="mb-8 flex items-end justify-between gap-6">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{t('hubSectionTitle', lang)}</h2>
