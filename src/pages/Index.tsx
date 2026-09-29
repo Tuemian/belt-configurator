@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, Globe, Lock, LogOut } from 'lucide-react';
-import conveyorHero from '@/assets/conveyor-hero.webp';
+import heroImage from '@/assets/hero-modular-systems.webp';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -141,7 +141,7 @@ const Index = () => {
             <div className="relative">
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-sky-200/10 to-transparent blur-2xl" />
               <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(10,47,76,0.12)] backdrop-blur">
-                <img src={conveyorHero} alt="Fördertechnik" className="w-full h-auto" width={1400} height={815} fetchPriority="high" loading="eager" decoding="async" />
+                <img src={heroImage} alt="NOVAMOTIS Modulare Systeme" className="w-full h-auto" width={2100} height={700} fetchPriority="high" loading="eager" decoding="async" />
               </div>
             </div>
           </div>
