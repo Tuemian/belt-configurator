@@ -1,10 +1,11 @@
-import { useRef, useMemo, useEffect, useState, Suspense } from 'react';
+import { useRef, useMemo, useEffect, useState, useDeferredValue, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { getModulePitch, type ProfileSection, type ProfileHole, type ProfileConnector, type SlotId, type AngleAxis } from '@/lib/profile-configurator-types';
 import { getDxfProfileShape, type DxfProfileShapeResult } from '@/lib/dxf-profile-shape';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 import { Download } from 'lucide-react';
 
@@ -264,17 +265,21 @@ function drillSegment(dirSign: number, halfExtent: number, d0: number, d1: numbe
   return { center: (worldAtD0 + worldAtD1) / 2, len: Math.abs(worldAtD1 - worldAtD0) };
 }
 
-function makeDrillBrush(radius: number, len: number, axisCenter: number, slot: SlotId, lateral: number, z: number): Brush {
+/** Baut die Bohrwerkzeug-Geometrie direkt in Weltkoordinaten (statt als Brush mit
+ *  eigenem Transform) — so lassen sich beliebig viele Bohrwerkzeuge vor dem
+ *  Ausschneiden zu einer einzigen Geometrie zusammenführen (s. cutHoles unten). */
+function makeDrillGeometry(radius: number, len: number, axisCenter: number, slot: SlotId, lateral: number, z: number): THREE.BufferGeometry {
   const cyl = new THREE.CylinderGeometry(radius, radius, len, 20, 1);
-  const brush = new Brush(cyl);
+  const pos = new THREE.Vector3();
+  const quat = new THREE.Quaternion();
   if (slot === 'A' || slot === 'C') {
-    brush.position.set(lateral, axisCenter, z);
+    pos.set(lateral, axisCenter, z);
   } else {
-    brush.rotation.z = Math.PI / 2;
-    brush.position.set(axisCenter, lateral, z);
+    quat.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+    pos.set(axisCenter, lateral, z);
   }
-  brush.updateMatrixWorld(true);
-  return brush;
+  cyl.applyMatrix4(new THREE.Matrix4().compose(pos, quat, new THREE.Vector3(1, 1, 1)));
+  return cyl;
 }
 
 /** Schneidet alle Bohrungen als echte Boolesche Subtraktion aus der extrudierten
@@ -290,9 +295,13 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
   const numW = Math.max(1, Math.round(w / PITCH));
   const numH = Math.max(1, Math.round(h / PITCH));
 
-  const evaluator = new Evaluator();
-  let brush = new Brush(geo);
-  brush.updateMatrixWorld(true);
+  // Alle Bohrwerkzeuge werden zunächst nur gesammelt und am Ende in EINEM Rutsch
+  // ausgeschnitten (eine einzige Boolesche Subtraktion), statt pro Bohrung einzeln zu
+  // subtrahieren. Eine Subtraktion pro Bohrung ließ jede weitere Subtraktion auf einer
+  // zunehmend komplexeren Geometrie neu die BVH aufbauen — bei vielen Bohrungen (z. B.
+  // "Bohrungen als Liste" mit mehreren Dutzend Positionen) fror das den Tab für Sekunden
+  // ein und konnte sogar den WebGL-Kontext verlieren lassen.
+  const drillGeometries: THREE.BufferGeometry[] = [];
 
   for (const hole of holes) {
     const slot: SlotId = hole.slot ?? 'A';
@@ -324,22 +333,29 @@ function cutHoles(geo: THREE.BufferGeometry, holes: ProfileHole[], section: Prof
       const pilotR = (STEP_PILOT_DIAMETER[hole.type] ?? hole.diameter * 0.55) / 2;
 
       const cb = drillSegment(dirSign, halfExtent, -CSG_EPS, counterDepth);
-      brush = evaluator.evaluate(brush, makeDrillBrush(r, cb.len, cb.center, slot, lateral, z), SUBTRACTION);
+      drillGeometries.push(makeDrillGeometry(r, cb.len, cb.center, slot, lateral, z));
 
       const pilot = drillSegment(dirSign, halfExtent, counterDepth - CSG_EPS, axisLen + CSG_EPS);
-      brush = evaluator.evaluate(brush, makeDrillBrush(pilotR, pilot.len, pilot.center, slot, lateral, z), SUBTRACTION);
+      drillGeometries.push(makeDrillGeometry(pilotR, pilot.len, pilot.center, slot, lateral, z));
     } else if (hole.type === 'custom-thread') {
       const drillDepth = Math.min(webThickness + 2, axisLen);
       const seg = drillSegment(dirSign, halfExtent, -CSG_EPS, drillDepth);
-      brush = evaluator.evaluate(brush, makeDrillBrush(r, seg.len, seg.center, slot, lateral, z), SUBTRACTION);
+      drillGeometries.push(makeDrillGeometry(r, seg.len, seg.center, slot, lateral, z));
     } else {
       // Durchgangsbohrung (d45 / d75 / custom): ganz durch, wie der Name sagt.
       const seg = drillSegment(dirSign, halfExtent, -CSG_EPS, axisLen + CSG_EPS);
-      brush = evaluator.evaluate(brush, makeDrillBrush(r, seg.len, seg.center, slot, lateral, z), SUBTRACTION);
+      drillGeometries.push(makeDrillGeometry(r, seg.len, seg.center, slot, lateral, z));
     }
   }
 
-  return brush.geometry;
+  if (drillGeometries.length === 0) return geo;
+  const mergedDrill = mergeGeometries(drillGeometries, false);
+  const evaluator = new Evaluator();
+  const baseBrush = new Brush(geo);
+  baseBrush.updateMatrixWorld(true);
+  const drillBrush = new Brush(mergedDrill);
+  drillBrush.updateMatrixWorld(true);
+  return evaluator.evaluate(baseBrush, drillBrush, SUBTRACTION).geometry;
 }
 
 // ---------------------------------------------------------------------------
@@ -418,12 +434,20 @@ function ProfileMesh({ section, length, angleStart, angleEnd, angleAxis = 'AC', 
   }, [section]);
   const usingDxf = dxfResult !== null;
 
+  // Das eigentliche Aussägen (cutHoles, echte CSG-Subtraktion) ist teuer und blockiert
+  // den Hauptthread synchron — bei jedem einzelnen Zwischenschritt eines Bohrung-Drags
+  // oder direkt nach einem Massen-Hinzufügen (Bohrungen als Liste) führte das bisher zu
+  // spürbarem Stottern/Einfrieren. useDeferredValue lässt React schnelle Zwischenwerte
+  // während eines Drags überspringen und nur den jeweils aktuellsten tatsächlich neu
+  // ausschneiden, statt jede Zwischenposition einzeln zu berechnen.
+  const deferredHoles = useDeferredValue(holes);
+
   const geometry = useMemo(() => {
     const shape = dxfResult?.shape ?? buildProfileShape(section);
     const geo = new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, steps: 1 });
     applyMiterCut(geo, length, angleStart, angleEnd, angleAxis);
-    return cutHoles(geo, holes, section, length);
-  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult, holes]);
+    return cutHoles(geo, deferredHoles, section, length);
+  }, [section, length, angleStart, angleEnd, angleAxis, dxfResult, deferredHoles]);
 
   // Verstärkungsringe um jeden Kernzug — nur für die Näherung nötig (kein echtes
   // Wandmaterial um die Bohrung). Die reale DXF-Kontur hat das Material dort schon.
