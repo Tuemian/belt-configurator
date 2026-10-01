@@ -24,39 +24,83 @@ function resolveCurtainColor(config: DoorConfig): string {
   return CURTAIN_COLORS.blau;
 }
 
-/** Einfache schematische Darstellung — kein CAD-Modell verfügbar, nur Seitenverhältnis/Farbe/Sichtfenster live. */
+// Layout-Konstanten für den Zeichenbereich — Ränder bewusst großzügig, damit Wickelwelle,
+// Motor und Maßangabe bei jeder Tor-Proportion innerhalb des viewBox bleiben (vorher kam es
+// bei sehr hohen Toren zu Überschneidungen mit dem Rahmen).
+const VIEW_W = 480;
+const VIEW_H = 320;
+const SIDE_MARGIN = 44;
+const TOP_MARGIN = 60;
+const BOTTOM_MARGIN = 60;
+const AVAIL_W = VIEW_W - SIDE_MARGIN * 2;
+const AVAIL_H = VIEW_H - TOP_MARGIN - BOTTOM_MARGIN;
+const GROUND_Y = TOP_MARGIN + AVAIL_H;
+
+/** Schematische Darstellung — kein CAD-Modell verfügbar. Zeigt Proportion, Behangfarbe,
+ * Sichtfenster, Motorposition (Antriebsausrichtung) und Boden-/Wandbefestigung live. */
 export function DoorPreview({ config }: Props) {
   const { widthMm, heightMm } = config;
-  const padding = 30;
-  const maxW = 340;
-  const maxH = 300;
-  const ratio = Math.min(maxW / widthMm, maxH / heightMm);
+  const ratio = Math.min(AVAIL_W / widthMm, AVAIL_H / heightMm);
   const w = widthMm * ratio;
   const h = heightMm * ratio;
-  const x = (maxW - w) / 2 + padding / 2;
-  const y = maxH - h + padding / 2;
+  const x = SIDE_MARGIN + (AVAIL_W - w) / 2;
+  const y = GROUND_Y - h;
 
   const curtainColor = resolveCurtainColor(config);
   const showWindow = config.windowVariant !== 'ohne';
   const windowCount = config.windowVariant === 'zusatz' ? 2 : 1;
   const isAlu = config.doorType === 'alu';
+  const isBodenbefestigung = config.mounting === 'boden';
+  const railColor = config.railFinish === 'ral' ? '#475569' : '#cbd5e1';
 
-  const viewW = maxW + padding;
-  const viewH = maxH + padding + 40;
+  // Sichtfenster: bei Sondergröße die echte gewählte Abmessung (skaliert) zeigen, sonst feste
+  // 500x700mm-Proportion.
+  const winWmm = config.windowVariant === 'sondergroesse' ? config.customWindowWidthMm : 500;
+  const winHmm = config.windowVariant === 'sondergroesse' ? config.customWindowHeightMm : 700;
+  const winW = Math.min(w * 0.5, Math.max(30, winWmm * ratio));
+  const winH = Math.min(h * 0.3, Math.max(24, winHmm * ratio));
+
+  // Motor: sitzt am rechten Ende der Wickelwelle. "nach unten" = Standard (hängt unter der
+  // Welle), "nach oben" = gespiegelt (sitzt über der Welle) — entspricht der "Antrieb um 180°
+  // schwenkbar"-Kopplung in der Preislogik.
+  const motorDown = config.driveOrientation === 'unten';
+  const motorW = 30;
+  const motorH = 20;
+  const motorX = x + w - motorW - 4;
+  const motorY = motorDown ? y - 6 : y - 26 - motorH + 6;
 
   return (
-    <svg viewBox={`0 0 ${viewW} ${viewH}`} className="h-full w-full" role="img" aria-label="Schematische Tor-Vorschau">
-      <rect x={0} y={0} width={viewW} height={viewH} fill="none" />
-
+    <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="h-full w-full" role="img" aria-label="Schematische Tor-Vorschau">
       {/* Wickelwelle / Ballenverkleidung oben */}
-      <rect x={x - 6} y={y - 22} width={w + 12} height={16} rx={6} fill="#94a3b8" />
-      <text x={x + (w + 12) / 2 - 6} y={y - 26} fontSize={9} fill="#64748b" textAnchor="middle">
+      <rect x={x - 8} y={y - 26} width={w + 16} height={16} rx={6} fill="#94a3b8" />
+      <text x={x + w / 2} y={y - 32} fontSize={9} fill="#64748b" textAnchor="middle">
         Ballenverkleidung
       </text>
 
+      {/* Motor (Position/Ausrichtung je nach Antriebsausrichtung) */}
+      {config.motorCover && (
+        <g>
+          <rect x={motorX} y={motorY} width={motorW} height={motorH} rx={3} fill="#334155" />
+          <circle cx={motorDown ? motorX + 6 : motorX + motorW - 6} cy={motorY + motorH / 2} r={3} fill="#64748b" />
+        </g>
+      )}
+
       {/* Führungsschienen */}
-      <rect x={x - 6} y={y} width={6} height={h} fill={config.railFinish === 'ral' ? '#475569' : '#cbd5e1'} />
-      <rect x={x + w} y={y} width={6} height={h} fill={config.railFinish === 'ral' ? '#475569' : '#cbd5e1'} />
+      <rect x={x - 8} y={y} width={6} height={h} fill={railColor} />
+      <rect x={x + w + 2} y={y} width={6} height={h} fill={railColor} />
+
+      {/* Befestigung: Bodenplatte bei Bodenbefestigung, Wandhalter bei Wandbefestigung */}
+      {isBodenbefestigung ? (
+        <g>
+          <rect x={x - 16} y={GROUND_Y - 6} width={22} height={8} rx={2} fill="#64748b" />
+          <rect x={x + w - 6} y={GROUND_Y - 6} width={22} height={8} rx={2} fill="#64748b" />
+        </g>
+      ) : (
+        <g>
+          <rect x={x - 20} y={y + h * 0.15} width={14} height={8} rx={2} fill="#64748b" />
+          <rect x={x + w + 6} y={y + h * 0.15} width={14} height={8} rx={2} fill="#64748b" />
+        </g>
+      )}
 
       {/* Torbehang */}
       {isAlu ? (
@@ -64,15 +108,7 @@ export function DoorPreview({ config }: Props) {
           {Array.from({ length: 12 }, (_, i) => {
             const lamH = h / 12;
             return (
-              <rect
-                key={i}
-                x={x}
-                y={y + i * lamH}
-                width={w}
-                height={lamH - 1.5}
-                fill={curtainColor}
-                stroke="#00000022"
-              />
+              <rect key={i} x={x} y={y + i * lamH} width={w} height={lamH - 1.5} fill={curtainColor} stroke="#00000022" />
             );
           })}
         </g>
@@ -83,12 +119,10 @@ export function DoorPreview({ config }: Props) {
       {/* Sichtfenster */}
       {showWindow &&
         Array.from({ length: windowCount }, (_, i) => {
-          const winW = Math.min(w * 0.45, 90);
-          const winH = Math.min(h * 0.22, 70);
           const gap = 10;
           const totalW = windowCount * winW + (windowCount - 1) * gap;
           const startX = x + (w - totalW) / 2 + i * (winW + gap);
-          const winY = y + h * 0.35;
+          const winY = y + (h - winH) / 2;
           return (
             <rect
               key={i}
@@ -104,13 +138,13 @@ export function DoorPreview({ config }: Props) {
         })}
 
       {/* Bodenlinie */}
-      <line x1={x - 20} y1={y + h} x2={x + w + 20} y2={y + h} stroke="#94a3b8" strokeWidth={2} />
+      <line x1={SIDE_MARGIN - 24} y1={GROUND_Y} x2={VIEW_W - SIDE_MARGIN + 24} y2={GROUND_Y} stroke="#94a3b8" strokeWidth={2} />
 
       {/* Maße */}
-      <text x={x + w / 2} y={viewH - 22} fontSize={11} fill="#334155" textAnchor="middle">
+      <text x={VIEW_W / 2} y={VIEW_H - 24} fontSize={12} fill="#334155" textAnchor="middle">
         {widthMm} × {heightMm} mm
       </text>
-      <text x={x + w / 2} y={viewH - 8} fontSize={9} fill="#94a3b8" textAnchor="middle">
+      <text x={VIEW_W / 2} y={VIEW_H - 9} fontSize={10} fill="#94a3b8" textAnchor="middle">
         {isAlu ? 'Aluminium-Lamellentor' : 'Folien-Schnelllauftor'} · schematisch
       </text>
     </svg>

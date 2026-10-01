@@ -32,12 +32,20 @@ function buildSummaryText(config: DoorConfig, price: ReturnType<typeof calculate
     `Kabellänge: ${config.cableLength === 'standard' ? '3.000mm (Standard)' : `Sonderlänge +${config.cableExtraMeters}m`}`,
   );
   lines.push(`Lichtschranke: ${config.lightBarrier === 'lichtgitter' ? 'Lichtgitter (Standard)' : 'Lichtschranke + Sicherheitskontaktleiste'}`);
-  lines.push(`Schienenausführung: ${config.railFinish === 'standard' ? 'Natur eloxiert/RAL 7035 (Standard)' : 'Pulverbeschichtet RAL nach Wahl'}`);
+  lines.push(
+    `Schienenausführung: ${
+      config.railFinish === 'standard' ? 'Natur eloxiert/RAL 7035 (Standard)' : `Pulverbeschichtet RAL ${config.ralCode}`
+    }`,
+  );
   if (config.doorType === 'folie') {
     lines.push(`Torbehang-Material: ${config.curtainMaterial}`);
   }
   lines.push(`Torbehangfarbe: ${config.curtainColor}`);
-  lines.push(`Sichtfenster: ${config.windowVariant}${config.windowVariant === 'sondergroesse' ? ` (${config.customWindowM2} m²)` : ''}`);
+  lines.push(
+    `Sichtfenster: ${config.windowVariant}${
+      config.windowVariant === 'sondergroesse' ? ` (${config.customWindowWidthMm}×${config.customWindowHeightMm}mm)` : ''
+    }`,
+  );
   if (config.windowVariant !== 'ohne') {
     lines.push(`Ausführung Sichtfenster: ${config.windowFinish === 'klar' ? 'klar' : 'Blendschutz (Schweißarbeiten)'}`);
   }

@@ -27,13 +27,16 @@ export interface DoorConfig {
   cableExtraMeters: number;
   lightBarrier: LightBarrier;
   railFinish: RailFinish;
+  /** Nur wenn railFinish/curtainColor 'RAL nach Wahl' ist: konkreter RAL-Code, z. B. "7016". */
+  ralCode: string;
   /** Nur bei doorType === 'folie' relevant (Alu-Torbehang ist immer Hohlkammerlamellen). */
   curtainMaterial: CurtainMaterial;
   /** Freies Label — Folie: Blau/Grau/Orange; Alu: Weißaluminium/Anthrazitgrau/Verkehrsweiß/RAL nach Wunsch. */
   curtainColor: string;
   windowVariant: WindowVariant;
   windowFinish: WindowFinish;
-  customWindowM2: number;
+  customWindowWidthMm: number;
+  customWindowHeightMm: number;
   /** Nur bei doorType === 'alu' relevant. */
   lightLamellas: boolean;
   lamellaWindowHeightMm: number;
@@ -54,11 +57,13 @@ export const DEFAULT_DOOR_CONFIG: DoorConfig = {
   cableExtraMeters: 0,
   lightBarrier: 'lichtgitter',
   railFinish: 'standard',
+  ralCode: '7016',
   curtainMaterial: 'standard',
   curtainColor: 'Blau (ähnlich RAL 5010)',
   windowVariant: 'standard',
   windowFinish: 'klar',
-  customWindowM2: 0.35,
+  customWindowWidthMm: 600,
+  customWindowHeightMm: 600,
   lightLamellas: true,
   lamellaWindowHeightMm: 308,
   extraOptionIds: [],
@@ -320,7 +325,11 @@ export function calculateDoorPrice(config: DoorConfig): DoorPriceResult {
   );
 
   if (doorType === 'folie') {
-    addIf(config.windowVariant === 'sondergroesse', options.fensterSonder!.label, options.fensterSonder!.price * config.customWindowM2);
+    addIf(
+      config.windowVariant === 'sondergroesse',
+      options.fensterSonder!.label,
+      options.fensterSonder!.price * area(config.customWindowWidthMm, config.customWindowHeightMm),
+    );
     addIf(config.windowVariant !== 'ohne' && config.windowFinish === 'schweisserschutz', options.fensterSchweisser!.label, options.fensterSchweisser!.price);
     addIf(config.windowVariant === 'zusatz', options.fensterZusatz!.label, options.fensterZusatz!.price);
     addIf(config.curtainMaterial === 'monofil', options.behangMonofil!.label, options.behangMonofil!.price * flaeche);

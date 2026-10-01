@@ -1,4 +1,5 @@
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { NumericInput } from '@/components/configurator/NumericInput';
 import { DoorPreview } from '@/components/configurator/DoorPreview';
@@ -46,11 +47,17 @@ function ChoiceRow<T extends string>({
 }
 
 const FOLIE_COLORS = ['Blau (ähnlich RAL 5010)', 'Grau (ähnlich RAL 7035)', 'Orange (ähnlich RAL 2004)'];
-const ALU_COLORS = ['Weißaluminium (ähnlich RAL9006)', 'Anthrazitgrau (ähnlich RAL7016)', 'Verkehrsweiß (ähnlich RAL9016)'];
+const ALU_COLORS = [
+  'Weißaluminium (ähnlich RAL9006)',
+  'Anthrazitgrau (ähnlich RAL7016)',
+  'Verkehrsweiß (ähnlich RAL9016)',
+  'Nach Wunsch (RAL beschichtet)',
+];
 
 export const StepDoorMaterial = ({ config, onChange }: Props) => {
   const isAlu = config.doorType === 'alu';
   const colorOptions = isAlu ? ALU_COLORS : FOLIE_COLORS;
+  const needsRalCode = config.railFinish === 'ral' || config.curtainColor.toLowerCase().includes('wunsch');
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -64,6 +71,21 @@ export const StepDoorMaterial = ({ config, onChange }: Props) => {
             { value: 'ral', label: 'Pulverbeschichtet in RAL nach Wahl' },
           ]}
         />
+
+        {needsRalCode && (
+          <div className="flex items-center gap-2">
+            <Label className="text-sm text-muted-foreground">RAL-Farbton:</Label>
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-muted-foreground">RAL</span>
+              <Input
+                value={config.ralCode}
+                onChange={(e) => onChange({ ralCode: e.target.value })}
+                placeholder="z. B. 7016"
+                className="h-9 w-24"
+              />
+            </div>
+          </div>
+        )}
 
         {!isAlu && (
           <ChoiceRow
@@ -115,17 +137,32 @@ export const StepDoorMaterial = ({ config, onChange }: Props) => {
           ]}
         />
         {config.windowVariant === 'sondergroesse' && (
-          <div className="flex items-center gap-2">
-            <Label className="text-sm text-muted-foreground">Fläche:</Label>
-            <NumericInput
-              min={0.1}
-              max={10}
-              step={0.05}
-              value={config.customWindowM2}
-              onCommit={(v) => onChange({ customWindowM2: Math.max(0.1, v) })}
-              className="h-9 w-24"
-            />
-            <span className="text-sm text-muted-foreground">m² (+110€/m²)</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm text-muted-foreground">Breite:</Label>
+              <NumericInput
+                min={100}
+                max={5000}
+                step={10}
+                value={config.customWindowWidthMm}
+                onCommit={(v) => onChange({ customWindowWidthMm: Math.max(100, v) })}
+                className="h-9 w-24"
+              />
+              <span className="text-sm text-muted-foreground">mm</span>
+              <Label className="text-sm text-muted-foreground ml-2">Höhe:</Label>
+              <NumericInput
+                min={100}
+                max={5000}
+                step={10}
+                value={config.customWindowHeightMm}
+                onCommit={(v) => onChange({ customWindowHeightMm: Math.max(100, v) })}
+                className="h-9 w-24"
+              />
+              <span className="text-sm text-muted-foreground">mm</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {((config.customWindowWidthMm / 1000) * (config.customWindowHeightMm / 1000)).toFixed(2)} m² · +110€/m²
+            </p>
           </div>
         )}
         {config.windowVariant !== 'ohne' && (

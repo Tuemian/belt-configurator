@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { NumericInput } from '@/components/configurator/NumericInput';
@@ -17,7 +18,7 @@ function ChoiceRow<T extends string>({
 }: {
   label: string;
   value: T;
-  options: Array<{ value: T; label: string; hint?: string }>;
+  options: Array<{ value: T; label: string; hint?: string; icon?: ReactNode }>;
   onSelect: (v: T) => void;
 }) {
   return (
@@ -34,12 +35,55 @@ function ChoiceRow<T extends string>({
               value === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
             )}
           >
+            {opt.icon && <div className="mb-1.5 text-muted-foreground">{opt.icon}</div>}
             <span className="font-medium text-sm">{opt.label}</span>
             {opt.hint && <span className="text-xs text-muted-foreground">{opt.hint}</span>}
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+// Kleine schematische Icons, damit auf einen Blick klar ist, was gemeint ist — kein Foto
+// verfügbar, daher an die Darstellung in DoorPreview angelehnt.
+function MountingBodenIcon() {
+  return (
+    <svg viewBox="0 0 48 32" className="h-6 w-9">
+      <rect x={14} y={4} width={4} height={22} fill="currentColor" />
+      <rect x={30} y={4} width={4} height={22} fill="currentColor" />
+      <rect x={9} y={25} width={14} height={5} rx={1} fill="currentColor" />
+      <rect x={25} y={25} width={14} height={5} rx={1} fill="currentColor" />
+      <line x1={2} y1={30} x2={46} y2={30} stroke="currentColor" strokeWidth={1.5} />
+    </svg>
+  );
+}
+function MountingWandIcon() {
+  return (
+    <svg viewBox="0 0 48 32" className="h-6 w-9">
+      <rect x={14} y={4} width={4} height={22} fill="currentColor" />
+      <rect x={30} y={4} width={4} height={22} fill="currentColor" />
+      <rect x={6} y={9} width={9} height={5} rx={1} fill="currentColor" />
+      <rect x={33} y={9} width={9} height={5} rx={1} fill="currentColor" />
+      <line x1={2} y1={2} x2={2} y2={30} stroke="currentColor" strokeWidth={2} />
+      <line x1={46} y1={2} x2={46} y2={30} stroke="currentColor" strokeWidth={2} />
+    </svg>
+  );
+}
+function DriveUntenIcon() {
+  return (
+    <svg viewBox="0 0 48 32" className="h-6 w-9">
+      <rect x={4} y={4} width={40} height={7} rx={3} fill="currentColor" />
+      <rect x={30} y={12} width={12} height={9} rx={2} fill="currentColor" opacity={0.7} />
+    </svg>
+  );
+}
+function DriveObenIcon() {
+  return (
+    <svg viewBox="0 0 48 32" className="h-6 w-9">
+      <rect x={30} y={2} width={12} height={9} rx={2} fill="currentColor" opacity={0.7} />
+      <rect x={4} y={12} width={40} height={7} rx={3} fill="currentColor" />
+    </svg>
   );
 }
 
@@ -52,8 +96,8 @@ export const StepDoorMounting = ({ config, onChange }: Props) => {
           value={config.mounting}
           onSelect={(mounting) => onChange({ mounting })}
           options={[
-            { value: 'boden', label: 'Bodenbefestigung', hint: 'Mit Fußplatte & Nivellierplatte' },
-            { value: 'wand', label: 'Wandbefestigung' },
+            { value: 'boden', label: 'Bodenbefestigung', hint: 'Mit Fußplatte & Nivellierplatte', icon: <MountingBodenIcon /> },
+            { value: 'wand', label: 'Wandbefestigung', icon: <MountingWandIcon /> },
           ]}
         />
 
@@ -62,8 +106,8 @@ export const StepDoorMounting = ({ config, onChange }: Props) => {
           value={config.driveOrientation}
           onSelect={(driveOrientation) => onChange({ driveOrientation })}
           options={[
-            { value: 'unten', label: 'Nach unten', hint: 'Standard' },
-            { value: 'oben', label: 'Nach oben', hint: 'Aufpreis für 180°-Schwenkbarkeit' },
+            { value: 'unten', label: 'Nach unten', hint: 'Standard — Motor unter der Welle', icon: <DriveUntenIcon /> },
+            { value: 'oben', label: 'Nach oben', hint: 'Motor über der Welle, Aufpreis 180°-Schwenkbarkeit', icon: <DriveObenIcon /> },
           ]}
         />
 

@@ -54,6 +54,7 @@ export const StepDoorTypeAndSize = ({ config, onChange }: Props) => {
               />
               <span className="text-sm text-muted-foreground">mm</span>
             </div>
+            <p className="text-xs text-muted-foreground">Erlaubter Bereich: 500–5000 mm</p>
           </div>
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground">Lichte Höhe</Label>
@@ -68,6 +69,7 @@ export const StepDoorTypeAndSize = ({ config, onChange }: Props) => {
               />
               <span className="text-sm text-muted-foreground">mm</span>
             </div>
+            <p className="text-xs text-muted-foreground">Erlaubter Bereich: 500–5000 mm</p>
           </div>
         </div>
 
