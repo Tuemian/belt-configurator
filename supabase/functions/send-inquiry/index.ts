@@ -11,7 +11,7 @@ const corsHeaders = {
 
 const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
-type InquiryType = "belt" | "profile";
+type InquiryType = "belt" | "profile" | "door";
 
 interface InquiryBody {
   type: InquiryType;
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
   // Validate
   const errors: string[] = [];
-  if (body.type !== "belt" && body.type !== "profile") errors.push("type");
+  if (body.type !== "belt" && body.type !== "profile" && body.type !== "door") errors.push("type");
   const name = (body.form?.name ?? "").toString().trim().slice(0, 120);
   const company = (body.form?.company ?? "").toString().trim().slice(0, 160);
   const email = (body.form?.email ?? "").toString().trim().slice(0, 254);
@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
   // Persist to DB
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-  const table = body.type === "belt" ? "belt_inquiries" : "profile_inquiries";
+  const table = body.type === "belt" ? "belt_inquiries" : body.type === "profile" ? "profile_inquiries" : "door_inquiries";
   const providedReference = typeof body.reference === "string" ? body.reference.trim().slice(0, 64) : "";
   const insertPayload: Record<string, unknown> = {
     lang,
@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
   }
 
   // Build emails
-  const productLabel = body.type === "belt" ? "Gurtförderer-Konfigurator" : "Profil-Konfigurator";
+  const productLabel = body.type === "belt" ? "Gurtförderer-Konfigurator" : body.type === "profile" ? "Profil-Konfigurator" : "Tortechnik-Konfigurator";
 
   const adminSubject = `Neue Anfrage ${inquiryRef} (${productLabel}) – ${name}${company ? " / " + company : ""}`;
 

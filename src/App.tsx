@@ -15,6 +15,7 @@ import { resetConsent } from "./lib/cookie-consent.ts";
 const BeltConfigurator = lazy(() => import("./pages/BeltConfigurator.tsx"));
 const ProfileConfigurator = lazy(() => import("./pages/ProfileConfigurator.tsx"));
 const DeflectionCalculator = lazy(() => import("./pages/DeflectionCalculator.tsx"));
+const HighSpeedDoorConfigurator = lazy(() => import("./pages/HighSpeedDoorConfigurator.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const AdminPricing = lazy(() => import("./pages/AdminPricing.tsx"));
@@ -46,6 +47,7 @@ const App = () => {
                     <Route path="/belt-conveyor" element={<BeltConfigurator />} />
                     <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route path="/deflection" element={<DeflectionCalculator />} />
+                    <Route path="/high-speed-door" element={<HighSpeedDoorConfigurator />} />
                     <Route path="/profile-configurator" element={<ProfileConfigurator />} />
                     <Route
                       path="/admin/pricing"
