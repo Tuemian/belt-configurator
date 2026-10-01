@@ -60,13 +60,15 @@ export function DoorPreview({ config }: Props) {
   const winW = Math.min(w * 0.5, Math.max(30, winWmm * ratio));
   const winH = Math.min(h * 0.3, Math.max(24, winHmm * ratio));
 
-  // Motor: sitzt am rechten Ende der Wickelwelle. "nach unten" = Standard (hängt unter der
-  // Welle), "nach oben" = gespiegelt (sitzt über der Welle) — entspricht der "Antrieb um 180°
-  // schwenkbar"-Kopplung in der Preislogik.
+  // Motor: mittig an der Wickelwelle, immer sichtbar (auch ohne Motorverkleidung — die ist nur
+  // eine Abdeckung, kein Ein/Aus für den Motor selbst). "nach unten" = Standard (hängt unter
+  // der Welle), "nach oben" = gespiegelt (sitzt über der Welle) — entspricht der "Antrieb um
+  // 180° schwenkbar"-Kopplung in der Preislogik. Mit Verkleidung = geschlossener Kasten, ohne =
+  // offene Kontur (man sieht den Motor "nackt").
   const motorDown = config.driveOrientation === 'unten';
   const motorW = 30;
   const motorH = 20;
-  const motorX = x + w - motorW - 4;
+  const motorX = x + (w - motorW) / 2;
   const motorY = motorDown ? y - 6 : y - 26 - motorH + 6;
 
   return (
@@ -77,13 +79,22 @@ export function DoorPreview({ config }: Props) {
         Ballenverkleidung
       </text>
 
-      {/* Motor (Position/Ausrichtung je nach Antriebsausrichtung) */}
-      {config.motorCover && (
-        <g>
-          <rect x={motorX} y={motorY} width={motorW} height={motorH} rx={3} fill="#334155" />
-          <circle cx={motorDown ? motorX + 6 : motorX + motorW - 6} cy={motorY + motorH / 2} r={3} fill="#64748b" />
-        </g>
-      )}
+      {/* Motor — immer sichtbar; mit Verkleidung als geschlossener Kasten, ohne als offene
+          Kontur (Motorverkleidung ist nur eine Abdeckung, kein Ein/Aus für den Motor selbst). */}
+      <g>
+        <rect
+          x={motorX}
+          y={motorY}
+          width={motorW}
+          height={motorH}
+          rx={3}
+          fill={config.motorCover ? '#334155' : 'none'}
+          stroke="#334155"
+          strokeWidth={config.motorCover ? 0 : 1.5}
+          strokeDasharray={config.motorCover ? undefined : '3 2'}
+        />
+        <circle cx={motorX + motorW / 2} cy={motorY + motorH / 2} r={3} fill="#64748b" />
+      </g>
 
       {/* Führungsschienen */}
       <rect x={x - 8} y={y} width={6} height={h} fill={railColor} />
