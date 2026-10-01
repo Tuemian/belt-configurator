@@ -60,15 +60,15 @@ export function DoorPreview({ config }: Props) {
   const winW = Math.min(w * 0.5, Math.max(30, winWmm * ratio));
   const winH = Math.min(h * 0.3, Math.max(24, winHmm * ratio));
 
-  // Motor: mittig an der Wickelwelle, immer sichtbar (auch ohne Motorverkleidung — die ist nur
-  // eine Abdeckung, kein Ein/Aus für den Motor selbst). "nach unten" = Standard (hängt unter
-  // der Welle), "nach oben" = gespiegelt (sitzt über der Welle) — entspricht der "Antrieb um
-  // 180° schwenkbar"-Kopplung in der Preislogik. Mit Verkleidung = geschlossener Kasten, ohne =
-  // offene Kontur (man sieht den Motor "nackt").
+  // Motor: sitzt seitlich am Ende der Wickelwelle (wie bei echten Rolltoren üblich), nicht
+  // mittig. Immer sichtbar, auch ohne Motorverkleidung — die ist nur eine Abdeckung, kein
+  // Ein/Aus für den Motor selbst. "nach unten" = Standard (hängt unter der Welle), "nach oben"
+  // = gespiegelt (sitzt über der Welle) — entspricht der "Antrieb um 180° schwenkbar"-Kopplung
+  // in der Preislogik. Mit Verkleidung = geschlossener Kasten, ohne = offene Kontur.
   const motorDown = config.driveOrientation === 'unten';
   const motorW = 30;
   const motorH = 20;
-  const motorX = x + (w - motorW) / 2;
+  const motorX = x + w - motorW - 8;
   const motorY = motorDown ? y - 6 : y - 26 - motorH + 6;
 
   return (
