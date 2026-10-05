@@ -1,3 +1,4 @@
+import { trackConfigurator } from '@/lib/analytics';
 import { useRef, useMemo, useEffect, useState, useDeferredValue, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
@@ -582,6 +583,7 @@ export function ProfileViewer3D({ section, length, angleStart, angleEnd, angleAx
       const a = document.createElement('a');
       a.href = url;
       a.download = stlFileName(section, length);
+      trackConfigurator('profile_cut', 'configurator_export', { file_format: 'stl', file_name: a.download });
       document.body.appendChild(a);
       a.click();
       a.remove();

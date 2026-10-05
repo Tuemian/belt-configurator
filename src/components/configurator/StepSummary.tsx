@@ -20,6 +20,7 @@ import {
 } from "@/lib/configurator-share";
 import { calculatePrice, type PriceCalculationResult, type PriceItem } from "@/lib/pricing";
 import { supabase } from "@/integrations/supabase/client";
+import { CURRENCY, shortSummary, trackConfigurator, trackLead, type AnalyticsItem } from "@/lib/analytics";
 
 const ConveyorViewer3D = lazy(() =>
   import("@/components/configurator/ConveyorViewer3D").then((m) => ({ default: m.ConveyorViewer3D })),
@@ -134,6 +135,14 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     breakdown: [],
     missingKeys: [],
   });
+  const checkoutTrackedRef = useRef(false);
+  const gaValue = pricing.status === "complete" ? Math.round((pricing.total ?? 0) * 100) / 100 : 0;
+  const gaSummary = shortSummary(
+    `Förderband ${config.frameWidth}x${config.beltLength} mm, ${config.beltType}, ${config.driveType}, ${config.speed} m/min${config.withStand ? `, Gestell ${config.standHeight} mm` : ""}`,
+  );
+  const gaItems = (id: string): AnalyticsItem[] => [
+    { item_id: id, item_name: "Förderband-Konfiguration", item_category: "Konfiguration", item_variant: gaSummary, price: gaValue, quantity: 1 },
+  ];
   const [configIdentity, setConfigIdentity] = useState<ConfigurationIdentity | null>(null);
   const identityCacheRef = useRef<ConfigurationIdentity | null>(null);
   const snapshotResolveRef = useRef<((value: string) => void) | null>(null);
@@ -293,6 +302,14 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
     void calculatePrice(config).then((result) => {
       if (!cancelled) {
         setPricing(result);
+        const value = result.status === "complete" ? Math.round((result.total ?? 0) * 100) / 100 : 0;
+        trackConfigurator("belt_conveyor", "configurator_complete", {
+          value,
+          currency: CURRENCY,
+          config_summary: shortSummary(
+            `Förderband ${config.frameWidth}x${config.beltLength} mm, ${config.beltType}, ${config.driveType}, ${config.speed} m/min${config.withStand ? `, Gestell ${config.standHeight} mm` : ""}`,
+          ),
+        });
       }
     });
 
@@ -709,6 +726,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
       const modelImageDataUrl = await captureModelSnapshot();
       const pdfBlob = await buildPdfBlob(identity, modelImageDataUrl);
       triggerBlobDownload(pdfBlob, getPdfFilename(identity));
+      trackConfigurator("belt_conveyor", "configurator_export", { file_format: "pdf", file_name: getPdfFilename(identity) });
       void markConfiguratorReference(identity.shortId, "pdf");
       toast({
         title: lang === "de" ? "PDF heruntergeladen" : lang === "it" ? "PDF scaricato" : "PDF downloaded",
@@ -773,6 +791,7 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
         throw new Error((data as { error: string }).error);
       }
 
+      trackLead("belt_conveyor", identity.shortId, gaValue, gaItems(identity.shortId));
       setForm({ name: "", company: "", email: "", phone: "", message: "", privacy: false });
       toast({ title: t("submitSuccess", lang), description: `ID ${identity.shortId}` });
     } catch (error) {
@@ -909,7 +928,15 @@ export const StepSummary = ({ config, lang, onReset }: Props) => {
               <p className="text-sm text-muted-foreground">{t("contactDesc", lang)}</p>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-4"
+                onFocusCapture={() => {
+                  if (checkoutTrackedRef.current) return;
+                  checkoutTrackedRef.current = true;
+                  trackConfigurator("belt_conveyor", "begin_checkout", { currency: CURRENCY, value: gaValue, items: gaItems("belt_conveyor") });
+                }}
+              >
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm">{t("name", lang)} *</Label>

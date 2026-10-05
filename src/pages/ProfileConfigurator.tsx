@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart, RotateCcw, Menu, ChevronDown } from 'lucide-react';
@@ -23,6 +23,15 @@ import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.svg';
 import { ProfileWorkbench2D } from '@/components/configurator/ProfileWorkbench2D';
 import { ProfileViewer3D } from '@/components/configurator/ProfileViewer3D';
+import { CURRENCY, trackConfigurator } from '@/lib/analytics';
+import { useConfiguratorStart } from '@/hooks/use-configurator-start';
+import { profileGaSummary, profileGaItems } from '@/components/configurator/ProfileInquiryDialog';
+
+const PROFILE_SECTION_STEPS: Record<string, [number, string]> = {
+  basis: [1, 'masse'],
+  enden: [2, 'enden'],
+  bearbeitungen: [3, 'bearbeitung'],
+};
 import { ProfileOnboarding } from '@/components/configurator/ProfileOnboarding';
 import { ProfileInquiryDialog, type ShopHandoffItem } from '@/components/configurator/ProfileInquiryDialog';
 import { NumericInput } from '@/components/configurator/NumericInput';
@@ -160,6 +169,13 @@ export default function ProfileConfigurator() {
       price: calculateProfilePrice(config),
     };
     setCart((prev) => [...prev, item]);
+    const value = Math.round(item.price.total * 100) / 100;
+    trackConfigurator('profile_cut', 'configurator_complete', {
+      value,
+      currency: CURRENCY,
+      config_summary: profileGaSummary(item.config),
+    });
+    trackConfigurator('profile_cut', 'add_to_cart', { currency: CURRENCY, value, items: profileGaItems([item]) });
     // Öffnet den Warenkorb direkt, statt zusätzlich einen Toast einzublenden — der
     // überlagerte sonst kurz die einblendende Warenkorb-Ansicht rechts (beide oben rechts).
     setCartOpen(true);
@@ -180,6 +196,8 @@ export default function ProfileConfigurator() {
   const cartOnRequestCount = cart.filter((i) => i.price.onRequest).length;
 
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const openSectionsRef = useRef<string[]>(['basis']);
+  const { onPointerDownCapture, onKeyDownCapture } = useConfiguratorStart('profile_cut');
   const openInquiry = () => {
     if (cart.length === 0) {
       toast({ title: 'Warenkorb ist leer', description: 'Bitte fügen Sie zuerst eine Konfiguration hinzu.' });
@@ -198,6 +216,14 @@ export default function ProfileConfigurator() {
           type="multiple"
           defaultValue={['basis']}
           className="w-full space-y-2"
+          onValueChange={(values) => {
+            const opened = values.filter((v) => !openSectionsRef.current.includes(v));
+            openSectionsRef.current = values;
+            for (const v of opened) {
+              const s = PROFILE_SECTION_STEPS[v];
+              if (s) trackConfigurator('profile_cut', 'configurator_step', { step_number: s[0], step_name: s[1] });
+            }
+          }}
         >
           {/* 1. Basis-Konfiguration */}
           <AccordionItem value="basis" className="border border-slate-200 rounded-lg px-4 bg-white shadow-sm">
@@ -513,7 +539,7 @@ export default function ProfileConfigurator() {
   const processingTotal = +(price.miterCuts + price.holes + price.endThreads + price.connectors).toFixed(2);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background" onPointerDownCapture={onPointerDownCapture} onKeyDownCapture={onKeyDownCapture}>
       <Helmet>
         <title>Profilzuschnitte Konfigurator – NOVAMOTIS</title>
         <meta name="description" content="Profilzuschnitte online konfigurieren: Profilgröße, Länge, Bohrungen und Endenbearbeitung wählen. Preis sofort kalkulieren und Anfrage an NOVAMOTIS senden." />

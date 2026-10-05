@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CURRENCY, shortSummary, trackConfigurator } from '@/lib/analytics';
+import { useConfiguratorStart } from '@/hooks/use-configurator-start';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Printer } from 'lucide-react';
@@ -64,6 +66,31 @@ export default function DeflectionCalculator() {
     [profile, length, loadN, loadCase, effectiveOrientation, loadPositionMm]
   );
 
+  const { onPointerDownCapture, onKeyDownCapture, startedRef } = useConfiguratorStart('deflection');
+  const inputsStepTrackedRef = useRef(false);
+  // Berechnung läuft live; als "ausgeführt" zählt sie, sobald der Nutzer etwas geändert
+  // hat und die Eingaben 1,5 s stabil sind.
+  useEffect(() => {
+    if (!startedRef.current) return;
+    const timer = window.setTimeout(() => {
+      if (!inputsStepTrackedRef.current) {
+        inputsStepTrackedRef.current = true;
+        trackConfigurator('deflection', 'configurator_step', { step_number: 1, step_name: 'profil_last' });
+      }
+      const deflection = Math.round(result.deflectionMm * 1000) / 1000;
+      trackConfigurator('deflection', 'configurator_complete', {
+        value: 0,
+        currency: CURRENCY,
+        config_summary: shortSummary(`${profile.series} ${profile.w}x${profile.h}, ${length} mm, ${Math.round(loadN)} N, ${loadCase}`),
+        profile: `${profile.series} ${profile.w}x${profile.h}`,
+        span_mm: length,
+        load_n: Math.round(loadN * 100) / 100,
+        deflection_mm: deflection,
+      });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [result]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const switchLoadUnit = (unit: LoadUnit) => {
     if (unit === loadUnit) return;
     const nextValue = unit === 'N' ? loadValue * KG_TO_N : loadValue / KG_TO_N;
@@ -85,7 +112,7 @@ export default function DeflectionCalculator() {
   const positionRatio = loadCase === 'udl-simple' ? 0.5 : loadPositionMm / length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background" onPointerDownCapture={onPointerDownCapture} onKeyDownCapture={onKeyDownCapture}>
       <Helmet>
         <title>Durchbiegungsrechner – NOVAMOTIS</title>
         <meta name="description" content="Schnelle Vorprüfung der Durchbiegung von NOVAMOTIS Aluminiumprofilen bei Profillänge und Last." />

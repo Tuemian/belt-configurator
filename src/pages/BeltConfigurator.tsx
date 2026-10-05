@@ -19,6 +19,10 @@ import conveyorHero from '@/assets/conveyor-hero.jpg';
 import logo from '@/assets/logo.svg';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { trackConfigurator } from '@/lib/analytics';
+import { useConfiguratorStart } from '@/hooks/use-configurator-start';
+
+const STEP_NAMES = ['', 'masse', 'band_geschwindigkeit', 'antrieb', 'untergestell', 'zusammenfassung'];
 
 const TOTAL_STEPS = 5;
 
@@ -49,7 +53,12 @@ const BeltConfigurator = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
+    if (step > 0) {
+      trackConfigurator('belt_conveyor', 'configurator_step', { step_number: step, step_name: STEP_NAMES[step] });
+    }
   }, [step]);
+
+  const { onPointerDownCapture, onKeyDownCapture } = useConfiguratorStart('belt_conveyor');
 
   const handleChange = useCallback((updates: Partial<ConveyorConfig>) => {
     setConfig((prev) => {
@@ -100,7 +109,7 @@ const BeltConfigurator = () => {
 
   if (step === 0) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col" onPointerDownCapture={onPointerDownCapture} onKeyDownCapture={onKeyDownCapture}>
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-28 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -162,7 +171,7 @@ const BeltConfigurator = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" onPointerDownCapture={onPointerDownCapture} onKeyDownCapture={onKeyDownCapture}>
       <Helmet>
         <title>Förderband Konfigurator – NOVAMOTIS</title>
         <meta name="description" content="Konfigurieren Sie Ihr individuelles Förderband: Maße, Gurtgeschwindigkeit, Antrieb und Untergestell. Sofort kalkulieren und Anfrage an NOVAMOTIS senden." />
