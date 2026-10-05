@@ -5,32 +5,14 @@ import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/hooks/use-language';
 import { t } from '@/lib/i18n';
 import { getConsent, setConsent, subscribeConsent, type ConsentChoice } from '@/lib/cookie-consent';
-import { loadGoogleAnalytics, trackPageView } from '@/lib/google-analytics';
-import { useLocation } from 'react-router-dom';
-import { useRef } from 'react';
 
 export function CookieConsentBanner() {
   const [lang] = useLanguage();
-  const [consent, setConsentState] = useState<ConsentChoice | null>(null);
+  const [consent, setConsentState] = useState<ConsentChoice | null>(getConsent());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [stats, setStats] = useState(false);
-  const location = useLocation();
-  const firstPath = useRef(true);
 
-  useEffect(() => {
-    setConsentState(getConsent());
-    if (getConsent() === 'all') loadGoogleAnalytics();
-    return subscribeConsent(() => {
-      const c = getConsent();
-      setConsentState(c);
-      if (c === 'all') loadGoogleAnalytics();
-    });
-  }, []);
-
-  useEffect(() => {
-    if (firstPath.current) { firstPath.current = false; return; }
-    if (getConsent() === 'all') trackPageView(location.pathname + location.search);
-  }, [location.pathname, location.search]);
+  useEffect(() => subscribeConsent(() => setConsentState(getConsent())), []);
 
   if (consent) return null;
 

@@ -1,6 +1,25 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});
+      (function(){
+        try {
+          var m = document.cookie.match(/(?:^|;\s*)nm_consent=([^;]*)/);
+          if (m) {
+            var v = JSON.parse(decodeURIComponent(m[1]));
+            gtag('consent','update',{analytics_storage: v && v.a ? 'granted' : 'denied'});
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GZPRBQCHJ4"></script>
+    <script>
+      gtag('js', new Date());
+      gtag('config','G-GZPRBQCHJ4',{cookie_domain:'auto'});
+    </script>
     <meta name="google-site-verification" content="QDw4H5KcK81L2rQ7YGQR6byOJG_hY4DI_HpL4B8T_TA" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
