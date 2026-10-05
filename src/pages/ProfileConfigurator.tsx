@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart, RotateCcw, Menu, ChevronDown } from 'lucide-react';
@@ -197,7 +197,19 @@ export default function ProfileConfigurator() {
 
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const openSectionsRef = useRef<string[]>(['basis']);
-  const { onPointerDownCapture, onKeyDownCapture } = useConfiguratorStart('profile_cut');
+  const { onPointerDownCapture, onKeyDownCapture, trackStep } = useConfiguratorStart('profile_cut');
+  const prevConfigRef = useRef(config);
+  useEffect(() => {
+    const prev = prevConfigRef.current;
+    prevConfigRef.current = config;
+    if (prev === config) return;
+    if (prev.sectionId !== config.sectionId) trackStep(1, 'profil');
+    if (prev.endStart !== config.endStart || prev.endEnd !== config.endEnd) trackStep(2, 'enden');
+    if (config.holes.length > prev.holes.length || config.connectors.length > prev.connectors.length) trackStep(3, 'bearbeitung');
+  }, [config, trackStep]);
+  useEffect(() => {
+    if (cart.length > 0) trackStep(4, 'warenkorb');
+  }, [cart.length, trackStep]);
   const openInquiry = () => {
     if (cart.length === 0) {
       toast({ title: 'Warenkorb ist leer', description: 'Bitte fügen Sie zuerst eine Konfiguration hinzu.' });
@@ -217,12 +229,7 @@ export default function ProfileConfigurator() {
           defaultValue={['basis']}
           className="w-full space-y-2"
           onValueChange={(values) => {
-            const opened = values.filter((v) => !openSectionsRef.current.includes(v));
             openSectionsRef.current = values;
-            for (const v of opened) {
-              const s = PROFILE_SECTION_STEPS[v];
-              if (s) trackConfigurator('profile_cut', 'configurator_step', { step_number: s[0], step_name: s[1] });
-            }
           }}
         >
           {/* 1. Basis-Konfiguration */}

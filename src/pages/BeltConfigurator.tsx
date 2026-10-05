@@ -51,14 +51,12 @@ const BeltConfigurator = () => {
     setStep(sharedState.step);
   }, []);
 
+  const { onPointerDownCapture, onKeyDownCapture, trackStep } = useConfiguratorStart('belt_conveyor');
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
-    if (step > 0) {
-      trackConfigurator('belt_conveyor', 'configurator_step', { step_number: step, step_name: STEP_NAMES[step] });
-    }
-  }, [step]);
-
-  const { onPointerDownCapture, onKeyDownCapture } = useConfiguratorStart('belt_conveyor');
+    if (step > 0) trackStep(step, STEP_NAMES[step]);
+  }, [step, trackStep]);
 
   const handleChange = useCallback((updates: Partial<ConveyorConfig>) => {
     setConfig((prev) => {
