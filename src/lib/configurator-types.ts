@@ -49,6 +49,29 @@ export function clampInclineAngleForConfig(config: Pick<ConveyorConfig, 'beltLen
   return Math.max(-limit, Math.min(limit, config.inclineAngle));
 }
 
+// Trommelmotor passt nur bei 200mm Rahmenbreite oder ab 250mm in 10er-Schritten —
+// alles dazwischen (z. B. 210-240) oder darunter (40-190) ist nicht verbaubar.
+export const DRUM_MOTOR_SMALL_WIDTH = 200;
+export const DRUM_MOTOR_STEP_START = 250;
+
+export function isDrumCompatibleFrameWidth(width: number): boolean {
+  if (width === DRUM_MOTOR_SMALL_WIDTH) return true;
+  return width >= DRUM_MOTOR_STEP_START && (width - DRUM_MOTOR_STEP_START) % 10 === 0;
+}
+
+export function nearestDrumCompatibleFrameWidth(width: number): number {
+  if (isDrumCompatibleFrameWidth(width)) return width;
+  const steppedUp = Math.max(DRUM_MOTOR_STEP_START, Math.round((width - DRUM_MOTOR_STEP_START) / 10) * 10 + DRUM_MOTOR_STEP_START);
+  const distanceToSmall = Math.abs(width - DRUM_MOTOR_SMALL_WIDTH);
+  const distanceToStepped = Math.abs(width - steppedUp);
+  return distanceToSmall <= distanceToStepped ? DRUM_MOTOR_SMALL_WIDTH : steppedUp;
+}
+
+export function clampFrameWidthForConfig(config: Pick<ConveyorConfig, 'frameWidth' | 'driveType'>): number {
+  if (config.driveType !== 'drum') return config.frameWidth;
+  return nearestDrumCompatibleFrameWidth(config.frameWidth);
+}
+
 export const defaultConfig: ConveyorConfig = {
   frameWidth: 400,
   beltLength: 2000,

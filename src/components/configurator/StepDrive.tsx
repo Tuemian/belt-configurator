@@ -51,6 +51,9 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
               </button>
             ))}
           </div>
+          {isDrum && (
+            <p className="text-xs text-amber-600">{t('driveDrumWidthHint', lang)}</p>
+          )}
         </div>
 
         <div className="space-y-3">

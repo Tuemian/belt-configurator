@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
+import { clampFrameWidthForConfig, clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
 import {
   clearSharedConfiguratorStateFromUrl,
   readSharedConfiguratorState,
@@ -54,8 +54,13 @@ const BeltConfigurator = () => {
   const handleChange = useCallback((updates: Partial<ConveyorConfig>) => {
     setConfig((prev) => {
       const next = { ...prev, ...updates };
-      const safeIncline = clampInclineAngleForConfig(next);
 
+      const safeFrameWidth = clampFrameWidthForConfig(next);
+      if (safeFrameWidth !== next.frameWidth) {
+        next.frameWidth = safeFrameWidth;
+      }
+
+      const safeIncline = clampInclineAngleForConfig(next);
       if (safeIncline !== next.inclineAngle) {
         next.inclineAngle = safeIncline;
       }
