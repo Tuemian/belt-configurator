@@ -66,17 +66,25 @@ export default function DeflectionCalculator() {
     [profile, length, loadN, loadCase, effectiveOrientation, loadPositionMm]
   );
 
-  const { onPointerDownCapture, onKeyDownCapture, startedRef } = useConfiguratorStart('deflection');
-  const inputsStepTrackedRef = useRef(false);
+  const { onPointerDownCapture, onKeyDownCapture, startedRef, trackStep } = useConfiguratorStart('deflection');
+  const firstProfileRef = useRef(true);
+  useEffect(() => {
+    if (firstProfileRef.current) { firstProfileRef.current = false; return; }
+    trackStep(1, 'profil');
+  }, [series, articleNumber, trackStep]);
+  const spanLoadRef = useRef({ length, loadValue, changedSpan: false, changedLoad: false });
+  useEffect(() => {
+    const r = spanLoadRef.current;
+    if (length !== r.length) r.changedSpan = true;
+    if (loadValue !== r.loadValue) r.changedLoad = true;
+    r.length = length; r.loadValue = loadValue;
+    if (r.changedSpan && r.changedLoad) trackStep(2, 'spannweite_last');
+  }, [length, loadValue, trackStep]);
   // Berechnung läuft live; als "ausgeführt" zählt sie, sobald der Nutzer etwas geändert
   // hat und die Eingaben 1,5 s stabil sind.
   useEffect(() => {
     if (!startedRef.current) return;
     const timer = window.setTimeout(() => {
-      if (!inputsStepTrackedRef.current) {
-        inputsStepTrackedRef.current = true;
-        trackConfigurator('deflection', 'configurator_step', { step_number: 1, step_name: 'profil_last' });
-      }
       const deflection = Math.round(result.deflectionMm * 1000) / 1000;
       trackConfigurator('deflection', 'configurator_complete', {
         value: 0,

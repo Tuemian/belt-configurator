@@ -15,6 +15,7 @@ declare global {
 }
 
 const COOKIE = 'nm_consent';
+let marketing = false;
 
 function readStored(): ConsentChoice | null {
   if (typeof document === 'undefined') return null;
@@ -22,6 +23,7 @@ function readStored(): ConsentChoice | null {
   if (!m) return null;
   try {
     const v = JSON.parse(decodeURIComponent(m[1]));
+    marketing = !!(v && v.m);
     return v && v.a ? 'all' : 'necessary';
   } catch {
     return null;
@@ -45,10 +47,23 @@ export function getConsent(): ConsentChoice | null {
   return current;
 }
 
-export function setConsent(choice: ConsentChoice): void {
-  current = choice;
-  writeCookie(encodeURIComponent(JSON.stringify({ a: choice === 'all' })), 31536000);
-  if (choice === 'all') window.gtag?.('consent', 'update', { analytics_storage: 'granted' });
+function applyConsent(a: boolean, m: boolean) {
+  window.gtag?.('consent', 'update', {
+    analytics_storage: a ? 'granted' : 'denied',
+    ad_storage: m ? 'granted' : 'denied',
+    ad_user_data: m ? 'granted' : 'denied',
+    ad_personalization: m ? 'granted' : 'denied',
+  });
+}
+
+/** 'all' = Statistik + Marketing, 'necessary' = nichts. Optional feingranular. */
+export function setConsent(choice: ConsentChoice, opts?: { analytics: boolean; marketing: boolean }): void {
+  const a = opts ? opts.analytics : choice === 'all';
+  const m = opts ? opts.marketing : choice === 'all';
+  current = a ? 'all' : 'necessary';
+  marketing = m;
+  writeCookie(encodeURIComponent(JSON.stringify({ a, m })), 31536000);
+  applyConsent(a, m);
   notify();
 }
 
@@ -56,7 +71,8 @@ export function setConsent(choice: ConsentChoice): void {
 export function resetConsent(): void {
   current = null;
   writeCookie('', 0);
-  window.gtag?.('consent', 'update', { analytics_storage: 'denied' });
+  marketing = false;
+  applyConsent(false, false);
   notify();
 }
 

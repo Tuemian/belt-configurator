@@ -11,6 +11,7 @@ export function CookieConsentBanner() {
   const [consent, setConsentState] = useState<ConsentChoice | null>(getConsent());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [stats, setStats] = useState(false);
+  const [marketing, setMarketing] = useState(false);
 
   useEffect(() => subscribeConsent(() => setConsentState(getConsent())), []);
 
@@ -54,9 +55,13 @@ export function CookieConsentBanner() {
               <span className="text-sm">{t('cookieStatistics', lang)}</span>
               <Switch checked={stats} onCheckedChange={setStats} />
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Marketing</span>
+              <Switch checked={marketing} onCheckedChange={setMarketing} />
+            </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => { setConsent(stats ? 'all' : 'necessary'); setSettingsOpen(false); }}>
+            <Button onClick={() => { setConsent(stats ? 'all' : 'necessary', { analytics: stats, marketing }); setSettingsOpen(false); }}>
               {t('cookieSave', lang)}
             </Button>
           </DialogFooter>

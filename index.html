@@ -10,7 +10,8 @@
           var m = document.cookie.match(/(?:^|;\s*)nm_consent=([^;]*)/);
           if (m) {
             var v = JSON.parse(decodeURIComponent(m[1]));
-            gtag('consent','update',{analytics_storage: v && v.a ? 'granted' : 'denied'});
+            var a = !!(v && v.a), mk = !!(v && v.m);
+            gtag('consent','update',{analytics_storage: a ? 'granted':'denied', ad_storage: mk ? 'granted':'denied', ad_user_data: mk ? 'granted':'denied', ad_personalization: mk ? 'granted':'denied'});
           }
         } catch (e) {}
       })();
