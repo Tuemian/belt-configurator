@@ -1,5 +1,5 @@
 import { Language, t } from '@/lib/i18n';
-import { ConveyorConfig } from '@/lib/configurator-types';
+import { ConveyorConfig, isDrumCompatibleFrameWidth } from '@/lib/configurator-types';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { ConveyorPreview } from '@/components/configurator/ConveyorPreview';
@@ -22,6 +22,7 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
 
   const motorAngles = [0, 90, 180, 270] as const;
   const isDrum = config.driveType === 'drum';
+  const drumWidthOk = isDrumCompatibleFrameWidth(config.frameWidth);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -29,29 +30,38 @@ export const StepDrive = ({ config, onChange, lang }: Props) => {
         <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground">{t('driveType', lang)}</Label>
           <div className="grid grid-cols-1 gap-3">
-            {driveOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onChange({
-                  driveType: opt.value,
-                  centerDriveOffset: opt.value === 'center' ? config.centerDriveOffset : 0,
-                  // Trommelmotor: keine Motorstellung, default 0
-                  motorAngle: opt.value === 'drum' ? 0 : config.motorAngle,
-                })}
-                className={cn(
-                  'flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left',
-                  config.driveType === opt.value
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                )}
-              >
-                <span className="font-semibold text-sm">{opt.label}</span>
-                <span className="text-xs text-muted-foreground">{opt.desc}</span>
-              </button>
-            ))}
+            {driveOptions.map((opt) => {
+              const isDisabled = opt.value === 'drum' && !drumWidthOk;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (isDisabled) return;
+                    onChange({
+                      driveType: opt.value,
+                      centerDriveOffset: opt.value === 'center' ? config.centerDriveOffset : 0,
+                      // Trommelmotor: keine Motorstellung, default 0
+                      motorAngle: opt.value === 'drum' ? 0 : config.motorAngle,
+                    });
+                  }}
+                  className={cn(
+                    'flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left',
+                    isDisabled
+                      ? 'opacity-40 cursor-not-allowed border-border bg-muted/20 text-muted-foreground hover:border-border'
+                      : config.driveType === opt.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  <span className="font-semibold text-sm">{opt.label}</span>
+                  <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                </button>
+              );
+            })}
           </div>
-          {isDrum && (
+          {!drumWidthOk && (
             <p className="text-xs text-amber-600">{t('driveDrumWidthHint', lang)}</p>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { clampFrameWidthForConfig, clampInclineAngleForConfig, ConveyorConfig, defaultConfig } from '@/lib/configurator-types';
+import { clampInclineAngleForConfig, ConveyorConfig, defaultConfig, driveTypeForConfig } from '@/lib/configurator-types';
 import {
   clearSharedConfiguratorStateFromUrl,
   readSharedConfiguratorState,
@@ -55,9 +55,12 @@ const BeltConfigurator = () => {
     setConfig((prev) => {
       const next = { ...prev, ...updates };
 
-      const safeFrameWidth = clampFrameWidthForConfig(next);
-      if (safeFrameWidth !== next.frameWidth) {
-        next.frameWidth = safeFrameWidth;
+      // Wird die Breite nachträglich inkompatibel mit einem bereits gewählten Trommelmotor,
+      // fällt die Antriebsart auf den Standard zurück (statt die Breite zu erzwingen) — die
+      // Trommelmotor-Auswahl selbst ist für inkompatible Breiten blockiert, siehe StepDrive.
+      const safeDriveType = driveTypeForConfig(next);
+      if (safeDriveType !== next.driveType) {
+        next.driveType = safeDriveType;
       }
 
       const safeIncline = clampInclineAngleForConfig(next);
