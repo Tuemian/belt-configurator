@@ -56,7 +56,7 @@ export function CookieConsentBanner() {
               <Switch checked={stats} onCheckedChange={setStats} />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">{lang === 'en' ? 'Marketing' : lang === 'it' ? 'Marketing' : 'Marketing'}</span>
+              <span className="text-sm">Marketing</span>
               <Switch checked={marketing} onCheckedChange={setMarketing} />
             </div>
           </div>
