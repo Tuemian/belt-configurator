@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { CURRENCY, shortSummary, trackConfigurator, trackLead, type AnalyticsItem } from '@/lib/analytics';
+import { PROFILE_SECTIONS, type ProfileConfig } from '@/lib/profile-configurator-types';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
@@ -50,6 +52,26 @@ interface Props {
   onSubmitted: () => void;
 }
 
+export function profileGaSummary(config: ProfileConfig): string {
+  const sec = PROFILE_SECTIONS.find((p) => p.id === config.sectionId);
+  const miters = [config.angleStart, config.angleEnd].filter((a) => a && a !== 0);
+  const parts = [sec ? `${sec.nut ?? 'A8'} ${sec.sizeKey}` : config.sectionId, `${config.length} mm`];
+  if (miters.length) parts.push(`${miters.length}× Gehrung ${miters[0]}°`);
+  if (config.holes.length) parts.push(`${config.holes.length} Bohrungen`);
+  return shortSummary(parts.join(', '));
+}
+
+export function profileGaItems(cart: CartItemLike[]): AnalyticsItem[] {
+  return cart.map((i) => ({
+    item_id: i.config.sectionId,
+    item_name: 'Profilzuschnitt',
+    item_category: 'Konfiguration',
+    item_variant: profileGaSummary(i.config),
+    price: Math.round((i.price.total / Math.max(1, i.config.quantity)) * 100) / 100,
+    quantity: i.config.quantity,
+  }));
+}
+
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -84,6 +106,15 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
   const onRequestCount = cart.filter((i) => i.price.onRequest).length;
   const canSubmit = form.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && form.privacy && cart.length > 0;
 
+  useEffect(() => {
+    if (!open || cart.length === 0) return;
+    trackConfigurator('profile_cut', 'begin_checkout', {
+      currency: CURRENCY,
+      value: Math.round(total * 100) / 100,
+      items: profileGaItems(cart),
+    });
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const formatDeliveryForPdf = (): string | undefined => {
     if (!desiredDelivery) return deliveryFlexibility === 'asap' ? 'schnellstmöglich' : undefined;
     const datePart = format(desiredDelivery, 'dd.MM.yyyy', { locale: de });
@@ -113,6 +144,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      trackConfigurator('profile_cut', 'configurator_export', { file_format: 'pdf', file_name: getInquiryPdfFilename() });
       toast({ title: 'PDF heruntergeladen' });
     } catch (err) {
       console.error(err);
@@ -170,6 +202,7 @@ export function ProfileInquiryDialog({ open, onOpenChange, cart, shopItems = [],
         throw new Error((data as { error: string }).error);
       }
 
+      trackLead('profile_cut', crypto.randomUUID(), Math.round(total * 100) / 100, profileGaItems(cart));
       toast({
         title: 'Anfrage gesendet',
         description: 'Vielen Dank! Sie erhalten eine Bestätigung per E-Mail. Eine Kopie geht an office@novamotis.com.',
